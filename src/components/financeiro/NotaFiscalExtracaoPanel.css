@@ -1,0 +1,81 @@
+.nota-extracao-panel {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nota-extracao-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.nota-extracao-panel__confianca {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  flex: 1;
+}
+
+.nota-extracao-panel__sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nota-extracao-panel__hint {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.nota-extracao-panel__itens {
+  border-top: 1px dashed var(--color-border);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nota-extracao-panel__itens-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.nota-extracao-panel__linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.nota-extracao-panel__linha-check {
+  display: flex;
+}
+
+.nota-extracao-panel__linha-check input {
+  width: auto;
+}
+
+.nota-extracao-panel__linha input,
+.nota-extracao-panel__linha select {
+  min-width: 90px;
+}
+
+.nota-extracao-panel__linha input:first-of-type {
+  flex: 2;
+  min-width: 160px;
+}
+
+.nota-extracao-panel__linha-status {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  min-width: 90px;
+}

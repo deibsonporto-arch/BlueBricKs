@@ -3,6 +3,7 @@ import { IconInfoCircle, IconPaperclip, IconTrash } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { FornecedorPicker } from './FornecedorPicker';
 import { DynamicListField } from '../obra-detail/DynamicListField';
+import { NotaFiscalExtracaoPanel, type ItemMaterialConfirmado } from './NotaFiscalExtracaoPanel';
 import type {
   Anexo,
   Atividade,
@@ -14,17 +15,32 @@ import type {
   LancamentoFinanceiro,
   Locacao,
   LocacaoItem,
+  OrigemHistoricoPreco,
   StatusLancamento,
 } from '../../types/domain';
 import { useLancamentos } from '../../hooks/useLancamentos';
 import { useLocacoes } from '../../hooks/useLocacoes';
+import { useMateriaisCatalogo } from '../../hooks/useMateriaisCatalogo';
+import { useHistoricoPrecos } from '../../hooks/useHistoricoPrecos';
 import { generateId } from '../../utils/id';
 import { todayISO, formatDate } from '../../utils/dateUtils';
 import { formatBRL } from '../../utils/currency';
 import { getCurrentUserName } from '../../utils/currentUser';
 import { readFileAsAnexo } from '../../utils/anexoUpload';
 import { deleteBlob, downloadAnexo, storeAnexo } from '../../utils/attachmentStore';
+import { extractNotaFiscal, type NotaFiscalExtraida } from '../../utils/notaFiscal/extractNotaFiscal';
 import './LancamentoFormModal.css';
+
+function origemHistoricoDaConfianca(confianca: NotaFiscalExtraida['confianca'] | undefined): OrigemHistoricoPreco {
+  if (confianca === 'alta') return 'nfe_xml';
+  if (confianca === 'media') return 'pdf_texto';
+  if (confianca === 'baixa') return 'ocr_imagem';
+  return 'manual';
+}
+
+function extraidaTemSinalUtil(extraida: NotaFiscalExtraida): boolean {
+  return !!extraida.fornecedorDocumento || !!extraida.fornecedorNome || !!extraida.data || extraida.valorTotal !== undefined || extraida.itens.length > 0;
+}
 
 interface LancamentoPrefill {
   fornecedorId?: string;
@@ -190,9 +206,20 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
   );
   const [form, setForm] = useState<FormState>(() => toFormState(lancamento, prefill, locacaoExistente));
   const [anexoErro, setAnexoErro] = useState('');
+  const { materiais: materiaisCatalogo, createMaterial } = useMateriaisCatalogo();
+  const { createHistoricoPreco } = useHistoricoPrecos();
+  const [notaFiscalExtraida, setNotaFiscalExtraida] = useState<NotaFiscalExtraida | null>(null);
+  const [notaFiscalOrigemAnexoId, setNotaFiscalOrigemAnexoId] = useState<string | undefined>(undefined);
+  const [itensMaterialConfirmados, setItensMaterialConfirmados] = useState<ItemMaterialConfirmado[] | null>(null);
 
   useEffect(() => {
-    if (open) { setForm(toFormState(lancamento, prefill, locacaoExistente)); setAnexoErro(''); }
+    if (open) {
+      setForm(toFormState(lancamento, prefill, locacaoExistente));
+      setAnexoErro('');
+      setNotaFiscalExtraida(null);
+      setNotaFiscalOrigemAnexoId(undefined);
+      setItensMaterialConfirmados(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lancamento, prefill]);
 
@@ -230,7 +257,16 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
     setAnexoErro('');
     Array.from(files).forEach((file) => {
       readFileAsAnexo(file)
-        .then(storeAnexo)
+        .then((anexo) => {
+          extractNotaFiscal(file).then((extraida) => {
+            if (extraidaTemSinalUtil(extraida)) {
+              setNotaFiscalExtraida(extraida);
+              setNotaFiscalOrigemAnexoId(anexo.id);
+              setItensMaterialConfirmados(null);
+            }
+          });
+          return storeAnexo(anexo);
+        })
         .then((anexo) => setForm((f) => ({ ...f, anexos: [...f.anexos, anexo] })))
         .catch((err: Error) => setAnexoErro(err.message));
     });
@@ -279,6 +315,74 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
     }
   }
 
+  /**
+   * Alimenta o histórico de preços a partir de um lançamento recém-criado. Serviço sempre
+   * gera 1 registro a partir dos próprios campos do lançamento (não depende de extração de
+   * nota — o clique em Salvar já é a confirmação). Material só grava se o usuário confirmou
+   * os itens no painel de extração (dados vêm da nota, não do lançamento em si).
+   */
+  async function registrarHistoricoDePrecos(novo: LancamentoFinanceiro, now: string) {
+    const origem = origemHistoricoDaConfianca(notaFiscalExtraida?.confianca);
+    const dataHistorico = notaFiscalExtraida?.data ?? novo.data;
+
+    if (novo.categoria === 'servico') {
+      await createHistoricoPreco({
+        id: generateId(),
+        tipo: 'servico',
+        nome: novo.descricao,
+        unidade: 'verba',
+        quantidade: 1,
+        valorUnitario: novo.valorPago,
+        valorTotal: novo.valorPago,
+        fornecedorId: novo.fornecedorId,
+        fornecedorNomeDetectado: notaFiscalExtraida?.fornecedorNome,
+        data: dataHistorico,
+        obraId,
+        origemLancamentoId: novo.id,
+        origemAnexoId: notaFiscalOrigemAnexoId,
+        origem,
+        createdAt: now,
+      });
+    }
+
+    if (novo.categoria === 'material' && itensMaterialConfirmados && itensMaterialConfirmados.length > 0) {
+      for (const item of itensMaterialConfirmados) {
+        let materialCatalogId = item.materialCatalogId;
+        if (!materialCatalogId) {
+          const novoMaterial = {
+            id: generateId(),
+            nome: item.nome,
+            categoria: item.categoriaNovoMaterial || 'Sem categoria',
+            unidade: item.unidade,
+            custoUnitario: item.valorUnitario,
+            createdAt: now,
+            updatedAt: now,
+          };
+          await createMaterial(novoMaterial);
+          materialCatalogId = novoMaterial.id;
+        }
+        await createHistoricoPreco({
+          id: generateId(),
+          tipo: 'material',
+          nome: item.nome,
+          materialCatalogId,
+          unidade: item.unidade,
+          quantidade: item.quantidade,
+          valorUnitario: item.valorUnitario,
+          valorTotal: item.valorTotal,
+          fornecedorId: novo.fornecedorId,
+          fornecedorNomeDetectado: notaFiscalExtraida?.fornecedorNome,
+          data: dataHistorico,
+          obraId,
+          origemLancamentoId: novo.id,
+          origemAnexoId: notaFiscalOrigemAnexoId,
+          origem,
+          createdAt: now,
+        });
+      }
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const now = new Date().toISOString();
@@ -295,7 +399,9 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
         updatedAt: now,
         ...base,
       };
-      createLancamento(novo).then(() => { syncLocacao(novo.id); onCreated?.(novo); onSaved(); });
+      createLancamento(novo)
+        .then(() => { syncLocacao(novo.id); return registrarHistoricoDePrecos(novo, now); })
+        .then(() => { onCreated?.(novo); onSaved(); });
     } else if (lancamento) {
       const resumo = buildHistoricoResumo(lancamento, base, fornecedores);
       const historico: HistoricoEntry[] = [...lancamento.historico, { data: now, usuario: getCurrentUserName(), resumo }];
@@ -582,6 +688,21 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
                 </li>
               ))}
             </ul>
+          )}
+          {notaFiscalExtraida && (
+            <NotaFiscalExtracaoPanel
+              extraida={notaFiscalExtraida}
+              fornecedores={fornecedores}
+              materiaisCatalogo={materiaisCatalogo}
+              descricaoAtual={form.descricao}
+              valorAtual={form.valorPago}
+              fornecedorIdAtual={form.fornecedorId}
+              onAplicarDescricao={(valor) => update('descricao', valor)}
+              onAplicarValor={(valor) => update('valorPago', String(valor))}
+              onSelecionarFornecedor={(fornecedorId) => update('fornecedorId', fornecedorId)}
+              onConfirmarItens={setItensMaterialConfirmados}
+              onDispensar={() => { setNotaFiscalExtraida(null); setItensMaterialConfirmados(null); }}
+            />
           )}
         </div>
 
