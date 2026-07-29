@@ -441,6 +441,36 @@ export interface HistoricoEntry {
   resumo: string;
 }
 
+// ---------- Histórico de Preços (banco de preços material/serviço) ----------
+
+export type OrigemHistoricoPreco = 'nfe_xml' | 'pdf_texto' | 'ocr_imagem' | 'manual';
+export type TipoHistoricoPreco = 'material' | 'servico';
+
+/**
+ * Registro de compra/contratação real (material ou serviço), usado pra sugerir preço e
+ * fornecedor em obras futuras. Global entre obras — obraId é só rastro de origem, nunca
+ * filtro: cimento ou mão de obra de hidráulica custam o mesmo independente da obra.
+ */
+export interface HistoricoPrecoItem {
+  id: string;
+  tipo: TipoHistoricoPreco;
+  nome: string;
+  materialCatalogId?: string; // vínculo com MaterialCatalogItem quando tipo === 'material'
+  descricao?: string;
+  unidade: UnidadeMedida;
+  quantidade: number;
+  valorUnitario: number;
+  valorTotal: number;
+  fornecedorId?: string;
+  fornecedorNomeDetectado?: string; // nome bruto extraído da nota, antes de casar com Fornecedor
+  data: string; // ISO date da nota/compra
+  obraId?: string;
+  origemLancamentoId?: string;
+  origemAnexoId?: string;
+  origem: OrigemHistoricoPreco;
+  createdAt: string;
+}
+
 export interface Pagamento {
   id: string;
   data: string; // data em que esse pagamento foi feito

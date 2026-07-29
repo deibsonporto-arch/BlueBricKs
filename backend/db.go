@@ -20,6 +20,7 @@ var collections = []string{
 	"ferramentas_catalogo",
 	"ferramentas",
 	"fornecedores",
+	"historico_precos",
 	"itens_providenciados",
 	"lancamentos",
 	"lembretes",
