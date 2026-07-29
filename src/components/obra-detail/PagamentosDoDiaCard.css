@@ -1,0 +1,105 @@
+.pagamentos-do-dia-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16px;
+}
+
+.pagamentos-do-dia-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 10px;
+}
+
+.pagamentos-do-dia-card__header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.pagamentos-do-dia-card__total {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pagamentos-do-dia-card__empty {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.pagamentos-do-dia-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pagamentos-do-dia-card__list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+}
+
+.pagamentos-do-dia-card__list li.is-proximo {
+  background: var(--color-warning-light);
+  border-color: var(--color-warning);
+}
+
+.pagamentos-do-dia-card__list li.is-fim-de-semana {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
+}
+
+.pagamentos-do-dia-card__list li.is-vencida {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+.pagamentos-do-dia-card__list li.is-vencida .pagamentos-do-dia-card__desc span,
+.pagamentos-do-dia-card__list li.is-vencida .pagamentos-do-dia-card__vencimento,
+.pagamentos-do-dia-card__list li.is-vencida .pagamentos-do-dia-card__status {
+  color: #fff;
+}
+
+.pagamentos-do-dia-card__desc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pagamentos-do-dia-card__desc span {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pagamentos-do-dia-card__valor {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pagamentos-do-dia-card__vencimento {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pagamentos-do-dia-card__status {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}

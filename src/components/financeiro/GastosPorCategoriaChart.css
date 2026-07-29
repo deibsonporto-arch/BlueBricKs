@@ -1,0 +1,51 @@
+.gastos-categoria-section {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.gastos-categoria-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.gastos-categoria-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.gastos-categoria-ranking {
+  list-style: decimal;
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gastos-categoria-ranking li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.gastos-categoria-ranking__nome {
+  color: var(--color-text);
+}
+
+.gastos-categoria-ranking__valor {
+  font-weight: 700;
+  color: var(--color-success);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .gastos-categoria-section {
+    grid-template-columns: 1fr;
+  }
+}

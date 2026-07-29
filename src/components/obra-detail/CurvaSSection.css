@@ -1,0 +1,16 @@
+.curva-s-section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.curva-s-section .curva-s-card {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .curva-s-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

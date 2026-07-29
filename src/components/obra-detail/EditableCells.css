@@ -1,0 +1,39 @@
+.editable-cell {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 3px 6px;
+  margin: -3px -6px;
+  display: inline-block;
+}
+
+.editable-cell:hover {
+  background: var(--color-primary-light);
+}
+
+.editable-cell--disabled {
+  cursor: default;
+  color: var(--color-text-muted);
+}
+
+.editable-cell--disabled:hover {
+  background: none;
+}
+
+.editable-cell__input {
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 13px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.editable-cell__predecessor-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editable-cell .dep-tag + .dep-tag {
+  margin-left: 4px;
+}

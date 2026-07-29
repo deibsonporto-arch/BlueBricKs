@@ -1,0 +1,56 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input, select, textarea {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 100%;
+  padding: 24px;
+}
+
+.scroll-x {
+  overflow-x: auto;
+}
+
+/* Elementos comuns a toda página de obra que nenhum relatório impresso deve mostrar. */
+@media print {
+  /* height: 100% no html/body/#root sobra além da página impressa e cria uma 2ª folha em branco. */
+  html, body, #root {
+    height: auto !important;
+  }
+
+  .app-header,
+  .obra-tabs-nav,
+  .obra-detail-breadcrumb {
+    display: none !important;
+  }
+
+  .container {
+    padding: 0 !important;
+  }
+}

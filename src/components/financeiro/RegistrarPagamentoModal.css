@@ -1,0 +1,52 @@
+.registrar-pagamento-resumo {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.registrar-pagamento-resumo__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.registrar-pagamento-resumo__grid strong {
+  color: var(--color-text);
+}
+
+.registrar-pagamento-resumo__parcela {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-primary-dark);
+}
+
+.registrar-pagamento-parcial {
+  background: var(--color-warning-light, #fff6e0);
+  border: 1px solid var(--color-warning, #b8860b);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.registrar-pagamento-parcial__aviso {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.registrar-pagamento-parcial__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.registrar-pagamento-parcial__grid .form-field {
+  flex: 1 1 180px;
+}

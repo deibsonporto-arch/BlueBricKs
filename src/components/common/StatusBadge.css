@@ -1,0 +1,41 @@
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.status-badge--em_andamento {
+  color: var(--status-em_andamento);
+  background: var(--status-em_andamento-bg);
+}
+
+.status-badge--concluida {
+  color: var(--status-concluida);
+  background: var(--status-concluida-bg);
+}
+
+.status-badge--atrasada {
+  color: var(--status-atrasada);
+  background: var(--status-atrasada-bg);
+  border-color: var(--status-atrasada);
+}
+
+.status-badge--paralisada {
+  color: var(--status-paralisada);
+  background: var(--status-paralisada-bg);
+}
+
+.status-badge--nao_iniciada {
+  color: var(--status-nao_iniciada);
+  background: var(--status-nao_iniciada-bg);
+}
+
+.status-badge--pendente {
+  color: var(--status-pendente);
+  background: var(--status-pendente-bg);
+}

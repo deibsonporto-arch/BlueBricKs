@@ -1,0 +1,111 @@
+.financeiro-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.financeiro-graficos-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.financeiro-graficos-toggle:hover {
+  color: var(--color-primary);
+}
+
+.financeiro-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.financeiro-filters select,
+.financeiro-filters input[type='date'] {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.financeiro-filters__periodo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.financeiro-filters__actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+/* ---------- Relatório impresso ---------- */
+
+.financeiro-print-view {
+  display: none;
+}
+
+.financeiro-print-header__empresa {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.financeiro-print-header__grid {
+  display: flex;
+  gap: 24px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.financeiro-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 16px;
+}
+
+.financeiro-print-table th,
+.financeiro-print-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.financeiro-print-table tr.is-total td {
+  font-weight: 700;
+  border-top: 2px solid #999;
+  border-bottom: none;
+}
+
+@media print {
+  .app-header,
+  .obra-tabs-nav,
+  .contas-a-pagar-panel,
+  .resumo-financeiro,
+  .gastos-categoria-card,
+  .custos-por-etapa,
+  .financeiro-card {
+    display: none !important;
+  }
+
+  .financeiro-print-view {
+    display: block;
+  }
+}

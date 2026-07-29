@@ -1,0 +1,47 @@
+.fornecedores-list__busca {
+  width: 100%;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.fornecedores-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.fornecedores-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.fornecedores-list__row-sub {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 2px;
+  text-transform: capitalize;
+}
+
+.fornecedores-list__row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.fornecedores-list__empty {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 20px;
+}

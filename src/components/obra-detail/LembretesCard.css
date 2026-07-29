@@ -1,0 +1,153 @@
+.lembretes-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16px;
+}
+
+.lembretes-card__header {
+  margin: 0 0 10px;
+}
+
+.lembretes-card__header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.lembretes-card__form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.lembretes-card__form input[type='text'] {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.lembretes-card__form input[type='date'] {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.lembretes-card__form button {
+  padding: 6px 10px;
+}
+
+.lembretes-card__empty {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.lembretes-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lembretes-card__list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
+.lembretes-card__list li.is-hoje {
+  background: var(--color-warning-light);
+  border-color: var(--color-warning);
+}
+
+.lembretes-card__list li.is-atrasado {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
+}
+
+.lembretes-card__list li.is-concluido {
+  opacity: 0.55;
+}
+
+.lembretes-card__list li.is-concluido .lembretes-card__texto {
+  text-decoration: line-through;
+}
+
+.lembretes-card__check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.lembretes-card__check:hover {
+  color: var(--color-text-muted);
+}
+
+.lembretes-card__check.is-checked {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: #fff;
+}
+
+.lembretes-card__texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lembretes-card__data {
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.lembretes-card__del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 2px;
+  display: flex;
+}
+
+.lembretes-card__del:hover {
+  color: var(--color-danger);
+}
+
+.lembretes-card__concluidos {
+  margin-top: 10px;
+}
+
+.lembretes-card__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: 0 0 6px;
+}

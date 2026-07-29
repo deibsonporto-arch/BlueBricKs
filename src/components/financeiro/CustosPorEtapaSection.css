@@ -1,0 +1,57 @@
+.custos-por-etapa {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.custos-por-etapa__chart-card,
+.custos-por-etapa__ranking-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.custos-por-etapa__chart-card h3,
+.custos-por-etapa__ranking-card h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+
+.custos-por-etapa__ranking {
+  list-style: decimal;
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.custos-por-etapa__ranking li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.custos-por-etapa__ranking-nome {
+  color: var(--color-text);
+}
+
+.custos-por-etapa__ranking-valor {
+  font-weight: 700;
+  color: var(--color-success);
+  white-space: nowrap;
+}
+
+.custos-por-etapa > .curva-s-card {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .custos-por-etapa {
+    grid-template-columns: 1fr;
+  }
+}

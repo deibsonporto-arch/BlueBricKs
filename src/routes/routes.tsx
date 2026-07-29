@@ -1,0 +1,30 @@
+export const ROUTES = {
+  obras: '/obras',
+  configuracoes: '/configuracoes',
+  obraDetail: (id: string) => `/obras/${id}`,
+  obraVisaoGeral: (id: string) => `/obras/${id}/visao-geral`,
+  obraOrcamento: (id: string) => `/obras/${id}/orcamento`,
+  obraPmoMensal: (id: string) => `/obras/${id}/pmo-mensal`,
+  obraDiarioDeObra: (id: string) => `/obras/${id}/diario-de-obra`,
+  obraProximaSemana: (id: string) => `/obras/${id}/proxima-semana`,
+  obraMapaCotacao: (id: string) => `/obras/${id}/mapa-cotacao`,
+  obraFinanceiro: (id: string) => `/obras/${id}/financeiro`,
+  obraEmpreita: (id: string) => `/obras/${id}/empreita`,
+  obraLocacaoDeBensMoveis: (id: string) => `/obras/${id}/locacao-de-bens-moveis`,
+  obraFerramentas: (id: string) => `/obras/${id}/ferramentas`,
+  ferramentas: '/ferramentas',
+  localFerramentas: (id: string) => `/ferramentas/locais/${id}`,
+};
+
+export const OBRA_TABS: { path: string; label: string }[] = [
+  { path: 'visao-geral', label: 'Visão Geral' },
+  { path: 'orcamento', label: 'Orçamento' },
+  { path: 'pmo-mensal', label: 'PMO Mensal' },
+  { path: 'diario-de-obra', label: 'Diário de Obra' },
+  { path: 'proxima-semana', label: 'Próxima Semana' },
+  { path: 'mapa-cotacao', label: 'Mapa de Cotação' },
+  { path: 'financeiro', label: 'Financeiro' },
+  { path: 'empreita', label: 'Empreita' },
+  { path: 'locacao-de-bens-moveis', label: 'Locação de Bens Móveis' },
+  { path: 'ferramentas', label: 'Ferramentas' },
+];

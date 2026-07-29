@@ -1,0 +1,11 @@
+.editable-status-cell__pill {
+  cursor: pointer;
+  border: none;
+}
+
+.editable-status-cell__select {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  font-size: 12px;
+}

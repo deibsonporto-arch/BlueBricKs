@@ -1,0 +1,122 @@
+.ferramentas-page-header {
+  margin: 24px 0;
+}
+
+.ferramentas-page-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.ferramentas-page-subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  max-width: 620px;
+}
+
+.ferramentas-page-empty {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.ferramentas-page-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 20px;
+}
+
+.ferramentas-page-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ferramentas-page-section__header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.ferramentas-page-section__hint {
+  margin: 0 0 14px;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  max-width: 640px;
+}
+
+.ferramentas-page-catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.ferramenta-catalogo-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.ferramenta-catalogo-card__actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ferramentas-page-local-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.ferramentas-page-obra {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16px;
+}
+
+.ferramentas-page-obra h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.ferramentas-page-obra h2 a {
+  color: var(--color-text);
+}
+
+.ferramentas-page-obra h2 a:hover {
+  color: var(--color-primary);
+}
+
+.ferramentas-page-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.ferramentas-page-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ferramentas-page-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border);
+}

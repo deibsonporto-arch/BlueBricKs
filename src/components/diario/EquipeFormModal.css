@@ -1,0 +1,19 @@
+.equipe-membro-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.equipe-membro-row input:first-child {
+  flex: 2;
+}
+
+.equipe-membro-row input:nth-child(2) {
+  flex: 1;
+}
+
+.equipe-membro-row input:nth-child(3) {
+  flex: 1;
+  min-width: 110px;
+}

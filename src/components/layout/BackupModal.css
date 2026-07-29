@@ -1,0 +1,21 @@
+.backup-modal__intro {
+  margin: 0 0 16px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.backup-modal__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.backup-modal__upload-btn {
+  cursor: pointer;
+}
+
+.backup-modal__erro {
+  margin: 12px 0 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}

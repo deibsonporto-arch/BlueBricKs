@@ -1,0 +1,132 @@
+.configuracoes-header {
+  margin: 24px 0;
+}
+
+.configuracoes-header h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.configuracoes-subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.configuracoes-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 20px;
+}
+
+.configuracoes-modelos-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.configuracoes-modelos-tab {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.configuracoes-modelos-tab.is-active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+.configuracoes-modelos-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.configuracoes-modelos-acoes input {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.configuracoes-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.configuracoes-section__header h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.config-etapas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.config-etapas-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.config-etapas-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.config-etapas-table input {
+  width: 100%;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.config-etapas-table input[type='number'] {
+  width: 80px;
+}
+
+.config-etapas-table__reorder {
+  display: flex;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.config-etapas-table__empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 20px;
+}
+
+.configuracoes-soma {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.configuracoes-soma.is-aviso {
+  color: var(--color-warning, #b8860b);
+  font-weight: 600;
+}
+
+.configuracoes-split {
+  display: flex;
+  gap: 16px;
+  max-width: 320px;
+}

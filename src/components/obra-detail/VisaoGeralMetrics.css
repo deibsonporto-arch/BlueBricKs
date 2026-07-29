@@ -1,0 +1,69 @@
+.visao-geral-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.vg-metric-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.vg-metric-card > div {
+  min-width: 0;
+}
+
+.vg-metric-card__value {
+  overflow-wrap: break-word;
+}
+
+.vg-metric-card__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vg-metric-card__icon--primary { background: var(--color-primary-light); color: var(--color-primary); }
+.vg-metric-card__icon--warning { background: var(--color-warning-light); color: var(--color-warning); }
+.vg-metric-card__icon--danger { background: var(--color-danger-light); color: var(--color-danger); }
+.vg-metric-card__icon--success { background: var(--color-success-light); color: var(--color-success); }
+.vg-metric-card__icon--neutral { background: var(--color-neutral-light); color: var(--color-neutral); }
+
+.vg-metric-card__value {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.vg-metric-card__value.is-danger {
+  color: var(--color-danger);
+}
+
+.vg-metric-card__vs {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.vg-metric-card__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 900px) {
+  .visao-geral-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

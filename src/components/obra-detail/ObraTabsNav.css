@@ -1,0 +1,26 @@
+.obra-tabs-nav {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 0 24px;
+  overflow-x: auto;
+}
+
+.obra-tabs-nav__link {
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.obra-tabs-nav__link:hover {
+  color: var(--color-text);
+}
+
+.obra-tabs-nav__link.is-active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}

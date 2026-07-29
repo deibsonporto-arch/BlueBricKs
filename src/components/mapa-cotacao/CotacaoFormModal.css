@@ -1,0 +1,124 @@
+.cotacao-fornecedor-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.cotacao-fornecedor-row--melhor {
+  border-color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.cotacao-melhor-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.cotacao-melhor-btn.is-active {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #fff;
+}
+
+.cotacao-fornecedor-row input,
+.cotacao-fornecedor-row select {
+  min-width: 0;
+  flex: 1 1 110px;
+}
+
+.cotacao-nf-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.cotacao-previsto-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cotacao-previsto-header__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.cotacao-previsto-header__toggle input {
+  width: auto;
+}
+
+.cotacao-fornecedor-orcamento {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.cotacao-fornecedor-orcamento__btn {
+  width: fit-content;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.cotacao-fornecedor-orcamento__anexo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+}
+
+.cotacao-fornecedor-orcamento__anexo button:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cotacao-fornecedor-orcamento__anexo button:last-child {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  display: flex;
+  flex-shrink: 0;
+}
+
+.cotacao-anexo-erro {
+  color: var(--color-danger);
+  font-size: 12px;
+  margin: 6px 0 0;
+}

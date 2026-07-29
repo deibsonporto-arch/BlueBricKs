@@ -1,0 +1,102 @@
+.proxima-semana-range {
+  margin: 20px 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.proxima-semana-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.proxima-semana-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+
+.proxima-semana-card__header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.proxima-semana-card__dia {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.proxima-semana-card__data {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.proxima-semana-card__empty {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.proxima-semana-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.proxima-semana-card__list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.proxima-semana-card__list input[type='checkbox'] {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.proxima-semana-card__label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.proxima-semana-card__atividade {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.proxima-semana-card__list li.is-providenciado .proxima-semana-card__label,
+.proxima-semana-card__list li.is-providenciado .proxima-semana-card__atividade {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.item-semana-badge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.item-semana-badge--aluguel { background: var(--color-orange-light); color: var(--color-orange); }
+.item-semana-badge--compra { background: var(--color-primary-light); color: var(--color-primary); }
+.item-semana-badge--mobilizacao { background: var(--color-success-light); color: var(--color-success); }
+.item-semana-badge--servico_contratado { background: var(--color-purple-light); color: var(--color-purple); }
+
+@media (max-width: 900px) {
+  .proxima-semana-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

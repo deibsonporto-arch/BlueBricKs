@@ -1,0 +1,29 @@
+.locacao-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.locacao-item-row input {
+  min-width: 90px;
+}
+
+.locacao-item-row input:first-child {
+  flex: 2;
+  min-width: 180px;
+}
+
+.locacao-item-row__valor {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+.locacao-bloco__total {
+  font-size: 13px;
+  margin: 8px 0 0;
+}

@@ -1,0 +1,369 @@
+.empreitada-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.empreitada-card__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  flex-wrap: wrap;
+}
+
+.empreitada-card__header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.empreitada-card__header-main strong {
+  font-size: 14px;
+}
+
+.empreitada-card__servico,
+.empreitada-card__etapa {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.empreitada-card__servico {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 420px;
+}
+
+.empreitada-card__descricao-completa {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: pre-wrap;
+}
+
+.empreitada-card__etapa {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.empreitada-card__header-metrics {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+}
+
+.empreitada-card__pct {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.empreitada-card__status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.empreitada-card__status--em_andamento { background: var(--color-warning-light); color: var(--color-warning); }
+.empreitada-card__status--concluida { background: var(--color-success-light); color: var(--color-success); }
+.empreitada-card__status--cancelada { background: var(--color-danger-light); color: var(--color-danger); }
+
+.empreitada-card__body {
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+.empreitada-card__actions {
+  display: flex;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.empreitada-card__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.empreitada-card__table th {
+  text-align: left;
+  padding: 5px 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.empreitada-card__table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.empreitada-card__vazio {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 12px;
+}
+
+.empreitada-card__medicao-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.empreitada-card__medicao-form input,
+.empreitada-card__medicao-form select {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.empreitada-card__medicao-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.empreitada-card__medicao-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+  border-top: 1px dashed var(--color-border);
+}
+
+.empreitada-card__medicao-linha:first-of-type {
+  border-top: none;
+}
+
+.empreitada-card__medicao-add {
+  align-self: flex-start;
+}
+
+.empreitada-card__medicao-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empreitada-card__medicao-campo-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.empreitada-card__medicao-campo-extra textarea {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 400;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.empreitada-card__desconto-entrada-opcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-weight: 400;
+}
+
+.empreitada-card__desconto-entrada-opcoes label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.empreitada-card__desconto-entrada-opcoes input {
+  width: auto;
+}
+
+.empreitada-card__medicao-valor {
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 90px;
+}
+
+.empreitada-card__modo-medicao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.empreitada-card__modo-medicao label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.empreitada-card__modo-medicao input {
+  width: auto;
+}
+
+.empreitada-card__medicao-editando {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.empreitada-card__medicao-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: -6px 0 12px;
+}
+
+.empreitada-card__medicao-hint--aviso {
+  color: var(--color-warning);
+}
+
+.empreitada-card__lancamento-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.empreitada-card__lancamento-status--pendente { background: var(--color-neutral-light); color: var(--color-neutral); }
+.empreitada-card__lancamento-status--pago { background: var(--color-success-light); color: var(--color-success); }
+.empreitada-card__lancamento-status--atrasado { background: var(--color-danger-light); color: var(--color-danger); }
+
+.empreitada-card__medicao-acoes {
+  display: flex;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.empreitada-card__vincular-lancamento {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.empreitada-card__vincular-lancamento select {
+  flex: 1;
+  min-width: 0;
+}
+
+.empreitada-card__sem-lancamento {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-warning);
+  background: var(--color-warning-light);
+  border-radius: 999px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.empreitada-card__medicao-linha-pendente {
+  background: var(--color-warning-light);
+}
+
+.empreitada-card__medicao-pct-hint {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+}
+
+.empreitada-card__medicao-atividade {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.empreitada-card__abatimento-linha td {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding-top: 0;
+  padding-bottom: 8px;
+}
+
+.empreitada-card__totais {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  padding-top: 8px;
+}
+
+.empreitada-card__desconto {
+  color: var(--color-danger);
+}
+
+.empreitada-card__observacoes {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.empreitada-card__anexos {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+}
+
+.empreitada-card__anexos ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.empreitada-card__anexos li button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 12px;
+}

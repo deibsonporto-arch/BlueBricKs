@@ -1,0 +1,172 @@
+.locacao-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.locacao-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+
+.locacao-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+
+.locacao-card__header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.locacao-card__chevron {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.locacao-card__body {
+  margin-top: 10px;
+}
+
+.locacao-card__header-main strong {
+  font-size: 14px;
+}
+
+.locacao-card__periodo {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.locacao-card__status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.locacao-card__status--ativa { background: var(--color-success-light); color: var(--color-success); }
+.locacao-card__status--agendada { background: var(--color-warning-light); color: var(--color-warning); }
+.locacao-card__status--encerrada { background: var(--color-neutral-light); color: var(--color-neutral); }
+
+.locacao-card__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.locacao-card__valor {
+  font-weight: 700;
+  font-size: 14px;
+  margin-right: 4px;
+}
+
+.locacao-card__meta {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 10px 0;
+}
+
+.locacao-card__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.locacao-card__table th {
+  text-align: left;
+  padding: 5px 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.locacao-card__table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.locacao-card__totais {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.locacao-card__entrega-financeiro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.locacao-card__entrega-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.locacao-card__entrega-toggle input {
+  width: auto;
+}
+
+.locacao-card__financeiro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.locacao-card__financeiro--vazio {
+  color: var(--color-text-muted);
+}
+
+.locacao-card__financeiro--compact {
+  margin-left: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.locacao-card__entrega-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.locacao-card__entrega-badge--sim { background: var(--color-success-light); color: var(--color-success); }
+.locacao-card__entrega-badge--nao { background: var(--color-warning-light); color: var(--color-warning); }
+
+.locacao-card__status-lancamento {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.locacao-card__status-lancamento--pendente { background: var(--color-neutral-light); color: var(--color-neutral); }
+.locacao-card__status-lancamento--pago { background: var(--color-success-light); color: var(--color-success); }
+.locacao-card__status-lancamento--atrasado { background: var(--color-danger-light); color: var(--color-danger); }

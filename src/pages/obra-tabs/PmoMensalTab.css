@@ -1,0 +1,346 @@
+.pmo-print-header {
+  display: none;
+}
+
+.pmo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pmo-toolbar__empresa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.pmo-toolbar__empresa input {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  min-width: 220px;
+}
+
+.pmo-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0 10px;
+}
+
+.pmo-month-nav h2 {
+  margin: 0;
+  font-size: 18px;
+  min-width: 200px;
+  text-align: center;
+}
+
+.pmo-weeks-banner {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.pmo-table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.pmo-table-card h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+
+.pmo-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pmo-table th {
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.pmo-table__week-date {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.pmo-table__week-label {
+  display: block;
+}
+
+.pmo-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.pmo-table__nome {
+  font-weight: 600;
+  white-space: normal;
+  min-width: 160px;
+}
+
+.pmo-table__row--atrasada td {
+  background: var(--status-atrasada-bg);
+}
+
+.pmo-table__atraso {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.pmo-table__atraso-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--status-atrasada);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pmo-table__atraso label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.pmo-table__atraso input[type='date'] {
+  border: 1px solid var(--status-atrasada);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
+.pmo-table__atraso-original {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.pmo-table__bar-cell {
+  min-width: 120px;
+}
+
+.pmo-table__bar-cell span {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.pmo-table__real-input {
+  width: 60px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 6px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.pmo-table__previsto-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.pmo-table__previsto-input {
+  width: 42px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.pmo-table__grupo-row td {
+  background: var(--color-bg);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  padding: 6px 10px;
+}
+
+.pmo-table__numero {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 11px;
+  margin-right: 2px;
+}
+
+.pmo-table__muted {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  white-space: normal;
+  max-width: 160px;
+}
+
+.pmo-table__checkbox-cell {
+  text-align: center;
+}
+
+.pmo-table__checkbox-cell.is-checked {
+  background: var(--color-success-light);
+}
+
+.pmo-table__checkbox-cell.is-planejada {
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.pmo-table__material-cell.is-pendente-compra {
+  background: var(--color-warning-light);
+}
+
+.pmo-table__material-cell.is-comprado {
+  background: var(--color-success-light);
+}
+
+.pmo-table__material-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pmo-table__material-list label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: normal;
+}
+
+.pmo-table__desvio {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pmo-table__desvio.is-positive { color: var(--color-success); }
+.pmo-table__desvio.is-negative { color: var(--color-danger); }
+
+.pmo-table__obs {
+  width: 160px;
+  min-height: 40px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.pmo-table__obs-print {
+  display: none;
+}
+
+.pmo-table__equipe {
+  width: 140px;
+  min-height: 40px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.pmo-table__real-print {
+  display: none;
+}
+
+.pmo-print-header__empresa {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.pmo-print-header__grid {
+  display: flex;
+  gap: 24px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+@media print {
+  .app-header,
+  .obra-tabs-nav,
+  .pmo-toolbar,
+  .pmo-month-nav,
+  .pmo-curva-s {
+    display: none !important;
+  }
+
+  .pmo-print-header {
+    display: block;
+  }
+
+  .pmo-table-card {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+  }
+
+  .scroll-x {
+    overflow: visible;
+  }
+
+  .pmo-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .pmo-table__col-desvio,
+  .pmo-table__desvio {
+    display: none !important;
+  }
+
+  .pmo-table__atraso label {
+    display: none;
+  }
+
+  .pmo-table__real-editable {
+    display: none;
+  }
+
+  .pmo-table__real-print {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .pmo-table__obs--editable {
+    display: none;
+  }
+
+  .pmo-table__obs-print {
+    display: block;
+    font-size: 12px;
+    white-space: pre-wrap;
+  }
+}

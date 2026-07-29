@@ -1,0 +1,172 @@
+.ferramentas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.ferramentas-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ferramentas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ferramentas-toolbar__busca {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--color-text-muted);
+  min-width: 220px;
+}
+
+.ferramentas-toolbar__busca input {
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 13px;
+  width: 100%;
+  color: var(--color-text);
+}
+
+.ferramentas-toolbar__totais {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.ferramentas-toolbar__total-badge {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ferramentas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.ferramenta-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ferramenta-card__main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ferramenta-card__main strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ferramenta-card__quantidade {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ferramenta-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ferramenta-card__obs {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ferramenta-card__movimentacao {
+  font-size: 11px;
+  color: var(--color-primary);
+}
+
+.ferramenta-card__actions {
+  display: flex;
+  gap: 2px;
+  justify-content: flex-end;
+}
+
+/* ---------- Lista impressa ---------- */
+
+.ferramentas-print-view {
+  display: none;
+}
+
+.ferramentas-print-header__empresa {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.ferramentas-print-header__grid {
+  display: flex;
+  gap: 24px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.ferramentas-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 16px;
+}
+
+.ferramentas-print-table th,
+.ferramentas-print-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.ferramentas-print-totais {
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media print {
+  .ferramentas-header,
+  .ferramentas-toolbar,
+  .ferramentas-grid {
+    display: none !important;
+  }
+
+  .ferramentas-print-view {
+    display: block;
+  }
+}

@@ -1,0 +1,98 @@
+.empreita-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
+.empreita-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.empreita-print-view {
+  display: none;
+}
+
+.empreita-print-header__empresa {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.empreita-print-header__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.empreita-print-header__obs {
+  margin: 6px 0 0;
+  font-size: 12px;
+}
+
+.empreita-print-subtitulo {
+  font-size: 14px;
+  margin: 20px 0 8px;
+}
+
+.empreita-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 16px;
+}
+
+.empreita-print-table th,
+.empreita-print-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.empreita-print-table tr.is-total td {
+  font-weight: 700;
+  border-top: 2px solid #999;
+  border-bottom: none;
+}
+
+.empreita-print-table__blank {
+  border-bottom: 1px solid #999 !important;
+}
+
+.empreita-print-table__nota td {
+  font-size: 11px;
+  font-style: italic;
+  color: #666;
+  padding-top: 0;
+}
+
+.empreita-print-assinaturas {
+  display: flex;
+  gap: 60px;
+  margin-top: 60px;
+}
+
+.empreita-print-assinatura {
+  flex: 1;
+  border-top: 1px solid #333;
+  padding-top: 6px;
+  text-align: center;
+  font-size: 12px;
+  color: #444;
+}
+
+@media print {
+  .app-header,
+  .obra-tabs-nav,
+  .obra-detail-breadcrumb,
+  .empreita-header,
+  .empreitada-card {
+    display: none !important;
+  }
+
+  .empreita-print-view {
+    display: block;
+  }
+}

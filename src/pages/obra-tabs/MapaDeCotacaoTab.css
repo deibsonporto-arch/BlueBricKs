@@ -1,0 +1,153 @@
+.mapa-cotacao-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.mapa-cotacao-filters-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mapa-cotacao-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapa-cotacao-filter label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.mapa-cotacao-filter select,
+.mapa-cotacao-filter input[type='date'] {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.mapa-cotacao-filter select {
+  min-width: 220px;
+}
+
+.mapa-cotacao-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------- Cotação impressa (PDF) ---------- */
+
+.cotacao-print-view {
+  display: none;
+}
+
+.cotacao-print-header__empresa {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.cotacao-print-header h2 {
+  margin: 1px 0 6px;
+  font-size: 16px;
+}
+
+.cotacao-print-header__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px 24px;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.cotacao-print-section {
+  margin: 8px 0;
+}
+
+.cotacao-print-section h3 {
+  font-size: 12px;
+  margin: 0 0 3px;
+}
+
+.cotacao-print-section p {
+  font-size: 12px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.cotacao-print-muted {
+  color: #666;
+}
+
+.cotacao-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+  margin-top: 4px;
+}
+
+.cotacao-print-table th,
+.cotacao-print-table td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.cotacao-print-table td:nth-child(1),
+.cotacao-print-table td:nth-child(11) {
+  white-space: normal;
+}
+
+.cotacao-print-table tr.is-melhor td {
+  background: #d3f2d8;
+  font-weight: 600;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  color-adjust: exact;
+}
+
+.cotacao-print-table tr.is-melhor td:first-child {
+  border-left: 3px solid #2f9e44;
+}
+
+.cotacao-print-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #2f9e44;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  vertical-align: middle;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  color-adjust: exact;
+}
+
+@media print {
+  @page {
+    margin: 10mm;
+  }
+
+  .app-header,
+  .obra-tabs-nav,
+  .mapa-cotacao-header,
+  .mapa-cotacao-card {
+    display: none !important;
+  }
+
+  .cotacao-print-view {
+    display: block;
+  }
+}

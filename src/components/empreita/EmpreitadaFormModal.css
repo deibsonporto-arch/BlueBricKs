@@ -1,0 +1,140 @@
+.empreitada-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.empreitada-item-row input,
+.empreitada-item-row select {
+  min-width: 90px;
+}
+
+.empreitada-item-row input:first-child {
+  flex: 2;
+  min-width: 160px;
+}
+
+.empreitada-item-row__atividade {
+  min-width: 140px;
+}
+
+.empreitada-item-row__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.empreitada-item-row__toggle input {
+  min-width: 0;
+}
+
+.empreitada-item-row__valor {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.empreitada-item-row__pct {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  min-width: 44px;
+  text-align: right;
+}
+
+.empreitada-item-row__total {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: -6px 0 0;
+}
+
+.empreitada-item-row__aviso {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.empreitada-porunidade-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.empreitada-porunidade-toggle input {
+  width: auto;
+}
+
+.empreitada-valor-calculado {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.empreitada-entrada-diluicao {
+  display: flex;
+  gap: 8px;
+}
+
+.empreitada-entrada-diluicao select {
+  flex: 2;
+}
+
+.empreitada-entrada-diluicao input {
+  flex: 1;
+  min-width: 90px;
+}
+
+.empreitada-anexo-btn {
+  width: fit-content;
+  cursor: pointer;
+}
+
+.empreitada-anexo-erro {
+  color: var(--color-danger);
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+.empreitada-anexos-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.empreitada-anexos-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+}
+
+.empreitada-anexo-nome {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.empreitada-anexos-list li button:last-child {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  display: flex;
+}

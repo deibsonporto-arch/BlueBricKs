@@ -1,0 +1,145 @@
+.lancamentos-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.lancamentos-table th {
+  text-align: left;
+  padding: 6px 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.lancamentos-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.lancamentos-table__descricao {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  cursor: help;
+}
+
+.lancamentos-table__row--pago { background: var(--color-success-light); }
+.lancamentos-table__row--hoje { background: var(--color-warning-light); }
+.lancamentos-table__row--atrasado { background: var(--color-danger-light); }
+
+.lancamentos-table__row--nao-lancado {
+  box-shadow: inset 3px 0 0 var(--color-warning);
+}
+
+.lancamentos-table__muted {
+  color: var(--color-text-muted);
+}
+
+.lancamentos-table__forma {
+  text-transform: capitalize;
+}
+
+.lancamentos-table__anexos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.atividade-link-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border: none;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lancamentos-table__empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 24px;
+}
+
+.lancamento-status-pill {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lancamento-status-pill--pendente { background: var(--color-neutral-light); color: var(--color-neutral); }
+.lancamento-status-pill--pago { background: var(--color-success-light); color: var(--color-success); }
+.lancamento-status-pill--atrasado { background: var(--color-danger-light); color: var(--color-danger); }
+
+.lancamentos-table__parcela-badge {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.lancamentos-table__status-cell {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.lancamentos-table__icon-btn {
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.lancamentos-table__pagar-btn {
+  color: var(--color-text-muted);
+}
+
+.lancamentos-table__pagar-btn:hover {
+  color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.lancamentos-table__footer {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: fit-content;
+  padding: 10px 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.lancamentos-table__footer strong {
+  color: var(--color-text);
+}
+
+.lancamentos-table__lancado-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-warning);
+}
+
+.lancamentos-table__lancado-btn.is-lancado {
+  color: var(--color-success);
+}

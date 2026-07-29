@@ -1,0 +1,53 @@
+:root {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-light: #dbeafe;
+
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+
+  --color-danger: #dc2626;
+  --color-danger-light: #fee2e2;
+
+  --color-warning: #ca8a04;
+  --color-warning-light: #fef9c3;
+
+  --color-neutral: #6b7280;
+  --color-neutral-light: #f3f4f6;
+
+  --color-purple: #7c3aed;
+  --color-purple-light: #ede9fe;
+
+  --color-orange: #ea580c;
+  --color-orange-light: #ffedd5;
+
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-input-border: #94a3b8;
+
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+
+  --status-em_andamento: var(--color-primary);
+  --status-em_andamento-bg: var(--color-primary-light);
+  --status-concluida: var(--color-success);
+  --status-concluida-bg: var(--color-success-light);
+  --status-atrasada: var(--color-danger);
+  --status-atrasada-bg: var(--color-danger-light);
+  --status-paralisada: var(--color-warning);
+  --status-paralisada-bg: var(--color-warning-light);
+  --status-nao_iniciada: var(--color-neutral);
+  --status-nao_iniciada-bg: var(--color-neutral-light);
+  --status-pendente: var(--color-neutral);
+  --status-pendente-bg: var(--color-neutral-light);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-modal: 0 20px 40px rgba(15, 23, 42, 0.2);
+
+  --header-height: 64px;
+}

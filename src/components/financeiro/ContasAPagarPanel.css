@@ -1,0 +1,52 @@
+.contas-a-pagar-panel {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.contas-a-pagar-panel__card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  text-align: left;
+}
+
+.contas-a-pagar-panel__card.is-active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.contas-a-pagar-panel__label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.contas-a-pagar-panel__count {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.contas-a-pagar-panel__total {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.contas-a-pagar-panel__card--hoje .contas-a-pagar-panel__count { color: var(--color-warning); }
+.contas-a-pagar-panel__card--proximos7 .contas-a-pagar-panel__count { color: var(--color-warning); }
+.contas-a-pagar-panel__card--vencidas .contas-a-pagar-panel__count { color: var(--color-danger); }
+.contas-a-pagar-panel__card--pagas .contas-a-pagar-panel__count { color: var(--color-success); }
+.contas-a-pagar-panel__card--pendentes .contas-a-pagar-panel__count { color: var(--color-neutral); }
+
+@media (max-width: 900px) {
+  .contas-a-pagar-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

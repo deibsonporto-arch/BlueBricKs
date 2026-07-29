@@ -1,0 +1,142 @@
+.materiais-header {
+  margin: 24px 0;
+}
+
+.materiais-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.materiais-subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  max-width: 560px;
+}
+
+.materiais-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 20px;
+}
+
+.materiais-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.materiais-section__header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.materiais-empty {
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 30px 0;
+}
+
+.materiais-categoria {
+  margin-bottom: 16px;
+}
+
+.materiais-categoria__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  width: 100%;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.materiais-categoria__header h3 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.materiais-categoria__count {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-neutral-light);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.materiais-catalogo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.material-catalogo-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.material-catalogo-card__sub {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin-top: 2px;
+  text-transform: capitalize;
+}
+
+.material-catalogo-card__actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.listas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.lista-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-card h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.lista-card__stat {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.lista-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.lista-card__actions .btn-secondary {
+  flex: 1;
+  justify-content: center;
+}
