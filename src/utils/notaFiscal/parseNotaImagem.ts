@@ -1,5 +1,6 @@
 import type { NotaFiscalExtraida } from './types';
 import { extrairCamposPorTexto } from './heuristicasTexto';
+import { extrairItensDeLinhas } from './extrairItensTexto';
 
 type Worker = Awaited<ReturnType<typeof import('tesseract.js').createWorker>>;
 
@@ -26,7 +27,14 @@ async function reconhecerTexto(fonte: File | HTMLCanvasElement): Promise<string>
 
 function resultadoDoTexto(texto: string): NotaFiscalExtraida {
   if (!texto.trim()) return { categoriaDetectada: 'indeterminado', itens: [], confianca: 'baixa' };
-  return { ...extrairCamposPorTexto(texto), confianca: 'baixa' };
+  const cabecalho = extrairCamposPorTexto(texto);
+  const itens = extrairItensDeLinhas(texto.split('\n'));
+  return {
+    ...cabecalho,
+    categoriaDetectada: itens.length > 0 ? 'material' : cabecalho.categoriaDetectada,
+    itens,
+    confianca: 'baixa',
+  };
 }
 
 export async function parseNotaImagem(file: File): Promise<NotaFiscalExtraida> {
