@@ -9,6 +9,7 @@ import { todayISO } from '../../utils/dateUtils';
 import { readFileAsAnexo } from '../../utils/anexoUpload';
 import { deleteBlob, downloadAnexo, storeAnexo } from '../../utils/attachmentStore';
 import { getCurrentUserName } from '../../utils/currentUser';
+import { extractNotaFiscal } from '../../utils/notaFiscal/extractNotaFiscal';
 import './CotacaoFormModal.css';
 
 interface CotacaoFormModalProps {
@@ -117,12 +118,22 @@ export function CotacaoFormModal({ open, mode, obraId, atividades, cotacao, dupl
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function handleOrcamentoChange(e: React.ChangeEvent<HTMLInputElement>, upd: (patch: Partial<FornecedorCotacao>) => void) {
+  function handleOrcamentoChange(e: React.ChangeEvent<HTMLInputElement>, item: FornecedorCotacao, upd: (patch: Partial<FornecedorCotacao>) => void) {
     const file = e.target.files?.[0];
     if (!file) return;
     setAnexoErro('');
     readFileAsAnexo(file)
-      .then(storeAnexo)
+      .then((anexo) => {
+        // Preenche só os campos vazios dessa linha a partir do orçamento anexado — o usuário confirma tudo normalmente ao salvar a cotação.
+        extractNotaFiscal(file).then((extraida) => {
+          const patch: Partial<FornecedorCotacao> = {};
+          if (!item.nome && extraida.fornecedorNome) patch.nome = extraida.fornecedorNome;
+          if (!item.documento && extraida.fornecedorDocumento) patch.documento = extraida.fornecedorDocumento;
+          if (!item.valor && extraida.valorTotal !== undefined) patch.valor = extraida.valorTotal;
+          if (Object.keys(patch).length > 0) upd(patch);
+        });
+        return storeAnexo(anexo);
+      })
       .then((anexo: Anexo) => upd({ orcamentoAnexo: anexo }))
       .catch((err: Error) => setAnexoErro(err.message));
     e.target.value = '';
@@ -318,7 +329,7 @@ export function CotacaoFormModal({ open, mode, obraId, atividades, cotacao, dupl
                 ) : (
                   <label className="btn btn-secondary cotacao-fornecedor-orcamento__btn">
                     <IconPaperclip size={13} /> Anexar orçamento
-                    <input type="file" onChange={(e) => handleOrcamentoChange(e, upd)} hidden />
+                    <input type="file" onChange={(e) => handleOrcamentoChange(e, item, upd)} hidden />
                   </label>
                 )}
               </div>
