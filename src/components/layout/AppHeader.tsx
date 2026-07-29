@@ -26,6 +26,9 @@ export function AppHeader() {
         <Link to="/materiais" className="app-header__nav-link">
           Materiais
         </Link>
+        <Link to="/historico-precos" className="app-header__nav-link">
+          Histórico de Preços
+        </Link>
         <Link to="/ferramentas" className="app-header__nav-link">
           Ferramentas
         </Link>

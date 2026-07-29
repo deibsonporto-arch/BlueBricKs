@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ObrasListPage } from './pages/ObrasListPage';
 import { ModelosPage } from './pages/ModelosPage';
 import { MateriaisPage } from './pages/MateriaisPage';
+import { HistoricoPrecosPage } from './pages/HistoricoPrecosPage';
 import { FerramentasPage } from './pages/FerramentasPage';
 import { LocalFerramentasPage } from './pages/LocalFerramentasPage';
 import { ConfiguracoesPage } from './pages/ConfiguracoesPage';
@@ -42,6 +43,7 @@ function App() {
         <Route path="/obras" element={<ObrasListPage />} />
         <Route path="/modelos" element={<ModelosPage />} />
         <Route path="/materiais" element={<MateriaisPage />} />
+        <Route path="/historico-precos" element={<HistoricoPrecosPage />} />
         <Route path="/ferramentas" element={<FerramentasPage />} />
         <Route path="/ferramentas/locais/:localId" element={<LocalFerramentasPage />} />
         <Route path="/configuracoes" element={<ConfiguracoesPage />} />
