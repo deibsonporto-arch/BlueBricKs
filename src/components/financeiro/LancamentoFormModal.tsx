@@ -4,6 +4,7 @@ import { Modal } from '../common/Modal';
 import { FornecedorPicker } from './FornecedorPicker';
 import { DynamicListField } from '../obra-detail/DynamicListField';
 import { NotaFiscalExtracaoPanel, type ItemMaterialConfirmado } from './NotaFiscalExtracaoPanel';
+import { ServicoPicker } from '../materiais/ServicoPicker';
 import type {
   Anexo,
   Atividade,
@@ -467,7 +468,19 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
 
         <div className="form-field form-field--full">
           <label>Descrição</label>
-          <input required value={form.descricao} onChange={(e) => update('descricao', e.target.value)} />
+          {form.categoria === 'servico' ? (
+            <ServicoPicker
+              required
+              value={form.descricao}
+              onChange={(v) => update('descricao', v)}
+              onSelecionarSugestao={(s) => {
+                if (!form.valorPago) update('valorPago', String(s.valorUnitario));
+                if (!form.fornecedorId && s.fornecedorId) update('fornecedorId', s.fornecedorId);
+              }}
+            />
+          ) : (
+            <input required value={form.descricao} onChange={(e) => update('descricao', e.target.value)} />
+          )}
         </div>
 
         <div className="form-field form-field--full">

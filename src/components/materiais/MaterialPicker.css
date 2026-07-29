@@ -1,8 +1,14 @@
 .material-picker {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   flex: 2;
   min-width: 0;
+}
+
+.material-picker__row {
+  display: flex;
+  gap: 6px;
 }
 
 .material-picker__categoria {
@@ -65,4 +71,14 @@
   color: var(--color-text-muted);
   font-size: 11px;
   margin-left: 6px;
+}
+
+.material-picker__ultimo-preco {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.material-picker__ultimo-preco-tag {
+  font-style: italic;
 }

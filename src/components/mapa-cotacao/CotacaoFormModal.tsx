@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { IconInfoCircle, IconPaperclip, IconStar, IconStarFilled, IconTrash } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { DynamicListField } from '../obra-detail/DynamicListField';
+import { ServicoPicker } from '../materiais/ServicoPicker';
 import type { Anexo, Atividade, Cotacao, FornecedorCotacao, TipoFornecedorCotacao, UnidadeMedida } from '../../types/domain';
 import { useCotacoes } from '../../hooks/useCotacoes';
 import { generateId } from '../../utils/id';
@@ -230,7 +231,16 @@ export function CotacaoFormModal({ open, mode, obraId, atividades, cotacao, dupl
 
         <div className="form-field form-field--full">
           <label>Item / serviço</label>
-          <input required value={form.itemServico} onChange={(e) => update('itemServico', e.target.value)} placeholder="Ex: Pintura Interna e Externa" />
+          <ServicoPicker
+            required
+            value={form.itemServico}
+            onChange={(v) => update('itemServico', v)}
+            onSelecionarSugestao={(s) => {
+              if (!form.naoPrevisto && !form.valorUnitarioPrevisto) update('valorUnitarioPrevisto', String(s.valorUnitario));
+              if (s.unidade) update('unidade', s.unidade);
+            }}
+            placeholder="Ex: Pintura Interna e Externa"
+          />
         </div>
         <div className="form-field form-field--full">
           <label>Descrição dos serviços orçados para execução na obra</label>
