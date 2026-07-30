@@ -7,6 +7,9 @@ const REGEX_CNPJ = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/;
 const REGEX_DATA = /\b(\d{2})\/(\d{2})\/(\d{4})\b/;
 const REGEX_VALOR = /R?\$?\s?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
 const REGEX_NUMERO_NF = /N[ºo°.]{0,3}\s*(\d{2,3}(?:\.\d{3}){0,3})/i;
+// Quase toda DANFE tem esse "canhoto" de recebimento no topo da página 1 — mais confiável
+// que subir a partir do CNPJ, que às vezes fica muitas linhas abaixo do nome (ou nem perto).
+const REGEX_RECEBEMOS_DE = /Recebemos de\s+(.+?)\s+os produtos/i;
 
 const PALAVRAS_SERVICO = ['serviço', 'servico', 'nfs-e', 'prestação de serviços', 'prestacao de servicos', 'discriminação dos serviços', 'discriminacao dos servicos'];
 const PALAVRAS_MATERIAL = ['produto', 'mercadoria', 'nf-e', 'danfe', 'venda ao consumidor', 'cupom fiscal'];
@@ -17,6 +20,7 @@ const PALAVRAS_LINHA_IGNORAR = [
   'INSCRICAO', 'INSCRIÇÃO', 'MUNICIPIO', 'MUNICÍPIO', 'BAIRRO', 'DISTRITO', 'NATUREZA',
   'DESTINAT', 'REMETENTE', 'ENDERECO', 'ENDEREÇO', 'DANFE', 'DOCUMENTO AUXILIAR',
   'CHAVE DE ACESSO', 'PROTOCOLO', 'CONSULTA DE AUTENTICIDADE', 'ENTRADA', 'SAIDA', 'SAÍDA', 'SÉRIE', 'SERIE',
+  'WWW.', 'HTTP', 'FOLHA', '@',
 ];
 
 function paraNumeroBR(valorTexto: string): number {
@@ -38,14 +42,18 @@ function contemAlguma(textoBaixo: string, palavras: string[]): boolean {
  * (não é endereço/rótulo/só números).
  */
 function acharNomeFornecedor(linhas: string[]): string | undefined {
+  const matchCanhoto = linhas.join('\n').match(REGEX_RECEBEMOS_DE);
+  if (matchCanhoto) return matchCanhoto[1].trim();
+
   for (let i = 0; i < linhas.length; i++) {
     if (!REGEX_CNPJ.test(linhas[i])) continue;
-    for (let j = i; j >= 0 && j >= i - 6; j--) {
+    for (let j = i; j >= 0 && j >= i - 15; j--) {
       const candidata = linhas[j].replace(REGEX_CNPJ, '').trim();
       if (candidata.length < 4) continue;
       const candidataMaiusc = candidata.toUpperCase();
       if (PALAVRAS_LINHA_IGNORAR.some((p) => candidataMaiusc.includes(p))) continue;
-      if (/^[\d./\- ]+$/.test(candidata)) continue; // só números/pontuação, não é nome
+      if (!/[A-Za-zÀ-ÖØ-öø-ÿ]{3,}/.test(candidata)) continue; // sem nenhuma palavra de verdade (só código/número), não é nome
+      if (/\d{6,}/.test(candidata)) continue; // número de protocolo/IE/telefone longo, não é nome de empresa
       return candidata;
     }
     return undefined;

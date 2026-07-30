@@ -411,10 +411,23 @@ export interface Fornecedor {
   id: string;
   codigo: string;
   nome: string;
+  nomeFantasia?: string;
   documento: string;
   tipo: TipoFornecedor;
+  porte?: string;
+  dataAbertura?: string; // ISO
   contato?: string;
+  telefone?: string;
+  email?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cep?: string;
   cidade?: string;
+  uf?: string;
+  situacaoCadastral?: string;
+  dataSituacaoCadastral?: string; // ISO
   banco?: string;
   agencia?: string;
   conta?: string;

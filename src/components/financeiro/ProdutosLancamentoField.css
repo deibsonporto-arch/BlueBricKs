@@ -1,0 +1,43 @@
+.produtos-lancamento-field {
+  margin-top: 10px;
+}
+
+.produtos-lancamento-field__linha {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.produtos-lancamento-field__nome {
+  display: flex;
+  flex-direction: column;
+  flex: 2;
+  min-width: 180px;
+  gap: 2px;
+}
+
+.produtos-lancamento-field__linha input,
+.produtos-lancamento-field__linha select {
+  min-width: 90px;
+}
+
+.produtos-lancamento-field__hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.produtos-lancamento-field__status {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  min-width: 56px;
+  align-self: center;
+}
+
+.produtos-lancamento-field__total {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 6px 0 0;
+  text-align: right;
+}

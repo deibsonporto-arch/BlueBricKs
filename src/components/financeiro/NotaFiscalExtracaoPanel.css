@@ -47,35 +47,3 @@
   color: var(--color-text-muted);
   margin: 0;
 }
-
-.nota-extracao-panel__linha {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.nota-extracao-panel__linha-check {
-  display: flex;
-}
-
-.nota-extracao-panel__linha-check input {
-  width: auto;
-}
-
-.nota-extracao-panel__linha input,
-.nota-extracao-panel__linha select {
-  min-width: 90px;
-}
-
-.nota-extracao-panel__linha input:first-of-type {
-  flex: 2;
-  min-width: 160px;
-}
-
-.nota-extracao-panel__linha-status {
-  font-size: 11px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  min-width: 90px;
-}

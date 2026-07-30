@@ -341,7 +341,7 @@ export function EmpreitaTab() {
                       <td>0ª</td>
                       <td>{lancamentoEntradaImpressao ? formatDate(lancamentoEntradaImpressao.data) : '—'}</td>
                       <td>Entrada</td>
-                      <td>{imprimindoEmpreitada.valorContrato > 0 ? `${((imprimindoEmpreitada.valorEntrada / imprimindoEmpreitada.valorContrato) * 100).toFixed(1)}%` : '—'}</td>
+                      <td>—</td>
                       <td>{formatBRL(imprimindoEmpreitada.valorEntrada)}</td>
                       <td>{lancamentoEntradaImpressao ? STATUS_LABEL_LANCAMENTO[lancamentoEntradaImpressao.status] : 'Falta lançar'}</td>
                     </tr>
@@ -353,9 +353,6 @@ export function EmpreitaTab() {
                       const primeiraOcorrenciaSequencia = !notasRenderizadas.has(m.sequencia);
                       if (primeiraOcorrenciaSequencia) notasRenderizadas.add(m.sequencia);
                       const abatimentoGrupo = abatimentosImpressao.get(m.sequencia) ?? 0;
-                      const medicoesDoGrupoCompleto = historicoMedicoes.filter((x) => x.sequencia === m.sequencia);
-                      const valorGrupoTotal = medicoesDoGrupoCompleto.reduce((s, x) => s + x.valor, 0);
-                      const descontoManualGrupo = medicoesDoGrupoCompleto.reduce((s, x) => s + (x.descontoEntrada ?? 0), 0);
                       const valorLiquidoLinha = m.valor - (m.descontoEntrada ?? 0) - (primeiraOcorrenciaSequencia ? abatimentoGrupo : 0);
                       return (
                         <Fragment key={m.id}>
@@ -364,23 +361,9 @@ export function EmpreitaTab() {
                             <td>{formatDate(m.data)}</td>
                             <td>{rotuloExibicaoMedicao(imprimindoEmpreitada, m)}</td>
                             <td>{m.quantidadeExecutada != null ? `${m.quantidadeExecutada} (${m.percentualExecutado.toFixed(1)}%)` : `${m.percentualExecutado}%`}</td>
-                            <td>{formatBRL(valorLiquidoLinha)}{valorLiquidoLinha !== m.valor && ` (bruto: ${formatBRL(m.valor)})`}</td>
+                            <td>{formatBRL(valorLiquidoLinha)}</td>
                             <td>{lancamentoDaMedicao ? STATUS_LABEL_LANCAMENTO[lancamentoDaMedicao.status] : 'Falta lançar'}</td>
                           </tr>
-                          {primeiraOcorrenciaSequencia && abatimentoGrupo > 0 && (
-                            <tr className="empreita-print-table__nota">
-                              <td colSpan={6}>
-                                Entrada diluída abate {formatBRL(abatimentoGrupo)} desta rodada (valor bruto medido: {formatBRL(valorGrupoTotal)})
-                              </td>
-                            </tr>
-                          )}
-                          {primeiraOcorrenciaSequencia && descontoManualGrupo > 0 && (
-                            <tr className="empreita-print-table__nota">
-                              <td colSpan={6}>
-                                Desconto de entrada aplicado nesta parcela: {formatBRL(descontoManualGrupo)} (valor bruto medido: {formatBRL(valorGrupoTotal)})
-                              </td>
-                            </tr>
-                          )}
                           {m.observacoes && (
                             <tr className="empreita-print-table__nota">
                               <td colSpan={6}>Observação: {m.observacoes}</td>
@@ -391,12 +374,10 @@ export function EmpreitaTab() {
                     });
                   })()}
                   <tr className="is-total">
-                    <td colSpan={4}>
+                    <td colSpan={6}>
                       Medido: {formatBRL(totaisImpressao.totalMedido)}
                       {totaisImpressao.valorAMedir > 0 && ` (${((totaisImpressao.totalMedido / totaisImpressao.valorAMedir) * 100).toFixed(0)}% de ${formatBRL(totaisImpressao.valorAMedir)} a medir)`}
-                      {totaisImpressao.valorAMedir > 0 && ` · Saldo a medir: ${formatBRL(totaisImpressao.saldo)}`}
                     </td>
-                    <td colSpan={2}>Pago: {formatBRL(totaisImpressao.totalPago)}</td>
                   </tr>
                 </tbody>
               </table>

@@ -3,8 +3,10 @@ import { IconInfoCircle, IconPaperclip, IconTrash } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { FornecedorPicker } from './FornecedorPicker';
 import { DynamicListField } from '../obra-detail/DynamicListField';
-import { NotaFiscalExtracaoPanel, type ItemMaterialConfirmado } from './NotaFiscalExtracaoPanel';
+import { NotaFiscalExtracaoPanel } from './NotaFiscalExtracaoPanel';
+import { ProdutosLancamentoField } from './ProdutosLancamentoField';
 import { ServicoPicker } from '../materiais/ServicoPicker';
+import { mapItensExtraidosParaProdutos, type ItemMaterialConfirmado } from '../../utils/notaFiscal/produtoLancamento';
 import type {
   Anexo,
   Atividade,
@@ -211,7 +213,7 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
   const { createHistoricoPreco } = useHistoricoPrecos();
   const [notaFiscalExtraida, setNotaFiscalExtraida] = useState<NotaFiscalExtraida | null>(null);
   const [notaFiscalOrigemAnexoId, setNotaFiscalOrigemAnexoId] = useState<string | undefined>(undefined);
-  const [itensMaterialConfirmados, setItensMaterialConfirmados] = useState<ItemMaterialConfirmado[] | null>(null);
+  const [produtos, setProdutos] = useState<ItemMaterialConfirmado[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -219,7 +221,7 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
       setAnexoErro('');
       setNotaFiscalExtraida(null);
       setNotaFiscalOrigemAnexoId(undefined);
-      setItensMaterialConfirmados(null);
+      setProdutos([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lancamento, prefill]);
@@ -263,7 +265,9 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
             if (extraidaTemSinalUtil(extraida)) {
               setNotaFiscalExtraida(extraida);
               setNotaFiscalOrigemAnexoId(anexo.id);
-              setItensMaterialConfirmados(null);
+              if (extraida.categoriaDetectada === 'material' && extraida.itens.length > 0) {
+                setProdutos((prev) => (prev.length === 0 ? mapItensExtraidosParaProdutos(extraida.itens, materiaisCatalogo) : prev));
+              }
             }
           });
           return storeAnexo(anexo);
@@ -346,8 +350,8 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
       });
     }
 
-    if (novo.categoria === 'material' && itensMaterialConfirmados && itensMaterialConfirmados.length > 0) {
-      for (const item of itensMaterialConfirmados) {
+    if (novo.categoria === 'material' && produtos.length > 0) {
+      for (const item of produtos) {
         let materialCatalogId = item.materialCatalogId;
         if (!materialCatalogId) {
           const novoMaterial = {
@@ -440,6 +444,13 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
         )}
 
         <div className="form-field">
+          <label>Tipo de lançamento</label>
+          <select value={form.categoria} onChange={(e) => update('categoria', e.target.value as CategoriaLancamento)}>
+            {CATEGORIA_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+
+        <div className="form-field">
           <label>Data</label>
           <input required type="date" value={form.data} disabled={mode === 'create'} onChange={(e) => update('data', e.target.value)} />
           {mode === 'create' && <span className="form-field__hint">Travada no dia de hoje</span>}
@@ -491,13 +502,6 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
             value={form.observacoes}
             onChange={(e) => update('observacoes', e.target.value)}
           />
-        </div>
-
-        <div className="form-field">
-          <label>Categoria</label>
-          <select value={form.categoria} onChange={(e) => update('categoria', e.target.value as CategoriaLancamento)}>
-            {CATEGORIA_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
         </div>
 
         {form.categoria === 'aluguel' && (
@@ -715,9 +719,12 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
               onAplicarValor={(valor) => update('valorPago', String(valor))}
               onSelecionarFornecedor={(fornecedorId) => update('fornecedorId', fornecedorId)}
               onAplicarNumeroNF={(valor) => setForm((f) => ({ ...f, numeroNF: valor, nf: true }))}
-              onConfirmarItens={setItensMaterialConfirmados}
-              onDispensar={() => { setNotaFiscalExtraida(null); setItensMaterialConfirmados(null); }}
+              onImportarItens={setProdutos}
+              onDispensar={() => setNotaFiscalExtraida(null)}
             />
+          )}
+          {form.categoria === 'material' && (
+            <ProdutosLancamentoField produtos={produtos} onChange={setProdutos} materiaisCatalogo={materiaisCatalogo} />
           )}
         </div>
 

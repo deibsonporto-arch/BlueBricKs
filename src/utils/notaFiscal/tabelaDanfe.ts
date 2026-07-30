@@ -31,7 +31,7 @@ function paraNumeroBR(t: string): number {
   return Number(t.replace(/\./g, '').replace(',', '.'));
 }
 
-type NomeColuna = 'codigo' | 'descricao' | 'ncm' | 'cst' | 'cfop' | 'unid' | 'qtde' | 'valorUnit' | 'valorTotal';
+type NomeColuna = 'descricao' | 'ncm' | 'cst' | 'cfop' | 'unid' | 'qtde' | 'valorUnit' | 'valorTotal' | 'ignorar';
 interface Ancora { nome: NomeColuna; x: number; }
 
 const PALAVRAS_CABECALHO = ['COD', 'DESCRI', 'NCM', 'CST', 'CFOP', 'UNID', 'QTD', 'QUANT', 'VALOR', 'BASE', 'ICMS', 'IPI', 'ALIQ', 'DESCONTO', 'LIQUIDO', 'TOTAL'];
@@ -43,29 +43,56 @@ function pareceLinhaDeCabecalho(linha: LinhaPosicionada): boolean {
   return PALAVRAS_CABECALHO.some((p) => texto.includes(p));
 }
 
+const DISTANCIA_MAX_MESMA_COLUNA_PX = 6;
+
 /**
  * Reconhece as colunas da tabela de produtos a partir de um "bloco" de cabeçalho (uma ou
  * mais linhas seguidas — muitas DANFEs quebram "VALOR" numa linha e "UNITÁRIO"/"LÍQUIDO" na
- * de baixo, dentro da mesma célula) e devolve a posição X de cada coluna que importa.
- * Os tokens do bloco são todos juntados e reordenados por X — assim "VALOR" (linha de cima)
- * e "UNITÁRIO" (linha de baixo) na mesma coluna acabam vizinhos na leitura, não importa a
- * altura de cada um.
+ * de baixo, dentro da mesma célula). Como o rótulo de baixo nem sempre fica exatamente sob o
+ * de cima (ex: "UNITÁRIO" pode começar alguns pixels ANTES de "VALOR" por causa de centralização
+ * diferente), agrupa por proximidade em X em vez de depender da ordem de leitura — tokens cuja
+ * distância em X pro vizinho mais próximo é pequena (rótulo de 2 linhas empilhado) formam um
+ * único grupo; colunas vizinhas na mesma linha (ex: CST/CFOP) ficam bem mais distantes e não
+ * se misturam.
  */
 function acharAncorasCabecalho(bloco: LinhaPosicionada): Ancora[] | undefined {
-  const linha = [...bloco].sort((a, b) => a.x - b.x);
+  const tokens = [...bloco].filter((t) => t.str.trim()).sort((a, b) => a.x - b.x);
+  if (tokens.length === 0) return undefined;
+
+  const grupos: { xEsquerda: number; ultimoX: number; texto: string }[] = [];
+  for (const tok of tokens) {
+    const atual = grupos[grupos.length - 1];
+    if (atual && tok.x - atual.ultimoX <= DISTANCIA_MAX_MESMA_COLUNA_PX) {
+      atual.texto += ' ' + normalizar(tok.str);
+      atual.ultimoX = tok.x;
+    } else {
+      grupos.push({ xEsquerda: tok.x, ultimoX: tok.x, texto: normalizar(tok.str) });
+    }
+  }
+
   const ancoras: Ancora[] = [];
-  for (let i = 0; i < linha.length; i++) {
-    const tok = normalizar(linha[i].str);
-    const prox = normalizar(linha[i + 1]?.str ?? '');
-    if (tok.startsWith('COD')) ancoras.push({ nome: 'codigo', x: linha[i].x });
-    else if (tok.startsWith('DESCRI')) ancoras.push({ nome: 'descricao', x: linha[i].x });
-    else if (tok.startsWith('NCM')) ancoras.push({ nome: 'ncm', x: linha[i].x });
-    else if (tok === 'CST' || tok.startsWith('CST')) ancoras.push({ nome: 'cst', x: linha[i].x });
-    else if (tok.startsWith('CFOP')) ancoras.push({ nome: 'cfop', x: linha[i].x });
-    else if (tok.startsWith('UNID')) ancoras.push({ nome: 'unid', x: linha[i].x });
-    else if (tok.startsWith('QTD') || tok.startsWith('QUANT')) ancoras.push({ nome: 'qtde', x: linha[i].x });
-    else if (tok.startsWith('VALOR') && prox.startsWith('UNIT')) ancoras.push({ nome: 'valorUnit', x: linha[i].x });
-    else if (tok.startsWith('VALOR') && (prox.startsWith('LIQ') || prox.startsWith('TOTAL'))) ancoras.push({ nome: 'valorTotal', x: linha[i].x });
+  // "CÓDIGO" costuma ser uma coluna estreita cujo rótulo fica logo no início da linha, enquanto
+  // "DESCRIÇÃO..." é um rótulo longo que muitas DANFEs centralizam dentro de uma coluna bem mais
+  // larga — o texto de verdade do produto começa bem antes de onde o rótulo "DESCRIÇÃO" aparece.
+  // Por isso não vira coluna própria: vira só a fronteira esquerda da coluna de descrição (não
+  // precisamos do código do produto pra nada).
+  let codigoX: number | undefined;
+  for (const g of grupos) {
+    const x = g.xEsquerda;
+    const t = g.texto;
+    if (t.includes('COD')) codigoX = x;
+    else if (t.includes('DESCRI')) ancoras.push({ nome: 'descricao', x: codigoX ?? x });
+    else if (t.includes('NCM')) ancoras.push({ nome: 'ncm', x });
+    else if (t === 'CST') ancoras.push({ nome: 'cst', x });
+    else if (t.includes('CFOP')) ancoras.push({ nome: 'cfop', x });
+    else if (t.includes('UNID')) ancoras.push({ nome: 'unid', x });
+    else if (t.includes('QTD') || t.includes('QUANT')) ancoras.push({ nome: 'qtde', x });
+    else if (t.includes('VALOR') && t.includes('UNIT')) ancoras.push({ nome: 'valorUnit', x });
+    else if (t.includes('VALOR') && (t.includes('LIQ') || t.includes('TOTAL'))) ancoras.push({ nome: 'valorTotal', x });
+    // Outros rótulos reconhecidos mas que não usamos (VALOR DESCONTO, VALOR ICMS, BASE DE CÁLC.
+    // ICMS, ALÍQ. %...) ainda viram fronteira — sem isso, o valor desses impostos "vazaria" pra
+    // dentro da célula da coluna anterior (ex: desconto grudando no valor unitário).
+    else ancoras.push({ nome: 'ignorar', x });
   }
   const temONecessario = ancoras.some((a) => a.nome === 'descricao') && ancoras.some((a) => a.nome === 'qtde') && ancoras.some((a) => a.nome === 'valorUnit');
   return temONecessario ? ancoras.sort((a, b) => a.x - b.x) : undefined;
@@ -124,11 +151,14 @@ export function extrairItensTabelaDanfe(linhas: LinhaPosicionada[]): ItemExtraid
     const celulas: Partial<Record<NomeColuna, string[]>> = {};
     for (const tok of linha) {
       const b = bucket(tok.x);
-      if (!b) continue;
+      if (!b || b === 'ignorar') continue;
       (celulas[b] ??= []).push(tok.str);
     }
 
-    const descricao = (celulas.descricao ?? []).join(' ').trim();
+    // "descricao" engloba também o código do produto (fronteira esquerda ampliada pra pegar a
+    // descrição mesmo quando o rótulo do cabeçalho vem centralizado) — remove o código numérico
+    // solto no início, já que ele não é usado.
+    const descricao = (celulas.descricao ?? []).join(' ').trim().replace(/^\d+\s+/, '');
     const qtdeTexto = (celulas.qtde ?? []).join('');
     const valorUnitTexto = (celulas.valorUnit ?? []).join('');
     if (!descricao || descricao.length < 3 || !qtdeTexto || !valorUnitTexto) continue;
