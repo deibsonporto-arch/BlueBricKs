@@ -54,6 +54,42 @@
   font-size: 13px;
 }
 
+.lancamento-parcelas__bloco {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lancamento-parcelas__qtd input {
+  max-width: 100px;
+}
+
+.lancamento-parcelas__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lancamento-parcelas__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.lancamento-parcelas__linha input[type='date'] {
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
 .lancamento-anexo-btn {
   width: fit-content;
   cursor: pointer;

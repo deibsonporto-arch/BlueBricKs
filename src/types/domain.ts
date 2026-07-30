@@ -491,6 +491,16 @@ export interface Pagamento {
   comprovante?: Anexo;
 }
 
+/** Plano de parcelas definido na criação do lançamento — cada uma com seu próprio vencimento. */
+export interface ParcelaLancamento {
+  id: string;
+  numero: number; // 1-based
+  valor: number;
+  vencimento: string; // ISO
+  pago: boolean;
+  dataPagamento?: string;
+}
+
 export interface DadosPagamento {
   pixChave?: string;
   pixFavorecido?: string;
@@ -526,6 +536,7 @@ export interface LancamentoFinanceiro {
   anexos: Anexo[];
   pagamentos?: Pagamento[]; // ledger de pagamentos confirmados (novo, opcional — registros antigos não têm)
   parcelaTotal?: number; // nº total de parcelas, se informado (mostra "1/2")
+  parcelas?: ParcelaLancamento[]; // plano de parcelas com vencimento definido na criação (opcional — lançamentos antigos usam só parcelaTotal/pagamentos reativamente)
   createdBy: string;
   updatedBy: string;
   historico: HistoricoEntry[];

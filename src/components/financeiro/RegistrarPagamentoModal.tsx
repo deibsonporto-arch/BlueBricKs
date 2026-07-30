@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { IconPaperclip, IconTrash } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
-import type { Anexo, LancamentoFinanceiro, Pagamento } from '../../types/domain';
+import type { Anexo, LancamentoFinanceiro, Pagamento, ParcelaLancamento } from '../../types/domain';
 import { useLancamentos } from '../../hooks/useLancamentos';
 import { generateId } from '../../utils/id';
 import { todayISO, formatDate } from '../../utils/dateUtils';
@@ -20,6 +20,12 @@ interface RegistrarPagamentoModalProps {
   onSaved: () => void;
 }
 
+/** Parcela pendente com o vencimento mais próximo do plano definido na criação do lançamento (se houver). */
+function acharProximaParcela(lancamento?: LancamentoFinanceiro): ParcelaLancamento | undefined {
+  if (!lancamento?.parcelas || lancamento.parcelas.length === 0) return undefined;
+  return [...lancamento.parcelas].filter((p) => !p.pago).sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0];
+}
+
 export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onSaved }: RegistrarPagamentoModalProps) {
   const { updateLancamento } = useLancamentos(obraId);
   const [valor, setValor] = useState('');
@@ -29,6 +35,7 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
   const [proximoVencimento, setProximoVencimento] = useState('');
   const [parcelaTotalInput, setParcelaTotalInput] = useState('');
 
+  const proximaParcela = acharProximaParcela(lancamento);
   const valorAPagarTotal = lancamento?.valorPago ?? 0;
   const jaPagoConfirmado = (lancamento?.pagamentos ?? []).reduce((s, p) => s + p.valor, 0);
   const naoPrevisto = lancamento?.naoPrevisto ?? false;
@@ -38,7 +45,8 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
     if (open && lancamento) {
       const jaPago = (lancamento.pagamentos ?? []).reduce((s, p) => s + p.valor, 0);
       const saldo = lancamento.naoPrevisto ? 0 : Math.max(0, lancamento.valorPago - jaPago);
-      setValor(lancamento.naoPrevisto ? '' : String(saldo));
+      const proxima = acharProximaParcela(lancamento);
+      setValor(lancamento.naoPrevisto ? '' : proxima ? String(proxima.valor) : String(saldo));
       setDataPagamento(todayISO());
       setComprovante(undefined);
       setAnexoErro('');
@@ -61,8 +69,12 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
   const valorNum = Number(valor) || 0;
   const restanteAposEste = Math.max(0, saldoRestante - valorNum);
   const isParcial = !naoPrevisto && valorNum > 0 && valorNum < saldoRestante;
-  const numeroParcela = (lancamento?.pagamentos?.length ?? 0) + 1;
-  const totalParcelasPreview = parcelaTotalInput ? Number(parcelaTotalInput) || undefined : lancamento?.parcelaTotal;
+  const numeroParcela = proximaParcela?.numero ?? (lancamento?.pagamentos?.length ?? 0) + 1;
+  const totalParcelasPreview = proximaParcela
+    ? lancamento?.parcelas?.length
+    : parcelaTotalInput
+      ? Number(parcelaTotalInput) || undefined
+      : lancamento?.parcelaTotal;
   const parcelasRestantesAposEsta = totalParcelasPreview ? Math.max(0, totalParcelasPreview - numeroParcela) : undefined;
 
   function handleSubmit(e: React.FormEvent) {
@@ -72,8 +84,32 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
 
     const novoPagamento: Pagamento = { id: generateId(), data: dataPagamento, valor: valorNum, comprovante };
     const novoTotalPago = jaPagoConfirmado + valorNum;
-    const quitado = naoPrevisto || novoTotalPago >= valorAPagarTotal;
     const now = new Date().toISOString();
+
+    if (proximaParcela) {
+      const parcelasAtualizadas = lancamento.parcelas!.map((p) =>
+        p.id === proximaParcela.id ? { ...p, pago: true, dataPagamento } : p,
+      );
+      const proximaPendente = [...parcelasAtualizadas].filter((p) => !p.pago).sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0];
+      const quitado = naoPrevisto || parcelasAtualizadas.every((p) => p.pago);
+      const resumo = quitado
+        ? `Pagamento de ${formatBRL(valorNum)} registrado (parcela ${proximaParcela.numero}/${parcelasAtualizadas.length}) — lançamento quitado`
+        : `Pagamento de ${formatBRL(valorNum)} registrado (parcela ${proximaParcela.numero}/${parcelasAtualizadas.length}) — próxima parcela vence em ${formatDate(proximaPendente!.vencimento)}`;
+
+      updateLancamento(lancamento.id, {
+        pagamentos: [...(lancamento.pagamentos ?? []), novoPagamento],
+        parcelas: parcelasAtualizadas,
+        status: quitado ? 'pago' : 'pendente',
+        dataVencimento: quitado ? lancamento.dataVencimento : proximaPendente!.vencimento,
+        anexos: comprovante ? [...lancamento.anexos, comprovante] : lancamento.anexos,
+        updatedBy: getCurrentUserName(),
+        updatedAt: now,
+        historico: [...lancamento.historico, { data: now, usuario: getCurrentUserName(), resumo }],
+      }).then(onSaved);
+      return;
+    }
+
+    const quitado = naoPrevisto || novoTotalPago >= valorAPagarTotal;
     const totalParcelas = parcelaTotalInput ? Number(parcelaTotalInput) || undefined : lancamento.parcelaTotal;
 
     const resumo = quitado
@@ -124,10 +160,16 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
               <span>Valor a pagar: <strong>{formatBRL(saldoRestante)}</strong></span>
             </div>
           )}
-          {!!lancamento.parcelaTotal && (
+          {proximaParcela ? (
             <span className="registrar-pagamento-resumo__parcela">
-              Parcela {numeroParcela} de {lancamento.parcelaTotal}
+              Parcela {proximaParcela.numero} de {lancamento.parcelas!.length} — vencimento {formatDate(proximaParcela.vencimento)}
             </span>
+          ) : (
+            !!lancamento.parcelaTotal && (
+              <span className="registrar-pagamento-resumo__parcela">
+                Parcela {numeroParcela} de {lancamento.parcelaTotal}
+              </span>
+            )
           )}
         </div>
 
@@ -175,18 +217,20 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
               {totalParcelasPreview ? `/${totalParcelasPreview}` : ''}) — vai restar <strong>{formatBRL(restanteAposEste)}</strong>
               {parcelasRestantesAposEsta !== undefined && ` (${parcelasRestantesAposEsta} parcela${parcelasRestantesAposEsta === 1 ? '' : 's'} restante${parcelasRestantesAposEsta === 1 ? '' : 's'} após esta)`}.
             </p>
-            <div className="registrar-pagamento-parcial__grid">
-              <div className="form-field">
-                <label>Vencimento da próxima parcela (opcional)</label>
-                <input type="date" value={proximoVencimento} onChange={(e) => setProximoVencimento(e.target.value)} />
-              </div>
-              {!lancamento.parcelaTotal && (
+            {!proximaParcela && (
+              <div className="registrar-pagamento-parcial__grid">
                 <div className="form-field">
-                  <label>Número total de parcelas (opcional)</label>
-                  <input type="number" min={2} value={parcelaTotalInput} onChange={(e) => setParcelaTotalInput(e.target.value)} placeholder="ex: 2" />
+                  <label>Vencimento da próxima parcela (opcional)</label>
+                  <input type="date" value={proximoVencimento} onChange={(e) => setProximoVencimento(e.target.value)} />
                 </div>
-              )}
-            </div>
+                {!lancamento.parcelaTotal && (
+                  <div className="form-field">
+                    <label>Número total de parcelas (opcional)</label>
+                    <input type="number" min={2} value={parcelaTotalInput} onChange={(e) => setParcelaTotalInput(e.target.value)} placeholder="ex: 2" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </form>
