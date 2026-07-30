@@ -27,8 +27,9 @@ async function reconhecerTexto(fonte: File | HTMLCanvasElement): Promise<string>
 
 function resultadoDoTexto(texto: string): NotaFiscalExtraida {
   if (!texto.trim()) return { categoriaDetectada: 'indeterminado', itens: [], confianca: 'baixa' };
-  const cabecalho = extrairCamposPorTexto(texto);
-  const itens = extrairItensDeLinhas(texto.split('\n'));
+  const linhas = texto.split('\n');
+  const cabecalho = extrairCamposPorTexto(linhas);
+  const itens = extrairItensDeLinhas(linhas);
   return {
     ...cabecalho,
     categoriaDetectada: itens.length > 0 ? 'material' : cabecalho.categoriaDetectada,

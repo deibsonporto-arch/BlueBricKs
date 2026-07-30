@@ -47,9 +47,11 @@ interface NotaFiscalExtracaoPanelProps {
   descricaoAtual: string;
   valorAtual: string;
   fornecedorIdAtual: string;
+  numeroNFAtual: string;
   onAplicarDescricao: (valor: string) => void;
   onAplicarValor: (valor: number) => void;
   onSelecionarFornecedor: (fornecedorId: string) => void;
+  onAplicarNumeroNF: (valor: string) => void;
   onConfirmarItens: (itens: ItemMaterialConfirmado[]) => void;
   onDispensar: () => void;
 }
@@ -61,9 +63,11 @@ export function NotaFiscalExtracaoPanel({
   descricaoAtual,
   valorAtual,
   fornecedorIdAtual,
+  numeroNFAtual,
   onAplicarDescricao,
   onAplicarValor,
   onSelecionarFornecedor,
+  onAplicarNumeroNF,
   onConfirmarItens,
   onDispensar,
 }: NotaFiscalExtracaoPanelProps) {
@@ -115,7 +119,8 @@ export function NotaFiscalExtracaoPanel({
   const nenhumaSugestaoDeCabecalho =
     (extraida.valorTotal === undefined || !!valorAtual) &&
     (mostrarItens || !extraida.fornecedorNome || !!descricaoAtual) &&
-    (!fornecedorSugerido || fornecedorIdAtual === fornecedorSugerido.id);
+    (!fornecedorSugerido || fornecedorIdAtual === fornecedorSugerido.id) &&
+    (!extraida.numeroNF || !!numeroNFAtual);
 
   return (
     <div className="nota-extracao-panel">
@@ -146,6 +151,11 @@ export function NotaFiscalExtracaoPanel({
           {fornecedorSugerido && fornecedorIdAtual !== fornecedorSugerido.id && (
             <button type="button" className="btn btn-secondary" onClick={() => onSelecionarFornecedor(fornecedorSugerido.id)}>
               Usar fornecedor {fornecedorSugerido.nome}
+            </button>
+          )}
+          {extraida.numeroNF && !numeroNFAtual && (
+            <button type="button" className="btn btn-secondary" onClick={() => onAplicarNumeroNF(extraida.numeroNF!)}>
+              Usar número da NF {extraida.numeroNF}
             </button>
           )}
         </div>

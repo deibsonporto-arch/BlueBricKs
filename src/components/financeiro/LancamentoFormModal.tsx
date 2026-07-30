@@ -710,9 +710,11 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
               descricaoAtual={form.descricao}
               valorAtual={form.valorPago}
               fornecedorIdAtual={form.fornecedorId}
+              numeroNFAtual={form.numeroNF}
               onAplicarDescricao={(valor) => update('descricao', valor)}
               onAplicarValor={(valor) => update('valorPago', String(valor))}
               onSelecionarFornecedor={(fornecedorId) => update('fornecedorId', fornecedorId)}
+              onAplicarNumeroNF={(valor) => setForm((f) => ({ ...f, numeroNF: valor, nf: true }))}
               onConfirmarItens={setItensMaterialConfirmados}
               onDispensar={() => { setNotaFiscalExtraida(null); setItensMaterialConfirmados(null); }}
             />
