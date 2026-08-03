@@ -96,7 +96,7 @@
 }
 
 .cotacoes-table__row--aprovado {
-  background: var(--color-neutral-light);
+  background: var(--color-success-light);
 }
 
 .cotacoes-table__empty {
