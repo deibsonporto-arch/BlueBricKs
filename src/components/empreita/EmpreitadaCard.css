@@ -7,6 +7,15 @@
   overflow: hidden;
 }
 
+.empreitada-card--finalizada {
+  background: var(--color-bg);
+  opacity: 0.7;
+}
+
+.empreitada-card--finalizada:hover {
+  opacity: 1;
+}
+
 .empreitada-card__header {
   width: 100%;
   display: flex;

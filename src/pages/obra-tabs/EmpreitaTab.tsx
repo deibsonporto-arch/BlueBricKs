@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { IconPlus } from '@tabler/icons-react';
 import { useEmpreitadas } from '../../hooks/useEmpreitadas';
@@ -84,6 +84,13 @@ export function EmpreitaTab() {
   const { atividades } = useAtividades(obraId);
   const { lancamentos, refresh: refreshLancamentos } = useLancamentos(obraId);
 
+  // "Em andamento" primeiro — cancelada/concluída já estão resolvidas e não precisam de atenção imediata,
+  // ficam abaixo mantendo a ordem relativa original entre si
+  const empreitadasOrdenadas = useMemo(
+    () => [...empreitadas].sort((a, b) => (a.status === 'em_andamento' ? 0 : 1) - (b.status === 'em_andamento' ? 0 : 1)),
+    [empreitadas],
+  );
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingEmpreitada, setEditingEmpreitada] = useState<Empreitada | undefined>(undefined);
@@ -122,8 +129,14 @@ export function EmpreitaTab() {
     if (confirm(`Excluir a empreitada "${empreitada.servico}"? As medições registradas também serão perdidas.`)) deleteEmpreitada(empreitada.id);
   }
 
-  function handleFinalizar(empreitada: Empreitada) {
-    if (confirm(`Finalizar a empreitada "${empreitada.servico}" com ${fornecedores.find((f) => f.id === empreitada.fornecedorId)?.nome ?? 'este fornecedor'}? Ela fica marcada como cancelada, mantendo o histórico e a % já medida — não será mais possível registrar novas medições nela.`)) {
+  function handleConcluir(empreitada: Empreitada) {
+    if (confirm(`Marcar a empreitada "${empreitada.servico}" com ${fornecedores.find((f) => f.id === empreitada.fornecedorId)?.nome ?? 'este fornecedor'} como concluída? Mantém o histórico e a % já medida — não será mais possível registrar novas medições nela.`)) {
+      updateEmpreitada(empreitada.id, { status: 'concluida' });
+    }
+  }
+
+  function handleCancelar(empreitada: Empreitada) {
+    if (confirm(`Cancelar a empreitada "${empreitada.servico}" com ${fornecedores.find((f) => f.id === empreitada.fornecedorId)?.nome ?? 'este fornecedor'}? Ela fica marcada como cancelada, mantendo o histórico e a % já medida — não será mais possível registrar novas medições nela.`)) {
       updateEmpreitada(empreitada.id, { status: 'cancelada' });
     }
   }
@@ -156,13 +169,13 @@ export function EmpreitaTab() {
         </button>
       </div>
 
-      {empreitadas.length === 0 ? (
+      {empreitadasOrdenadas.length === 0 ? (
         <EmptyState
           title="Nenhuma empreitada cadastrada"
           description="Cadastre um contrato de empreitada para acompanhar o valor, as etapas e as medições periódicas."
         />
       ) : (
-        empreitadas.map((e) => (
+        empreitadasOrdenadas.map((e) => (
           <EmpreitadaCard
             key={e.id}
             empreitada={e}
@@ -171,7 +184,8 @@ export function EmpreitaTab() {
             lancamentos={lancamentos}
             onEdit={() => openEdit(e)}
             onDelete={() => handleDelete(e)}
-            onFinalizar={() => handleFinalizar(e)}
+            onConcluir={() => handleConcluir(e)}
+            onCancelar={() => handleCancelar(e)}
             onDuplicar={() => handleDuplicar(e)}
             onRegistrarMedicao={(lista) => registrarMedicoes(e.id, lista)}
             onEditarMedicao={(medicaoId, patch) => atualizarMedicao(e.id, medicaoId, patch)}

@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { IconAlertTriangle, IconChevronDown, IconChevronUp, IconCopy, IconEdit, IconFlag, IconLink, IconPaperclip, IconPlus, IconPrinter, IconReceipt, IconTrash, IconX } from '@tabler/icons-react';
+import { IconAlertTriangle, IconBan, IconChevronDown, IconChevronUp, IconCircleCheck, IconCopy, IconEdit, IconLink, IconPaperclip, IconPlus, IconPrinter, IconReceipt, IconTrash, IconX } from '@tabler/icons-react';
 import type { Atividade, Empreitada, Fornecedor, LancamentoFinanceiro, MedicaoEmpreitada } from '../../types/domain';
 import { formatBRL } from '../../utils/currency';
 import { formatDate, todayISO } from '../../utils/dateUtils';
@@ -15,7 +15,8 @@ interface EmpreitadaCardProps {
   lancamentos: LancamentoFinanceiro[];
   onEdit: () => void;
   onDelete: () => void;
-  onFinalizar: () => void;
+  onConcluir: () => void;
+  onCancelar: () => void;
   onDuplicar: () => void;
   onRegistrarMedicao: (lista: Omit<MedicaoEmpreitada, 'id' | 'sequencia'>[]) => void;
   onEditarMedicao: (medicaoId: string, patch: Partial<MedicaoEmpreitada>) => void;
@@ -46,7 +47,7 @@ function novaLinhaVazia(): MedicaoLinha {
   return { key: generateId(), itemId: '', modoMedicao: 'quantidade', percentual: '', quantidade: '' };
 }
 
-export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos, onEdit, onDelete, onFinalizar, onDuplicar, onRegistrarMedicao, onEditarMedicao, onGerarLancamento, onGerarLancamentoEntrada, onRemoverMedicao, onVincularEntrada, onImprimir }: EmpreitadaCardProps) {
+export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos, onEdit, onDelete, onConcluir, onCancelar, onDuplicar, onRegistrarMedicao, onEditarMedicao, onGerarLancamento, onGerarLancamentoEntrada, onRemoverMedicao, onVincularEntrada, onImprimir }: EmpreitadaCardProps) {
   const atividadeNome = atividades.find((a) => a.id === empreitada.atividadeId)?.nome;
   const nomeAtividade = (atividadeId?: string) => atividades.find((a) => a.id === atividadeId)?.nome;
   const multiplasAtividades = new Set(empreitada.itens.map((i) => atividadeIdDoItem(empreitada, i.id)).filter(Boolean)).size > 1;
@@ -213,7 +214,7 @@ export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos
   }
 
   return (
-    <div className="empreitada-card">
+    <div className={`empreitada-card${empreitada.status !== 'em_andamento' ? ' empreitada-card--finalizada' : ''}`}>
       <button type="button" className="empreitada-card__header" onClick={() => setExpandida((v) => !v)}>
         <div className="empreitada-card__header-main">
           <strong>{fornecedor?.nome ?? 'Sem fornecedor'}</strong>
@@ -236,7 +237,10 @@ export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos
             <button type="button" className="btn btn-ghost" onClick={onEdit}><IconEdit size={14} /> Editar</button>
             <button type="button" className="btn btn-ghost" onClick={onDelete}><IconTrash size={14} /> Excluir</button>
             {empreitada.status === 'em_andamento' && (
-              <button type="button" className="btn btn-ghost" onClick={onFinalizar}><IconFlag size={14} /> Finalizar</button>
+              <>
+                <button type="button" className="btn btn-ghost" onClick={onConcluir}><IconCircleCheck size={14} /> Concluir</button>
+                <button type="button" className="btn btn-ghost" onClick={onCancelar}><IconBan size={14} /> Cancelar</button>
+              </>
             )}
             <button type="button" className="btn btn-ghost" onClick={onDuplicar}><IconCopy size={14} /> Duplicar p/ novo empreiteiro</button>
             {empreitada.status === 'em_andamento' && (
