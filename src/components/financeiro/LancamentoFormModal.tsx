@@ -133,19 +133,25 @@ interface FormState {
   parcelas: ParcelaLancamento[];
 }
 
-/** Divide o valor total em N parcelas iguais (a última absorve o resto do arredondamento) com
- * vencimento sugerido a cada 30 dias a partir da data de vencimento base — tudo editável depois. */
-function gerarParcelas(n: number, valorPagoStr: string, dataVencimentoBase: string): ParcelaLancamento[] {
+/** Monta o plano de pagamento: entrada opcional (vence na data base) + N parcelas iguais do
+ * restante (a última absorve o resto do arredondamento), com vencimento sugerido a cada 30 dias
+ * a partir da entrada (ou da data base, se não houver entrada) — tudo editável depois. */
+function gerarPlano(n: number, valorPagoStr: string, temEntrada: boolean, valorEntradaStr: string, dataVencimentoBase: string): ParcelaLancamento[] {
   const total = Number(valorPagoStr) || 0;
-  const valorBase = Math.floor((total / n) * 100) / 100;
-  const parcelas: ParcelaLancamento[] = [];
+  const valorEntrada = temEntrada ? Math.min(Number(valorEntradaStr) || 0, total) : 0;
+  const restante = Math.max(0, total - valorEntrada);
+  const plano: ParcelaLancamento[] = [];
+  if (temEntrada) {
+    plano.push({ id: generateId(), numero: 0, ehEntrada: true, valor: valorEntrada, vencimento: dataVencimentoBase, pago: false });
+  }
+  const valorBase = n > 0 ? Math.floor((restante / n) * 100) / 100 : 0;
   let somaAnteriores = 0;
   for (let i = 0; i < n; i++) {
-    const valor = i === n - 1 ? Math.round((total - somaAnteriores) * 100) / 100 : valorBase;
+    const valor = i === n - 1 ? Math.round((restante - somaAnteriores) * 100) / 100 : valorBase;
     somaAnteriores += valor;
-    parcelas.push({ id: generateId(), numero: i + 1, valor, vencimento: addDays(dataVencimentoBase, i * 30), pago: false });
+    plano.push({ id: generateId(), numero: i + 1, valor, vencimento: addDays(dataVencimentoBase, (temEntrada ? i + 1 : i) * 30), pago: false });
   }
-  return parcelas;
+  return plano;
 }
 
 function toFormState(l?: LancamentoFinanceiro, prefill?: LancamentoPrefill, locacaoExistente?: Locacao): FormState {
@@ -279,12 +285,31 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
   }
 
   function toggleParcelas(dividir: boolean) {
-    setForm((f) => ({ ...f, parcelas: dividir ? gerarParcelas(2, f.valorPago, f.dataVencimento) : [] }));
+    setForm((f) => ({ ...f, parcelas: dividir ? gerarPlano(2, f.valorPago, false, '', f.dataVencimento) : [] }));
+  }
+
+  function toggleEntrada(temEntrada: boolean) {
+    setForm((f) => {
+      const n = f.parcelas.filter((p) => !p.ehEntrada).length || 2;
+      const valorEntradaStr = temEntrada ? String(Math.round(((Number(f.valorPago) || 0) / 2) * 100) / 100) : '';
+      return { ...f, parcelas: gerarPlano(n, f.valorPago, temEntrada, valorEntradaStr, f.dataVencimento) };
+    });
+  }
+
+  function updateValorEntrada(valorEntradaStr: string) {
+    setForm((f) => {
+      const n = f.parcelas.filter((p) => !p.ehEntrada).length;
+      return { ...f, parcelas: gerarPlano(n, f.valorPago, true, valorEntradaStr, f.dataVencimento) };
+    });
   }
 
   function updateQuantidadeParcelas(n: number) {
-    if (!n || n < 2) return;
-    setForm((f) => ({ ...f, parcelas: gerarParcelas(n, f.valorPago, f.dataVencimento) }));
+    const temEntrada = form.parcelas.some((p) => p.ehEntrada);
+    if (!n || n < (temEntrada ? 1 : 2)) return;
+    setForm((f) => {
+      const entradaAtual = f.parcelas.find((p) => p.ehEntrada);
+      return { ...f, parcelas: gerarPlano(n, f.valorPago, !!entradaAtual, entradaAtual ? String(entradaAtual.valor) : '', f.dataVencimento) };
+    });
   }
 
   function updateVencimentoParcela(id: string, vencimento: string) {
@@ -714,23 +739,47 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
             </label>
             {form.parcelas.length > 0 && (() => {
               const algumaPaga = form.parcelas.some((p) => p.pago);
+              const entrada = form.parcelas.find((p) => p.ehEntrada);
+              const parcelasReais = form.parcelas.filter((p) => !p.ehEntrada);
               return (
                 <div className="lancamento-parcelas__bloco">
+                  <label className="lancamento-parcelas__entrada-toggle">
+                    <input
+                      type="checkbox"
+                      checked={!!entrada}
+                      disabled={algumaPaga}
+                      onChange={(e) => toggleEntrada(e.target.checked)}
+                    />
+                    Tem entrada
+                  </label>
+                  {entrada && (
+                    <div className="form-field lancamento-parcelas__qtd">
+                      <label>Valor da entrada (R$)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={entrada.valor}
+                        disabled={entrada.pago}
+                        onChange={(e) => updateValorEntrada(e.target.value)}
+                      />
+                    </div>
+                  )}
                   <div className="form-field lancamento-parcelas__qtd">
-                    <label>Quantas parcelas?</label>
+                    <label>Quantas parcelas{entrada ? ' (além da entrada)' : ''}?</label>
                     <input
                       type="number"
-                      min={2}
-                      value={form.parcelas.length}
+                      min={entrada ? 1 : 2}
+                      value={parcelasReais.length}
                       disabled={algumaPaga}
                       onChange={(e) => updateQuantidadeParcelas(Number(e.target.value))}
                     />
-                    {algumaPaga && <span className="form-field__hint">Já tem parcela paga — não dá pra mudar a quantidade.</span>}
+                    {algumaPaga && <span className="form-field__hint">Já tem parcela paga — não dá pra mudar a quantidade ou a entrada.</span>}
                   </div>
                   <div className="lancamento-parcelas__lista">
                     {form.parcelas.map((p) => (
                       <div className="lancamento-parcelas__linha" key={p.id}>
-                        <span>Parcela {p.numero} — {formatBRL(p.valor)}{p.pago && ' (paga)'}</span>
+                        <span>{p.ehEntrada ? <strong>Entrada</strong> : `Parcela ${p.numero}`} — {formatBRL(p.valor)}{p.pago && ' (paga)'}</span>
                         <input type="date" value={p.vencimento} disabled={p.pago} onChange={(e) => updateVencimentoParcela(p.id, e.target.value)} />
                       </div>
                     ))}

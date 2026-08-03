@@ -65,6 +65,20 @@
   gap: 10px;
 }
 
+.lancamento-parcelas__entrada-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.lancamento-parcelas__entrada-toggle input {
+  width: auto;
+}
+
 .lancamento-parcelas__qtd input {
   max-width: 100px;
 }

@@ -71,11 +71,16 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
   const isParcial = !naoPrevisto && valorNum > 0 && valorNum < saldoRestante;
   const numeroParcela = proximaParcela?.numero ?? (lancamento?.pagamentos?.length ?? 0) + 1;
   const totalParcelasPreview = proximaParcela
-    ? lancamento?.parcelas?.length
+    ? lancamento?.parcelas?.filter((p) => !p.ehEntrada).length
     : parcelaTotalInput
       ? Number(parcelaTotalInput) || undefined
       : lancamento?.parcelaTotal;
   const parcelasRestantesAposEsta = totalParcelasPreview ? Math.max(0, totalParcelasPreview - numeroParcela) : undefined;
+  const labelParcelaAtual = proximaParcela
+    ? proximaParcela.ehEntrada
+      ? 'entrada'
+      : `parcela ${proximaParcela.numero}/${totalParcelasPreview}`
+    : `parcela ${numeroParcela}${totalParcelasPreview ? `/${totalParcelasPreview}` : ''}`;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -93,8 +98,8 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
       const proximaPendente = [...parcelasAtualizadas].filter((p) => !p.pago).sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0];
       const quitado = naoPrevisto || parcelasAtualizadas.every((p) => p.pago);
       const resumo = quitado
-        ? `Pagamento de ${formatBRL(valorNum)} registrado (parcela ${proximaParcela.numero}/${parcelasAtualizadas.length}) — lançamento quitado`
-        : `Pagamento de ${formatBRL(valorNum)} registrado (parcela ${proximaParcela.numero}/${parcelasAtualizadas.length}) — próxima parcela vence em ${formatDate(proximaPendente!.vencimento)}`;
+        ? `Pagamento de ${formatBRL(valorNum)} registrado (${labelParcelaAtual}) — lançamento quitado`
+        : `Pagamento de ${formatBRL(valorNum)} registrado (${labelParcelaAtual}) — próxima parcela vence em ${formatDate(proximaPendente!.vencimento)}`;
 
       updateLancamento(lancamento.id, {
         pagamentos: [...(lancamento.pagamentos ?? []), novoPagamento],
@@ -162,7 +167,7 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
           )}
           {proximaParcela ? (
             <span className="registrar-pagamento-resumo__parcela">
-              Parcela {proximaParcela.numero} de {lancamento.parcelas!.length} — vencimento {formatDate(proximaParcela.vencimento)}
+              {proximaParcela.ehEntrada ? 'Entrada' : `Parcela ${proximaParcela.numero} de ${totalParcelasPreview}`} — vencimento {formatDate(proximaParcela.vencimento)}
             </span>
           ) : (
             !!lancamento.parcelaTotal && (
@@ -213,8 +218,7 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
         {isParcial && (
           <div className="form-field form-field--full registrar-pagamento-parcial">
             <p className="registrar-pagamento-parcial__aviso">
-              Pagamento parcial (parcela {numeroParcela}
-              {totalParcelasPreview ? `/${totalParcelasPreview}` : ''}) — vai restar <strong>{formatBRL(restanteAposEste)}</strong>
+              Pagamento parcial ({labelParcelaAtual}) — vai restar <strong>{formatBRL(restanteAposEste)}</strong>
               {parcelasRestantesAposEsta !== undefined && ` (${parcelasRestantesAposEsta} parcela${parcelasRestantesAposEsta === 1 ? '' : 's'} restante${parcelasRestantesAposEsta === 1 ? '' : 's'} após esta)`}.
             </p>
             {!proximaParcela && (

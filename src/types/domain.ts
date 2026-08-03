@@ -494,7 +494,8 @@ export interface Pagamento {
 /** Plano de parcelas definido na criação do lançamento — cada uma com seu próprio vencimento. */
 export interface ParcelaLancamento {
   id: string;
-  numero: number; // 1-based
+  numero: number; // 1-based entre as parcelas normais; 0 quando ehEntrada
+  ehEntrada?: boolean; // marca a linha de entrada (adiantamento), separada da contagem de parcelas
   valor: number;
   vencimento: string; // ISO
   pago: boolean;
