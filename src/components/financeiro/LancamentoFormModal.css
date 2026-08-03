@@ -104,6 +104,27 @@
   font-size: 13px;
 }
 
+.lancamento-parcelas__linha-controles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lancamento-parcelas__pago-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lancamento-parcelas__pago-toggle input {
+  width: auto;
+}
+
 .lancamento-anexo-btn {
   width: fit-content;
   cursor: pointer;

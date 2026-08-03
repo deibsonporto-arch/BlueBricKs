@@ -93,7 +93,7 @@ export function RegistrarPagamentoModal({ open, obraId, lancamento, onClose, onS
 
     if (proximaParcela) {
       const parcelasAtualizadas = lancamento.parcelas!.map((p) =>
-        p.id === proximaParcela.id ? { ...p, pago: true, dataPagamento } : p,
+        p.id === proximaParcela.id ? { ...p, pago: true, dataPagamento, pagamentoId: novoPagamento.id } : p,
       );
       const proximaPendente = [...parcelasAtualizadas].filter((p) => !p.pago).sort((a, b) => a.vencimento.localeCompare(b.vencimento))[0];
       const quitado = naoPrevisto || parcelasAtualizadas.every((p) => p.pago);

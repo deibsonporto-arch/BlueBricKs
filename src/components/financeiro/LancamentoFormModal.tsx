@@ -19,6 +19,7 @@ import type {
   Locacao,
   LocacaoItem,
   OrigemHistoricoPreco,
+  Pagamento,
   ParcelaLancamento,
   StatusLancamento,
 } from '../../types/domain';
@@ -152,6 +153,22 @@ function gerarPlano(n: number, valorPagoStr: string, temEntrada: boolean, valorE
     plano.push({ id: generateId(), numero: i + 1, valor, vencimento: addDays(dataVencimentoBase, (temEntrada ? i + 1 : i) * 30), pago: false });
   }
   return plano;
+}
+
+/** Reconstrói o ledger de pagamentos a partir do estado atual do plano de parcelas: preserva
+ * pagamentos sem vínculo com nenhuma parcela (ex: registros antigos), sincroniza valor/data dos
+ * vinculados a parcelas ainda marcadas como pagas (mantendo comprovante, se houver) e remove os
+ * que foram desmarcados. */
+function reconciliarPagamentos(parcelas: ParcelaLancamento[], existentes: Pagamento[]): Pagamento[] {
+  const idsDeParcelas = new Set(parcelas.map((p) => p.pagamentoId).filter((id): id is string => !!id));
+  const semVinculo = existentes.filter((pg) => !idsDeParcelas.has(pg.id));
+  const dasParcelasPagas = parcelas
+    .filter((p) => p.pago && p.pagamentoId)
+    .map((p) => {
+      const existente = existentes.find((pg) => pg.id === p.pagamentoId);
+      return { ...(existente ?? { id: p.pagamentoId! }), data: p.dataPagamento ?? existente?.data ?? todayISO(), valor: p.valor };
+    });
+  return [...semVinculo, ...dasParcelasPagas];
 }
 
 function toFormState(l?: LancamentoFinanceiro, prefill?: LancamentoPrefill, locacaoExistente?: Locacao): FormState {
@@ -316,6 +333,21 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
     setForm((f) => ({ ...f, parcelas: f.parcelas.map((p) => (p.id === id ? { ...p, vencimento } : p)) }));
   }
 
+  function toggleParcelaPaga(id: string, pago: boolean) {
+    setForm((f) => ({
+      ...f,
+      parcelas: f.parcelas.map((p) =>
+        p.id === id
+          ? { ...p, pago, dataPagamento: pago ? (p.dataPagamento ?? todayISO()) : p.dataPagamento, pagamentoId: pago ? (p.pagamentoId ?? generateId()) : p.pagamentoId }
+          : p,
+      ),
+    }));
+  }
+
+  function updateDataPagamentoParcela(id: string, dataPagamento: string) {
+    setForm((f) => ({ ...f, parcelas: f.parcelas.map((p) => (p.id === id ? { ...p, dataPagamento } : p)) }));
+  }
+
   function handleAnexoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
@@ -454,6 +486,9 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
     e.preventDefault();
     const now = new Date().toISOString();
     const base = toBase(form, obraId);
+    const baseComPagamentos = form.parcelas.length > 0
+      ? { ...base, pagamentos: reconciliarPagamentos(form.parcelas, lancamento?.pagamentos ?? []) }
+      : base;
 
     if (mode === 'create') {
       const historico: HistoricoEntry[] = [{ data: now, usuario: getCurrentUserName(), resumo: 'Lançamento criado' }];
@@ -464,7 +499,7 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
         historico,
         createdAt: now,
         updatedAt: now,
-        ...base,
+        ...baseComPagamentos,
       };
       createLancamento(novo)
         .then(() => { syncLocacao(novo.id); return registrarHistoricoDePrecos(novo, now); })
@@ -472,7 +507,7 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
     } else if (lancamento) {
       const resumo = buildHistoricoResumo(lancamento, base, fornecedores);
       const historico: HistoricoEntry[] = [...lancamento.historico, { data: now, usuario: getCurrentUserName(), resumo }];
-      updateLancamento(lancamento.id, { ...base, updatedBy: getCurrentUserName(), historico, updatedAt: now }).then(() => syncLocacao(lancamento.id)).then(onSaved);
+      updateLancamento(lancamento.id, { ...baseComPagamentos, updatedBy: getCurrentUserName(), historico, updatedAt: now }).then(() => syncLocacao(lancamento.id)).then(onSaved);
     }
   }
 
@@ -779,8 +814,28 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
                   <div className="lancamento-parcelas__lista">
                     {form.parcelas.map((p) => (
                       <div className="lancamento-parcelas__linha" key={p.id}>
-                        <span>{p.ehEntrada ? <strong>Entrada</strong> : `Parcela ${p.numero}`} — {formatBRL(p.valor)}{p.pago && ' (paga)'}</span>
-                        <input type="date" value={p.vencimento} disabled={p.pago} onChange={(e) => updateVencimentoParcela(p.id, e.target.value)} />
+                        <span>{p.ehEntrada ? <strong>Entrada</strong> : `Parcela ${p.numero}`} — {formatBRL(p.valor)}</span>
+                        <div className="lancamento-parcelas__linha-controles">
+                          <label className="lancamento-parcelas__pago-toggle">
+                            <input type="checkbox" checked={p.pago} onChange={(e) => toggleParcelaPaga(p.id, e.target.checked)} />
+                            Pago
+                          </label>
+                          {p.pago ? (
+                            <input
+                              type="date"
+                              value={p.dataPagamento ?? todayISO()}
+                              onChange={(e) => updateDataPagamentoParcela(p.id, e.target.value)}
+                              title="Data do pagamento"
+                            />
+                          ) : (
+                            <input
+                              type="date"
+                              value={p.vencimento}
+                              onChange={(e) => updateVencimentoParcela(p.id, e.target.value)}
+                              title="Data de vencimento"
+                            />
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

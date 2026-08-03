@@ -500,6 +500,7 @@ export interface ParcelaLancamento {
   vencimento: string; // ISO
   pago: boolean;
   dataPagamento?: string;
+  pagamentoId?: string; // vincula ao registro correspondente em LancamentoFinanceiro.pagamentos, quando pago
 }
 
 export interface DadosPagamento {

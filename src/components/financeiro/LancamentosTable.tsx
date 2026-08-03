@@ -86,9 +86,16 @@ export function LancamentosTable({ lancamentos, fornecedores, atividades, onEdit
                 <td>
                   {formatBRL(l.valorPago)}
                   {(l.pagamentos?.length ?? 0) > 0 && (
-                    <span className="lancamentos-table__parcela-badge">
-                      {l.parcelaTotal ? `${l.pagamentos!.length}/${l.parcelaTotal}` : `${l.pagamentos!.length} pagamentos`}
-                    </span>
+                    <>
+                      <span className="lancamentos-table__parcela-badge">
+                        {l.parcelaTotal ? `${l.pagamentos!.length}/${l.parcelaTotal}` : `${l.pagamentos!.length} pagamentos`}
+                      </span>
+                      {l.status !== 'pago' && (
+                        <span className="lancamentos-table__ja-pago">
+                          Já pago: {formatBRL(l.pagamentos!.reduce((s, p) => s + p.valor, 0))}
+                        </span>
+                      )}
+                    </>
                   )}
                 </td>
                 <td className="lancamentos-table__forma">{l.formaPagamento}</td>
