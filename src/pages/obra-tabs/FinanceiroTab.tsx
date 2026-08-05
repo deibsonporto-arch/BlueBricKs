@@ -11,6 +11,7 @@ import { GastosPorCategoriaChart } from '../../components/financeiro/GastosPorCa
 import { CustosPorEtapaSection } from '../../components/financeiro/CustosPorEtapaSection';
 import { ContasAPagarPanel } from '../../components/financeiro/ContasAPagarPanel';
 import { LancamentosTable } from '../../components/financeiro/LancamentosTable';
+import { FornecedorFilterCombobox } from '../../components/financeiro/FornecedorFilterCombobox';
 import { LancamentoFormModal } from '../../components/financeiro/LancamentoFormModal';
 import { RegistrarPagamentoModal } from '../../components/financeiro/RegistrarPagamentoModal';
 import { FornecedoresListModal } from '../../components/financeiro/FornecedoresListModal';
@@ -192,10 +193,7 @@ export function FinanceiroTab() {
               <option key={c} value={c}>{CATEGORIA_LABEL[c]}</option>
             ))}
           </select>
-          <select value={filtroFornecedor} onChange={(e) => setFiltroFornecedor(e.target.value)}>
-            <option value="">Todos os fornecedores</option>
-            {fornecedores.map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
-          </select>
+          <FornecedorFilterCombobox fornecedores={fornecedores} value={filtroFornecedor} onChange={setFiltroFornecedor} />
           <select value={filtroAtividade} onChange={(e) => setFiltroAtividade(e.target.value)}>
             <option value="">Todas as etapas</option>
             {atividades.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
