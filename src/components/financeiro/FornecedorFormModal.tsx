@@ -71,9 +71,10 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
     if (!file) return;
     setCartaoCnpjErro('');
     setCartaoCnpjAplicado(false);
+    const erroLeitura = 'Não consegui ler os dados desse PDF — confira se é o Comprovante de Inscrição e de Situação Cadastral (cartão CNPJ) e preencha manualmente se precisar. Se o problema persistir, atualize a página (Ctrl+Shift+R) e tente de novo.';
     import('../../utils/cnpj/parseCartaoCnpj').then(({ parseCartaoCnpj }) => parseCartaoCnpj(file)).then((extraido) => {
       if (!extraido.nome && !extraido.documento) {
-        setCartaoCnpjErro('Não consegui ler os dados desse PDF — confira se é o Comprovante de Inscrição e de Situação Cadastral (cartão CNPJ) e preencha manualmente se precisar.');
+        setCartaoCnpjErro(erroLeitura);
         return;
       }
       setForm((f) => ({
@@ -97,7 +98,7 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
         dataSituacaoCadastral: f.dataSituacaoCadastral || extraido.dataSituacaoCadastral || f.dataSituacaoCadastral,
       }));
       setCartaoCnpjAplicado(true);
-    });
+    }).catch(() => setCartaoCnpjErro(erroLeitura));
   }
 
   function handleSubmit(e: React.FormEvent) {
