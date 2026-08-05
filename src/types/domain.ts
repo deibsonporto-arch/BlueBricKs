@@ -440,6 +440,7 @@ export interface Fornecedor {
 export type CategoriaLancamento = 'sem_categoria' | 'mao_de_obra' | 'material' | 'aluguel' | 'alimentacao' | 'servico' | 'taxa' | 'empreitada' | 'projetos' | 'sondagem';
 export type StatusLancamento = 'pendente' | 'pago' | 'atrasado';
 export type FormaPagamento = 'pix' | 'boleto' | 'transferencia' | 'dinheiro' | 'cartao';
+export type LancadoTipo = 'nao_lancado' | 'com_adiantamento' | 'com_nf' | 'sem_nf';
 
 export interface Anexo {
   id: string;
@@ -533,7 +534,9 @@ export interface LancamentoFinanceiro {
   nf: boolean;
   numeroNF?: string;
   observacoes?: string;
-  lancado?: boolean; // nota lançada para pagamento (controle interno, independente do status de pagamento)
+  lancado?: boolean; // legado — mantido só para compatibilidade com registros antigos; usar lancadoTipo
+  lancadoTipo?: LancadoTipo; // status do lançamento em outro sistema/contabilidade, independente do status de pagamento
+  lancadoNumero?: string; // número do lançamento nesse outro sistema (ex: 746, 749, 3402)
   status: StatusLancamento;
   anexos: Anexo[];
   pagamentos?: Pagamento[]; // ledger de pagamentos confirmados (novo, opcional — registros antigos não têm)

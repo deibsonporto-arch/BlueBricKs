@@ -1,9 +1,11 @@
-import { IconCash, IconCircle, IconCircleCheck, IconEdit, IconLink, IconTrash } from '@tabler/icons-react';
-import type { Atividade, Fornecedor, LancamentoFinanceiro, StatusLancamento } from '../../types/domain';
+import { IconCash, IconEdit, IconLink, IconTrash } from '@tabler/icons-react';
+import type { Atividade, Fornecedor, LancadoTipo, LancamentoFinanceiro, StatusLancamento } from '../../types/domain';
 import { AnexosCell } from './AnexosCell';
 import { EditableStatusCell } from './EditableStatusCell';
+import { EditableLancadoCell } from './EditableLancadoCell';
 import { formatBRL } from '../../utils/currency';
 import { formatDate, isPast, todayISO } from '../../utils/dateUtils';
+import { lancadoTipoEfetivo } from '../../utils/lancado';
 import './LancamentosTable.css';
 
 const CATEGORIA_LABEL: Record<LancamentoFinanceiro['categoria'], string> = {
@@ -35,10 +37,10 @@ interface LancamentosTableProps {
   onUpdateStatus: (lancamento: LancamentoFinanceiro, novoStatus: StatusLancamento) => void;
   onRegistrarPagamento: (lancamento: LancamentoFinanceiro) => void;
   onDelete: (lancamento: LancamentoFinanceiro) => void;
-  onToggleLancado: (lancamento: LancamentoFinanceiro) => void;
+  onUpdateLancado: (lancamento: LancamentoFinanceiro, tipo: LancadoTipo, numero: string) => void;
 }
 
-export function LancamentosTable({ lancamentos, fornecedores, atividades, onEdit, onFiltrarPorAtividade, onUpdateStatus, onRegistrarPagamento, onDelete, onToggleLancado }: LancamentosTableProps) {
+export function LancamentosTable({ lancamentos, fornecedores, atividades, onEdit, onFiltrarPorAtividade, onUpdateStatus, onRegistrarPagamento, onDelete, onUpdateLancado }: LancamentosTableProps) {
   const totalPago = lancamentos.filter((l) => l.status === 'pago').reduce((s, l) => s + l.valorPago, 0);
   const saldoAPagar = lancamentos.filter((l) => l.status !== 'pago').reduce((s, l) => s + l.valorPago, 0);
   const totalLiquido = totalPago + saldoAPagar;
@@ -68,7 +70,7 @@ export function LancamentosTable({ lancamentos, fornecedores, atividades, onEdit
             const fornecedor = fornecedores.find((f) => f.id === l.fornecedorId);
             const atividade = atividades.find((a) => a.id === l.atividadeId);
             return (
-              <tr key={l.id} className={`${rowClass(l)}${l.lancado ? '' : ' lancamentos-table__row--nao-lancado'}`}>
+              <tr key={l.id} className={`${rowClass(l)}${lancadoTipoEfetivo(l) === 'nao_lancado' ? ' lancamentos-table__row--nao-lancado' : ''}`}>
                 <td>{formatDate(l.data)}</td>
                 <td>{formatDate(l.dataVencimento)}</td>
                 <td>{fornecedor?.nome ?? <span className="lancamentos-table__muted">—</span>}</td>
@@ -101,15 +103,11 @@ export function LancamentosTable({ lancamentos, fornecedores, atividades, onEdit
                 <td className="lancamentos-table__forma">{l.formaPagamento}</td>
                 <td>{l.nf ? 'Sim' : 'Não'}</td>
                 <td>
-                  <button
-                    type="button"
-                    className={`lancamentos-table__lancado-btn${l.lancado ? ' is-lancado' : ''}`}
-                    onClick={() => onToggleLancado(l)}
-                    title={l.lancado ? 'Lançado para pagamento — clique para desmarcar' : 'Não lançado para pagamento — clique para marcar como lançado'}
-                    aria-label={l.lancado ? 'Lançado para pagamento' : 'Não lançado para pagamento'}
-                  >
-                    {l.lancado ? <IconCircleCheck size={16} /> : <IconCircle size={16} />}
-                  </button>
+                  <EditableLancadoCell
+                    tipo={lancadoTipoEfetivo(l)}
+                    numero={l.lancadoNumero}
+                    onSave={(tipo, numero) => onUpdateLancado(l, tipo, numero)}
+                  />
                 </td>
                 <td>
                   <AnexosCell anexos={l.anexos} />

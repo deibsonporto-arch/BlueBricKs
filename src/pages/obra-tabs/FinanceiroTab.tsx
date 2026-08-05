@@ -14,11 +14,12 @@ import { LancamentosTable } from '../../components/financeiro/LancamentosTable';
 import { LancamentoFormModal } from '../../components/financeiro/LancamentoFormModal';
 import { RegistrarPagamentoModal } from '../../components/financeiro/RegistrarPagamentoModal';
 import { FornecedoresListModal } from '../../components/financeiro/FornecedoresListModal';
-import type { CategoriaLancamento, LancamentoFinanceiro, StatusLancamento } from '../../types/domain';
+import type { CategoriaLancamento, LancadoTipo, LancamentoFinanceiro, StatusLancamento } from '../../types/domain';
 import { exportToCsv } from '../../utils/csvExport';
 import { formatDate, todayISO } from '../../utils/dateUtils';
 import { formatBRL, formatNumberBR } from '../../utils/currency';
 import { getCurrentUserName } from '../../utils/currentUser';
+import { lancadoTipoEfetivo } from '../../utils/lancado';
 import type { VencimentoBucket } from '../../utils/contasAPagar';
 import { lancamentoNoBucket } from '../../utils/contasAPagar';
 import './FinanceiroTab.css';
@@ -80,8 +81,8 @@ export function FinanceiroTab() {
       .filter((l) => !filtroVencimento || lancamentoNoBucket(l, filtroVencimento))
       .sort((a, b) => {
         // notas ainda não lançadas para pagamento vêm sempre primeiro, como lembrete.
-        const lancA = a.lancado ? 1 : 0;
-        const lancB = b.lancado ? 1 : 0;
+        const lancA = lancadoTipoEfetivo(a) === 'nao_lancado' ? 0 : 1;
+        const lancB = lancadoTipoEfetivo(b) === 'nao_lancado' ? 0 : 1;
         if (lancA !== lancB) return lancA - lancB;
         const pagoA = a.status === 'pago' ? 1 : 0;
         const pagoB = b.status === 'pago' ? 1 : 0;
@@ -123,8 +124,14 @@ export function FinanceiroTab() {
     updateLancamento(lancamento.id, { status: novoStatus, updatedBy: getCurrentUserName(), historico, updatedAt: now });
   }
 
-  function handleToggleLancado(lancamento: LancamentoFinanceiro) {
-    updateLancamento(lancamento.id, { lancado: !lancamento.lancado, updatedBy: getCurrentUserName(), updatedAt: new Date().toISOString() });
+  function handleUpdateLancado(lancamento: LancamentoFinanceiro, tipo: LancadoTipo, numero: string) {
+    updateLancamento(lancamento.id, {
+      lancadoTipo: tipo,
+      lancadoNumero: numero || undefined,
+      lancado: tipo !== 'nao_lancado',
+      updatedBy: getCurrentUserName(),
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   function handleImprimir() {
@@ -230,7 +237,7 @@ export function FinanceiroTab() {
           onUpdateStatus={handleUpdateStatus}
           onRegistrarPagamento={setPagamentoModalTarget}
           onDelete={handleDelete}
-          onToggleLancado={handleToggleLancado}
+          onUpdateLancado={handleUpdateLancado}
         />
       </div>
 

@@ -1,0 +1,47 @@
+.editable-lancado-cell__pill {
+  display: inline-flex;
+  border: none;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.editable-lancado-cell__pill--nao_lancado { background: var(--color-warning-light); color: var(--color-warning); }
+.editable-lancado-cell__pill--com_adiantamento { background: var(--color-purple-light); color: var(--color-purple); }
+.editable-lancado-cell__pill--com_nf { background: var(--color-success-light); color: var(--color-success); }
+.editable-lancado-cell__pill--sem_nf { background: var(--color-orange-light); color: var(--color-orange); }
+
+.editable-lancado-cell__form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editable-lancado-cell__select {
+  font-size: 11px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  max-width: 150px;
+}
+
+.editable-lancado-cell__numero {
+  width: 50px;
+  font-size: 11px;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+}
+
+.editable-lancado-cell__ok {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  display: flex;
+  cursor: pointer;
+  padding: 2px;
+  flex-shrink: 0;
+}

@@ -136,18 +136,3 @@
 .lancamentos-table__footer strong {
   color: var(--color-text);
 }
-
-.lancamentos-table__lancado-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--color-warning);
-}
-
-.lancamentos-table__lancado-btn.is-lancado {
-  color: var(--color-success);
-}
