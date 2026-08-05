@@ -37,15 +37,13 @@ export function EditableLancadoCell({ tipo, numero, onSave }: EditableLancadoCel
         >
           {LANCADO_OPTIONS.map((t) => <option key={t} value={t}>{LANCADO_LABEL[t]}</option>)}
         </select>
-        {tipoDraft !== 'nao_lancado' && (
-          <input
-            className="editable-lancado-cell__numero"
-            placeholder="Nº"
-            value={numeroDraft}
-            onChange={(e) => setNumeroDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') salvar(); }}
-          />
-        )}
+        <input
+          className="editable-lancado-cell__numero"
+          placeholder="Nº"
+          value={numeroDraft}
+          onChange={(e) => setNumeroDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') salvar(); }}
+        />
         <button type="button" className="editable-lancado-cell__ok" onClick={salvar} aria-label="Salvar">
           <IconCheck size={14} />
         </button>

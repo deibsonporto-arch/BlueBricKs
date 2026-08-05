@@ -58,7 +58,7 @@ export function LancamentosTable({ lancamentos, fornecedores, atividades, onEdit
             <th>Atividade</th>
             <th>Categoria</th>
             <th>Valor a pagar</th>
-            <th>Forma pagamento</th>
+            <th>Pagamento</th>
             <th>NF</th>
             <th title="Nota lançada para pagamento">Lanç.</th>
             <th>Anexos</th>

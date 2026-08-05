@@ -2,7 +2,7 @@ import type { LancadoTipo, LancamentoFinanceiro } from '../types/domain';
 
 export const LANCADO_LABEL: Record<LancadoTipo, string> = {
   nao_lancado: 'Não lançado',
-  com_adiantamento: 'Lançado c/ adiantamento',
+  com_adiantamento: 'Lançado c/ adiant.',
   com_nf: 'Lançado C/NF',
   sem_nf: 'Lançado S/NF',
 };
