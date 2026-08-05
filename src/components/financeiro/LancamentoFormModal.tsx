@@ -5,6 +5,7 @@ import { FornecedorPicker } from './FornecedorPicker';
 import { DynamicListField } from '../obra-detail/DynamicListField';
 import { NotaFiscalExtracaoPanel } from './NotaFiscalExtracaoPanel';
 import { ProdutosLancamentoField } from './ProdutosLancamentoField';
+import { AtividadeFormModal } from '../obra-detail/AtividadeFormModal';
 import { ServicoPicker } from '../materiais/ServicoPicker';
 import { mapItensExtraidosParaProdutos, type ItemMaterialConfirmado } from '../../utils/notaFiscal/produtoLancamento';
 import type {
@@ -67,10 +68,12 @@ interface LancamentoFormModalProps {
   lancamento?: LancamentoFinanceiro;
   fornecedores: Fornecedor[];
   atividades: Atividade[];
+  obraDataInicio?: string;
   onClose: () => void;
   onSaved: () => void;
   prefill?: LancamentoPrefill;
   onCreated?: (lancamento: LancamentoFinanceiro) => void;
+  onAtividadeCriada?: (atividade: Atividade) => void;
   descontoEntrada?: DescontoEntradaConfig;
 }
 
@@ -247,7 +250,7 @@ function toBase(form: FormState, obraId: string) {
   };
 }
 
-export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedores, atividades, onClose, onSaved, prefill, onCreated, descontoEntrada }: LancamentoFormModalProps) {
+export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedores, atividades, obraDataInicio, onClose, onSaved, prefill, onCreated, onAtividadeCriada, descontoEntrada }: LancamentoFormModalProps) {
   const { createLancamento, updateLancamento } = useLancamentos(obraId);
   const { locacoes, createLocacao, updateLocacao, deleteLocacao } = useLocacoes(obraId);
   const locacaoExistente = useMemo(
@@ -261,6 +264,9 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
   const [notaFiscalExtraida, setNotaFiscalExtraida] = useState<NotaFiscalExtraida | null>(null);
   const [notaFiscalOrigemAnexoId, setNotaFiscalOrigemAnexoId] = useState<string | undefined>(undefined);
   const [produtos, setProdutos] = useState<ItemMaterialConfirmado[]>([]);
+  const [novaAtividadeAberta, setNovaAtividadeAberta] = useState(false);
+  const [atividadesCriadas, setAtividadesCriadas] = useState<Atividade[]>([]);
+  const atividadesParaSelect = [...atividades, ...atividadesCriadas];
 
   useEffect(() => {
     if (open) {
@@ -269,6 +275,7 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
       setNotaFiscalExtraida(null);
       setNotaFiscalOrigemAnexoId(undefined);
       setProdutos([]);
+      setAtividadesCriadas([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lancamento, prefill]);
@@ -568,9 +575,16 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
 
         <div className="form-field form-field--full">
           <label>Etapa/Atividade vinculada</label>
-          <select value={form.atividadeId} onChange={(e) => update('atividadeId', e.target.value)}>
+          <select
+            value={form.atividadeId}
+            onChange={(e) => {
+              if (e.target.value === '__nova__') { setNovaAtividadeAberta(true); return; }
+              update('atividadeId', e.target.value);
+            }}
+          >
             <option value="">Nenhuma</option>
-            {atividades.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+            {atividadesParaSelect.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+            <option value="__nova__">+ Nova etapa...</option>
           </select>
         </div>
 
@@ -918,6 +932,22 @@ export function LancamentoFormModal({ open, mode, obraId, lancamento, fornecedor
           </div>
         )}
       </form>
+
+      <AtividadeFormModal
+        open={novaAtividadeAberta}
+        mode="create"
+        obraId={obraId}
+        obraDataInicio={obraDataInicio ?? todayISO()}
+        todasAtividades={atividadesParaSelect}
+        lancamentos={[]}
+        onClose={() => setNovaAtividadeAberta(false)}
+        onSaved={() => setNovaAtividadeAberta(false)}
+        onCreated={(nova) => {
+          setAtividadesCriadas((prev) => [...prev, nova]);
+          update('atividadeId', nova.id);
+          onAtividadeCriada?.(nova);
+        }}
+      />
     </Modal>
   );
 }

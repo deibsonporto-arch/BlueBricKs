@@ -18,6 +18,7 @@ interface AtividadeFormModalProps {
   lancamentos: LancamentoFinanceiro[];
   onClose: () => void;
   onSaved: () => void;
+  onCreated?: (atividade: Atividade) => void;
 }
 
 type UnidadeDuracao = 'semanas' | 'dias';
@@ -46,7 +47,7 @@ function toFormState(a?: Atividade): FormState {
   };
 }
 
-export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, atividade, todasAtividades, lancamentos, onClose, onSaved }: AtividadeFormModalProps) {
+export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, atividade, todasAtividades, lancamentos, onClose, onSaved, onCreated }: AtividadeFormModalProps) {
   const { createAtividade, updateAtividade } = useAtividades(obraId);
   const [form, setForm] = useState<FormState>(() => toFormState(atividade));
 
@@ -107,7 +108,7 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
         createdAt: now,
         updatedAt: now,
       };
-      createAtividade(nova).then(onSaved);
+      createAtividade(nova).then(() => { onCreated?.(nova); onSaved(); });
     } else if (atividade) {
       updateAtividade(atividade.id, {
         nome: form.nome,

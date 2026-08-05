@@ -81,7 +81,7 @@ export function EmpreitaTab() {
   const { nomeEmpresa } = useEmpresaConfig();
   const { empreitadas, createEmpreitada, updateEmpreitada, deleteEmpreitada, registrarMedicoes, atualizarMedicao, removerMedicao, refresh } = useEmpreitadas(obraId);
   const { fornecedores } = useFornecedores();
-  const { atividades } = useAtividades(obraId);
+  const { atividades, refresh: refreshAtividades } = useAtividades(obraId);
   const { lancamentos, refresh: refreshLancamentos } = useLancamentos(obraId);
 
   // "Em andamento" primeiro — cancelada/concluída já estão resolvidas e não precisam de atenção imediata,
@@ -219,6 +219,8 @@ export function EmpreitaTab() {
           obraId={obraId}
           fornecedores={fornecedores}
           atividades={atividades}
+          obraDataInicio={obra?.dataInicio}
+          onAtividadeCriada={refreshAtividades}
           prefill={
             gerandoLancamento.kind === 'entrada'
               ? {

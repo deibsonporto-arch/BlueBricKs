@@ -46,7 +46,7 @@ export function FinanceiroTab() {
   const obra = obras.find((o) => o.id === obraId);
   const { fornecedores, refresh: refreshFornecedores } = useFornecedores();
   const { lancamentos, updateLancamento, deleteLancamento, refresh: refreshLancamentos } = useLancamentos(obraId);
-  const { atividades } = useAtividades(obraId);
+  const { atividades, refresh: refreshAtividades } = useAtividades(obraId);
   const { nomeEmpresa } = useEmpresaConfig();
 
   const [lancamentoModalOpen, setLancamentoModalOpen] = useState(false);
@@ -298,6 +298,8 @@ export function FinanceiroTab() {
         lancamento={editingLancamento}
         fornecedores={fornecedores}
         atividades={atividades}
+        obraDataInicio={obra.dataInicio}
+        onAtividadeCriada={refreshAtividades}
         onClose={() => setLancamentoModalOpen(false)}
         onSaved={() => {
           setLancamentoModalOpen(false);
