@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconPlus } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronUp, IconPlus } from '@tabler/icons-react';
 import { useEmpreitadas } from '../../hooks/useEmpreitadas';
 import { useFornecedores } from '../../hooks/useFornecedores';
 import { useAtividades } from '../../hooks/useAtividades';
@@ -84,12 +84,18 @@ export function EmpreitaTab() {
   const { atividades, refresh: refreshAtividades } = useAtividades(obraId);
   const { lancamentos, refresh: refreshLancamentos } = useLancamentos(obraId);
 
-  // "Em andamento" primeiro — cancelada/concluída já estão resolvidas e não precisam de atenção imediata,
-  // ficam abaixo mantendo a ordem relativa original entre si
-  const empreitadasOrdenadas = useMemo(
-    () => [...empreitadas].sort((a, b) => (a.status === 'em_andamento' ? 0 : 1) - (b.status === 'em_andamento' ? 0 : 1)),
+  // "Em andamento" primeiro — concluída já está resolvida e não precisa de atenção imediata, fica
+  // abaixo mantendo a ordem relativa original. Canceladas nem aparecem aqui — ficam escondidas
+  // numa seção recolhível à parte, já que não exigem mais nenhuma ação.
+  const empreitadasVisiveis = useMemo(
+    () =>
+      empreitadas
+        .filter((e) => e.status !== 'cancelada')
+        .sort((a, b) => (a.status === 'em_andamento' ? 0 : 1) - (b.status === 'em_andamento' ? 0 : 1)),
     [empreitadas],
   );
+  const empreitadasCanceladas = useMemo(() => empreitadas.filter((e) => e.status === 'cancelada'), [empreitadas]);
+  const [canceladasAbertas, setCanceladasAbertas] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -169,33 +175,65 @@ export function EmpreitaTab() {
         </button>
       </div>
 
-      {empreitadasOrdenadas.length === 0 ? (
+      {empreitadasVisiveis.length === 0 && empreitadasCanceladas.length === 0 ? (
         <EmptyState
           title="Nenhuma empreitada cadastrada"
           description="Cadastre um contrato de empreitada para acompanhar o valor, as etapas e as medições periódicas."
         />
       ) : (
-        empreitadasOrdenadas.map((e) => (
-          <EmpreitadaCard
-            key={e.id}
-            empreitada={e}
-            fornecedor={fornecedores.find((f) => f.id === e.fornecedorId)}
-            atividades={atividades}
-            lancamentos={lancamentos}
-            onEdit={() => openEdit(e)}
-            onDelete={() => handleDelete(e)}
-            onConcluir={() => handleConcluir(e)}
-            onCancelar={() => handleCancelar(e)}
-            onDuplicar={() => handleDuplicar(e)}
-            onRegistrarMedicao={(lista) => registrarMedicoes(e.id, lista)}
-            onEditarMedicao={(medicaoId, patch) => atualizarMedicao(e.id, medicaoId, patch)}
-            onGerarLancamento={(medicoes) => setGerandoLancamento({ kind: 'medicao', empreitada: e, medicoes })}
-            onGerarLancamentoEntrada={() => setGerandoLancamento({ kind: 'entrada', empreitada: e })}
-            onRemoverMedicao={(medicaoId) => removerMedicao(e.id, medicaoId)}
-            onVincularEntrada={(lancamentoId) => updateEmpreitada(e.id, { entradaLancamentoId: lancamentoId })}
-            onImprimir={() => handleImprimir(e)}
-          />
-        ))
+        <>
+          {empreitadasVisiveis.map((e) => (
+            <EmpreitadaCard
+              key={e.id}
+              empreitada={e}
+              fornecedor={fornecedores.find((f) => f.id === e.fornecedorId)}
+              atividades={atividades}
+              lancamentos={lancamentos}
+              onEdit={() => openEdit(e)}
+              onDelete={() => handleDelete(e)}
+              onConcluir={() => handleConcluir(e)}
+              onCancelar={() => handleCancelar(e)}
+              onDuplicar={() => handleDuplicar(e)}
+              onRegistrarMedicao={(lista) => registrarMedicoes(e.id, lista)}
+              onEditarMedicao={(medicaoId, patch) => atualizarMedicao(e.id, medicaoId, patch)}
+              onGerarLancamento={(medicoes) => setGerandoLancamento({ kind: 'medicao', empreitada: e, medicoes })}
+              onGerarLancamentoEntrada={() => setGerandoLancamento({ kind: 'entrada', empreitada: e })}
+              onRemoverMedicao={(medicaoId) => removerMedicao(e.id, medicaoId)}
+              onVincularEntrada={(lancamentoId) => updateEmpreitada(e.id, { entradaLancamentoId: lancamentoId })}
+              onImprimir={() => handleImprimir(e)}
+            />
+          ))}
+
+          {empreitadasCanceladas.length > 0 && (
+            <div className="empreita-canceladas">
+              <button type="button" className="empreita-canceladas__toggle" onClick={() => setCanceladasAbertas((v) => !v)}>
+                {canceladasAbertas ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
+                {empreitadasCanceladas.length} cancelada{empreitadasCanceladas.length === 1 ? '' : 's'}
+              </button>
+              {canceladasAbertas && empreitadasCanceladas.map((e) => (
+                <EmpreitadaCard
+                  key={e.id}
+                  empreitada={e}
+                  fornecedor={fornecedores.find((f) => f.id === e.fornecedorId)}
+                  atividades={atividades}
+                  lancamentos={lancamentos}
+                  onEdit={() => openEdit(e)}
+                  onDelete={() => handleDelete(e)}
+                  onConcluir={() => handleConcluir(e)}
+                  onCancelar={() => handleCancelar(e)}
+                  onDuplicar={() => handleDuplicar(e)}
+                  onRegistrarMedicao={(lista) => registrarMedicoes(e.id, lista)}
+                  onEditarMedicao={(medicaoId, patch) => atualizarMedicao(e.id, medicaoId, patch)}
+                  onGerarLancamento={(medicoes) => setGerandoLancamento({ kind: 'medicao', empreitada: e, medicoes })}
+                  onGerarLancamentoEntrada={() => setGerandoLancamento({ kind: 'entrada', empreitada: e })}
+                  onRemoverMedicao={(medicaoId) => removerMedicao(e.id, medicaoId)}
+                  onVincularEntrada={(lancamentoId) => updateEmpreitada(e.id, { entradaLancamentoId: lancamentoId })}
+                  onImprimir={() => handleImprimir(e)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <EmpreitadaFormModal

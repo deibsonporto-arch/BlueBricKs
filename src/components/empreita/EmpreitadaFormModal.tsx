@@ -154,7 +154,7 @@ export function EmpreitadaFormModal({ open, mode, obraId, empreitada, fornecedor
       open={open}
       title={mode === 'create' ? 'Nova empreitada' : 'Editar empreitada'}
       onClose={onClose}
-      width={860}
+      width={1040}
       footer={
         <>
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
