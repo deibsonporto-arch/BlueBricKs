@@ -500,10 +500,15 @@ export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos
                   const itemDaMedicao = m.itemId ? empreitada.itens.find((i) => i.id === m.itemId) : undefined;
                   const unidadeDaMedicao = itemDaMedicao?.unidade ?? empreitada.unidadeContratada;
 
-                  const grupoDaMedicao = !m.lancamentoId
-                    ? empreitada.medicoes.filter((x) => !x.lancamentoId && x.sequencia === m.sequencia)
+                  // usa o lançamento resolvido (não só m.lancamentoId) — se o lançamento vinculado foi
+                  // excluído depois, a referência fica órfã e a medição precisa voltar a poder ser lançada
+                  const grupoDaMedicao = !lancamento
+                    ? empreitada.medicoes.filter((x) => {
+                        const lancamentoDoX = x.lancamentoId ? lancamentos.find((l) => l.id === x.lancamentoId) : undefined;
+                        return !lancamentoDoX && x.sequencia === m.sequencia;
+                      })
                     : [];
-                  const ehRepresentanteDoGrupo = !m.lancamentoId && !gruposRenderizados.has(m.sequencia);
+                  const ehRepresentanteDoGrupo = !lancamento && !gruposRenderizados.has(m.sequencia);
                   if (ehRepresentanteDoGrupo) gruposRenderizados.add(m.sequencia);
 
                   const primeiraOcorrenciaSequencia = !notasRenderizadas.has(m.sequencia);
