@@ -6,6 +6,7 @@ import { EditableLancadoCell } from './EditableLancadoCell';
 import { formatBRL } from '../../utils/currency';
 import { formatDate, isPast, todayISO } from '../../utils/dateUtils';
 import { lancadoTipoEfetivo } from '../../utils/lancado';
+import { saldoRestante } from '../../utils/lancamentoSaldo';
 import './LancamentosTable.css';
 
 const CATEGORIA_LABEL: Record<LancamentoFinanceiro['categoria'], string> = {
@@ -42,8 +43,8 @@ interface LancamentosTableProps {
 
 export function LancamentosTable({ lancamentos, fornecedores, atividades, onEdit, onFiltrarPorAtividade, onUpdateStatus, onRegistrarPagamento, onDelete, onUpdateLancado }: LancamentosTableProps) {
   const totalPago = lancamentos.filter((l) => l.status === 'pago').reduce((s, l) => s + l.valorPago, 0);
-  const saldoAPagar = lancamentos.filter((l) => l.status !== 'pago').reduce((s, l) => s + l.valorPago, 0);
-  const totalLiquido = totalPago + saldoAPagar;
+  const saldoAPagar = lancamentos.filter((l) => l.status !== 'pago').reduce((s, l) => s + saldoRestante(l), 0);
+  const totalLiquido = lancamentos.reduce((s, l) => s + l.valorPago, 0);
 
   return (
     <div>

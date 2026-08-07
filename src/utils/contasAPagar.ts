@@ -1,5 +1,6 @@
 import type { LancamentoFinanceiro } from '../types/domain';
 import { diffDays, isPast, todayISO } from './dateUtils';
+import { saldoRestante } from './lancamentoSaldo';
 
 export type VencimentoBucket = 'hoje' | 'proximos7' | 'vencidas' | 'pagas' | 'pendentes';
 
@@ -31,6 +32,6 @@ export function lancamentoNoBucket(l: LancamentoFinanceiro, bucket: VencimentoBu
 
 export function bucketSummary(lancamentos: LancamentoFinanceiro[], bucket: VencimentoBucket) {
   const itens = lancamentos.filter((l) => lancamentoNoBucket(l, bucket));
-  const total = itens.reduce((s, l) => s + l.valorPago, 0);
+  const total = itens.reduce((s, l) => s + (bucket === 'pagas' ? l.valorPago : saldoRestante(l)), 0);
   return { count: itens.length, total };
 }

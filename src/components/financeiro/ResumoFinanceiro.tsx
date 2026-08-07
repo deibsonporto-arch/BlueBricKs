@@ -1,5 +1,6 @@
 import type { LancamentoFinanceiro } from '../../types/domain';
 import { formatBRL } from '../../utils/currency';
+import { saldoRestante } from '../../utils/lancamentoSaldo';
 import './ResumoFinanceiro.css';
 
 interface ResumoFinanceiroProps {
@@ -9,7 +10,7 @@ interface ResumoFinanceiroProps {
 
 export function ResumoFinanceiro({ lancamentos, orcamentoTotal }: ResumoFinanceiroProps) {
   const totalPago = lancamentos.filter((l) => l.status === 'pago').reduce((s, l) => s + l.valorPago, 0);
-  const saldoAPagar = lancamentos.filter((l) => l.status !== 'pago').reduce((s, l) => s + l.valorPago, 0);
+  const saldoAPagar = lancamentos.filter((l) => l.status !== 'pago').reduce((s, l) => s + saldoRestante(l), 0);
 
   return (
     <div className="resumo-financeiro">

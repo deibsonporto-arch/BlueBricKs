@@ -21,6 +21,7 @@ import { formatDate, todayISO } from '../../utils/dateUtils';
 import { formatBRL, formatNumberBR } from '../../utils/currency';
 import { getCurrentUserName } from '../../utils/currentUser';
 import { lancadoTipoEfetivo } from '../../utils/lancado';
+import { saldoRestante } from '../../utils/lancamentoSaldo';
 import type { VencimentoBucket } from '../../utils/contasAPagar';
 import { lancamentoNoBucket } from '../../utils/contasAPagar';
 import './FinanceiroTab.css';
@@ -141,7 +142,7 @@ export function FinanceiroTab() {
 
   function handleExportCsv() {
     const totalPago = lancamentosFiltrados.filter((l) => l.status === 'pago').reduce((s, l) => s + l.valorPago, 0);
-    const totalNaoPago = lancamentosFiltrados.filter((l) => l.status !== 'pago').reduce((s, l) => s + l.valorPago, 0);
+    const totalNaoPago = lancamentosFiltrados.filter((l) => l.status !== 'pago').reduce((s, l) => s + saldoRestante(l), 0);
     exportToCsv(
       `financeiro-${obraId}.csv`,
       ['Data', 'Vencimento', 'Fornecedor', 'Descrição', 'Categoria', 'Valor previsto', 'Valor a pagar', 'Forma pagamento', 'NF', 'Status'],
@@ -282,7 +283,7 @@ export function FinanceiroTab() {
             </tr>
             <tr className="is-total">
               <td colSpan={5}>Falta pagar</td>
-              <td>{formatBRL(lancamentosFiltrados.filter((l) => l.status !== 'pago').reduce((s, l) => s + l.valorPago, 0))}</td>
+              <td>{formatBRL(lancamentosFiltrados.filter((l) => l.status !== 'pago').reduce((s, l) => s + saldoRestante(l), 0))}</td>
               <td></td>
             </tr>
           </tfoot>

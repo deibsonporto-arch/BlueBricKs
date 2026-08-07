@@ -1,6 +1,7 @@
 import type { Fornecedor, LancamentoFinanceiro } from '../../types/domain';
 import { diffDays, formatDate, isPast, isWeekend, todayISO } from '../../utils/dateUtils';
 import { formatBRL } from '../../utils/currency';
+import { saldoRestante } from '../../utils/lancamentoSaldo';
 import './PagamentosDoDiaCard.css';
 
 const STATUS_LABEL: Record<LancamentoFinanceiro['status'], string> = {
@@ -23,7 +24,7 @@ export function PagamentosDoDiaCard({ lancamentos, fornecedores }: PagamentosDoD
   const itens = lancamentos
     .filter((l) => l.status !== 'pago' && diffDays(hoje, l.dataVencimento) <= 3)
     .sort((a, b) => a.dataVencimento.localeCompare(b.dataVencimento));
-  const total = itens.reduce((s, l) => s + l.valorPago, 0);
+  const total = itens.reduce((s, l) => s + saldoRestante(l), 0);
 
   return (
     <div className="pagamentos-do-dia-card">
@@ -43,7 +44,7 @@ export function PagamentosDoDiaCard({ lancamentos, fornecedores }: PagamentosDoD
                   <strong>{fornecedor?.nome ?? 'sem fornecedor'}</strong>
                   <span>{l.descricao}</span>
                 </div>
-                <div className="pagamentos-do-dia-card__valor">{formatBRL(l.valorPago)}</div>
+                <div className="pagamentos-do-dia-card__valor">{formatBRL(saldoRestante(l))}</div>
                 <div className="pagamentos-do-dia-card__vencimento">{formatDate(l.dataVencimento)}</div>
                 <div className="pagamentos-do-dia-card__status">{STATUS_LABEL[l.status]}</div>
               </li>
