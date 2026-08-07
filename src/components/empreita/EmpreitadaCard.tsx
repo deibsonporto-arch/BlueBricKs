@@ -135,6 +135,8 @@ export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos
   }
 
   const linhasCalculadas = linhas.map((linha) => ({ linha, calc: calcularLinha(linha) }));
+  const totalLinhasCalculadas = linhasCalculadas.reduce((s, { calc }) => s + calc.resultado.valor, 0);
+  const totalLiquidoLinhasCalculadas = Math.max(0, totalLinhasCalculadas - valorDescontoEntradaEscolhido);
 
   function atualizarLinha(key: string, patch: Partial<MedicaoLinha>) {
     setLinhas((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
@@ -346,6 +348,13 @@ export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos
                   )}
                 </div>
               ))}
+
+              {linhas.length > 1 && (
+                <p className="empreitada-card__medicao-total">
+                  Total desta rodada: <strong>{formatBRL(totalLiquidoLinhasCalculadas)}</strong>
+                  {valorDescontoEntradaEscolhido > 0 && ` (já descontando ${formatBRL(valorDescontoEntradaEscolhido)} de entrada)`}
+                </p>
+              )}
 
               {!editandoMedicaoId && empreitada.itens.length > 0 && (
                 <button type="button" className="btn btn-ghost empreitada-card__medicao-add" onClick={adicionarLinha}>
