@@ -19,6 +19,14 @@ const TIPO_OPTIONS: { value: TipoFornecedor; label: string }[] = [
   { value: 'Informal', label: 'Informal' },
 ];
 
+function normalizarNome(s: string): string {
+  return s.trim().toUpperCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ');
+}
+
+function normalizarDocumento(s: string): string {
+  return s.replace(/\D/g, '');
+}
+
 function toFormState(f?: Fornecedor) {
   return {
     nome: f?.nome ?? '',
@@ -52,16 +60,19 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
   const [form, setForm] = useState(() => toFormState(fornecedor));
   const [cartaoCnpjErro, setCartaoCnpjErro] = useState('');
   const [cartaoCnpjAplicado, setCartaoCnpjAplicado] = useState(false);
+  const [duplicidadeErro, setDuplicidadeErro] = useState('');
 
   useEffect(() => {
     if (open) {
       setForm(toFormState(fornecedor));
       setCartaoCnpjErro('');
       setCartaoCnpjAplicado(false);
+      setDuplicidadeErro('');
     }
   }, [open, fornecedor]);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    if (key === 'nome' || key === 'documento') setDuplicidadeErro('');
     setForm((f) => ({ ...f, [key]: value }));
   }
 
@@ -103,6 +114,24 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const nomeNorm = normalizarNome(form.nome);
+    const docNorm = normalizarDocumento(form.documento);
+    const duplicado = fornecedores.find((f) => {
+      if (fornecedor && f.id === fornecedor.id) return false;
+      const mesmoNome = nomeNorm !== '' && normalizarNome(f.nome) === nomeNorm;
+      const mesmoDocumento = docNorm !== '' && normalizarDocumento(f.documento) === docNorm;
+      return mesmoNome || mesmoDocumento;
+    });
+    if (duplicado) {
+      const porDocumento = docNorm !== '' && normalizarDocumento(duplicado.documento) === docNorm;
+      setDuplicidadeErro(
+        `Já existe um fornecedor cadastrado com ${porDocumento ? 'o mesmo CNPJ/CPF' : 'o mesmo nome'}: "${duplicado.nome}" (${duplicado.codigo}). Edite o cadastro existente em vez de criar um novo.`,
+      );
+      return;
+    }
+    setDuplicidadeErro('');
+
     const base = {
       nome: form.nome,
       nomeFantasia: form.nomeFantasia || undefined,
@@ -158,6 +187,11 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
       }
     >
       <form id="fornecedor-form" className="form-grid" onSubmit={handleSubmit}>
+        {duplicidadeErro && (
+          <div className="form-field form-field--full">
+            <p style={{ color: 'var(--color-danger)', fontSize: 13, margin: 0, fontWeight: 600 }}>{duplicidadeErro}</p>
+          </div>
+        )}
         <div className="form-field form-field--full">
           <label>Cartão CNPJ (opcional)</label>
           <label className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, width: 'fit-content', cursor: 'pointer' }}>
