@@ -58,19 +58,16 @@ function montarFolhaMedicao(empreitada: Empreitada): LinhaFolhaMedicao[] {
   return [linhaPara(undefined, rotuloServicoEmpreitada(empreitada), empreitada.valorContrato, empreitada.quantidadeContratada, empreitada.unidadeContratada)];
 }
 
-/** Descrição sugerida para o lançamento gerado a partir de uma medição — usa rótulos curtos, e só repete
- * o detalhe entre parênteses quando ele traz informação além do rótulo do serviço (ex: nome de um item). */
+/** Descrição sugerida para o lançamento gerado a partir de uma medição — usa rótulos curtos, identifica
+ * a rodada pelo número dela (1ª, 2ª...) em vez da data, e só repete o detalhe entre parênteses quando
+ * ele traz informação além do rótulo do serviço (ex: nome de um item). */
 function descricaoLancamentoMedicao(empreitada: Empreitada, medicoes: MedicaoEmpreitada[]): string {
   const rotulo = rotuloServicoEmpreitada(empreitada);
   const detalhes = [...new Set(medicoes.map((m) => rotuloExibicaoMedicao(empreitada, m)))].filter((d) => d !== rotulo);
-  if (medicoes.length > 1) {
-    return detalhes.length > 0
-      ? `${rotulo} — Medição ${formatDate(medicoes[0].data)} (${detalhes.join(', ')})`
-      : `${rotulo} — Medição ${formatDate(medicoes[0].data)}`;
-  }
+  const rotuloMedicao = `${medicoes[0].sequencia}ª Medição`;
   return detalhes.length > 0
-    ? `${rotulo} — Medição ${medicoes[0].sequencia}ª (${detalhes[0]})`
-    : `${rotulo} — Medição ${medicoes[0].sequencia}ª`;
+    ? `${rotulo} — ${rotuloMedicao} (${detalhes.join(', ')})`
+    : `${rotulo} — ${rotuloMedicao}`;
 }
 
 export function EmpreitaTab() {

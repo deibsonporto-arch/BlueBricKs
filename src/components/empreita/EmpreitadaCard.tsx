@@ -638,6 +638,7 @@ export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos
           </table>
 
           <div className="empreitada-card__totais">
+            {temContratoFixo && <span><strong>Valor do contrato:</strong> {formatBRL(empreitada.valorContrato)}</span>}
             {!!empreitada.valorEntrada && (
               <span>
                 <strong>Entrada:</strong> {formatBRL(empreitada.valorEntrada)}
