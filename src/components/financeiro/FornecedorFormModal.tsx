@@ -90,7 +90,7 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
       }
       setForm((f) => ({
         ...f,
-        nome: f.nome || extraido.nome || f.nome,
+        nome: f.nome || extraido.nome?.toUpperCase() || f.nome,
         nomeFantasia: f.nomeFantasia || extraido.nomeFantasia || f.nomeFantasia,
         documento: f.documento || extraido.documento || f.documento,
         tipo: extraido.documento ? 'PJ' : f.tipo,
@@ -133,7 +133,7 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
     setDuplicidadeErro('');
 
     const base = {
-      nome: form.nome,
+      nome: form.nome.toUpperCase(),
       nomeFantasia: form.nomeFantasia || undefined,
       documento: form.documento,
       tipo: form.tipo,
@@ -209,7 +209,7 @@ export function FornecedorFormModal({ open, mode, fornecedor, onClose, onSaved }
         <div className="form-section-title">Identificação</div>
         <div className="form-field form-field--full">
           <label>Nome / Razão social</label>
-          <input required value={form.nome} onChange={(e) => update('nome', e.target.value)} />
+          <input required value={form.nome} onChange={(e) => update('nome', e.target.value.toUpperCase())} />
         </div>
         <div className="form-field">
           <label>Nome fantasia</label>
