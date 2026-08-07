@@ -325,14 +325,14 @@ export function EmpreitadaCard({ empreitada, fornecedor, atividades, lancamentos
                   )}
                   {calc.modoEfetivo === 'quantidade' ? (
                     <input
-                      type="number" min={0} step="0.01" required
+                      type="number" min={0} step="any" required
                       placeholder={`Quantidade executada (${calc.unidadeMedicao})`}
                       value={linha.quantidade}
                       onChange={(e) => atualizarLinha(linha.key, { quantidade: e.target.value })}
                     />
                   ) : (
                     <input
-                      type="number" min={0} max={100} step="0.1" required
+                      type="number" min={0} max={100} step="any" required
                       placeholder="% executado"
                       value={linha.percentual}
                       onChange={(e) => atualizarLinha(linha.key, { percentual: e.target.value })}
