@@ -107,3 +107,97 @@ export function deleteAnexoRemote(id: string): void {
     })
     .catch((err) => console.error(`Falha ao remover anexo "${id}" no servidor:`, err));
 }
+
+// ---------- Base de referência SINAPI (somente leitura, consultada sob demanda) ----------
+
+export interface SinapiComposicaoResumo {
+  codigo: number;
+  grupo: string | null;
+  descricao: string;
+  unidade: string;
+  custo: number | null;
+}
+
+export interface SinapiInsumoResumo {
+  codigo: number;
+  classificacao: string | null;
+  descricao: string;
+  unidade: string;
+  preco: number | null;
+}
+
+export interface SinapiMaterialExplodido {
+  codigo: number;
+  descricao: string;
+  unidade: string;
+  classificacao: string | null;
+  coeficiente: number;
+  precoUnitario: number | null;
+  custoTotal: number | null;
+}
+
+export interface SinapiFiltro {
+  uf: string;
+  desoneracao?: 'SD' | 'CD';
+  mes?: string;
+}
+
+export async function fetchSinapiMeses(): Promise<string[]> {
+  const res = await fetch('/api/sinapi/meses', { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Falha ao buscar meses SINAPI: ${res.status}`);
+  return (await res.json()) as string[];
+}
+
+/** Lista os Grupos/Cadernos Técnicos existentes nas composições do mês (ex: "Alvenaria Estrutural - Blocos Cerâmicos"), pra filtrar a busca por categoria. */
+export async function fetchSinapiGrupos(mes?: string): Promise<string[]> {
+  const qs = new URLSearchParams();
+  if (mes) qs.set('mes', mes);
+  const res = await fetch(`/api/sinapi/grupos?${qs}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Falha ao buscar grupos SINAPI: ${res.status}`);
+  return (await res.json()) as string[];
+}
+
+export async function buscarComposicoesSinapi(q: string, filtro: SinapiFiltro, limit = 30, grupo?: string): Promise<SinapiComposicaoResumo[]> {
+  const qs = new URLSearchParams({ uf: filtro.uf, limit: String(limit) });
+  if (q) qs.set('q', q);
+  if (grupo) qs.set('grupo', grupo);
+  if (filtro.desoneracao) qs.set('desoneracao', filtro.desoneracao);
+  if (filtro.mes) qs.set('mes', filtro.mes);
+  const res = await fetch(`/api/sinapi/composicoes?${qs}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Falha ao buscar composições SINAPI: ${res.status}`);
+  return (await res.json()) as SinapiComposicaoResumo[];
+}
+
+export async function buscarInsumosSinapi(q: string, filtro: SinapiFiltro, limit = 30): Promise<SinapiInsumoResumo[]> {
+  const qs = new URLSearchParams({ uf: filtro.uf, limit: String(limit) });
+  if (q) qs.set('q', q);
+  if (filtro.desoneracao) qs.set('desoneracao', filtro.desoneracao);
+  if (filtro.mes) qs.set('mes', filtro.mes);
+  const res = await fetch(`/api/sinapi/insumos?${qs}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Falha ao buscar insumos SINAPI: ${res.status}`);
+  return (await res.json()) as SinapiInsumoResumo[];
+}
+
+/** Explode uma composição isolada nos insumos-folha (materiais/mão de obra/equipamentos), já multiplicados pela quantidade informada. */
+export async function buscarItensComposicaoSinapi(codigo: number, filtro: SinapiFiltro, quantidade = 1): Promise<SinapiMaterialExplodido[]> {
+  const qs = new URLSearchParams({ uf: filtro.uf, quantidade: String(quantidade) });
+  if (filtro.desoneracao) qs.set('desoneracao', filtro.desoneracao);
+  if (filtro.mes) qs.set('mes', filtro.mes);
+  const res = await fetch(`/api/sinapi/composicoes/${codigo}/itens?${qs}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Falha ao explodir composição SINAPI: ${res.status}`);
+  return (await res.json()) as SinapiMaterialExplodido[];
+}
+
+/** Lista de materiais consolidada entre várias linhas de orçamento (composição × quantidade). */
+export async function buscarMateriaisConsolidadosSinapi(
+  linhas: { composicaoCodigo: number; quantidade: number }[],
+  filtro: SinapiFiltro,
+): Promise<SinapiMaterialExplodido[]> {
+  const res = await fetch('/api/sinapi/materiais', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ uf: filtro.uf, desoneracao: filtro.desoneracao, mes: filtro.mes, linhas }),
+  });
+  if (!res.ok) throw new Error(`Falha ao consolidar materiais SINAPI: ${res.status}`);
+  return (await res.json()) as SinapiMaterialExplodido[];
+}

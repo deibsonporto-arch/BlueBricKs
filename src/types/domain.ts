@@ -139,7 +139,7 @@ export interface Obra {
   cubPorM2?: number; // R$/m²
   ccuPercentual?: number; // ajuste comercial CCU, default 0
   bdiPercentual?: number; // ajuste comercial BDI, default 0
-  orcamentoFonteEtapas?: 'modelo' | 'atividades'; // de onde vem a lista de "Etapas Técnicas" do Orçamento — default 'modelo'
+  orcamentoFonteEtapas?: 'modelo' | 'atividades' | 'analitico'; // de onde vem a lista de "Etapas Técnicas" do Orçamento — default 'modelo'
   orcamentoModeloId?: string; // qual OrcamentoModelo esta obra usa, quando orcamentoFonteEtapas === 'modelo'
   status: StatusObra;
   gastoReal: number;
@@ -205,6 +205,52 @@ export interface OrcamentoModelo {
   etapas: EtapaOrcamentoConfig[];
   materialPercentual: number; // default 45.5
   maoDeObraPercentual: number; // default 54.5
+}
+
+// ---------- Orçamento Analítico (SINAPI) ----------
+
+export type SinapiDesoneracao = 'SD' | 'CD'; // SD = sem desoneração ("não desonerado"), CD = com desoneração
+
+/** Uma linha do orçamento analítico: uma composição SINAPI aplicada a uma quantidade medida no
+ * projeto. Guarda um snapshot da descrição/custo do momento do lançamento (não referencia a base
+ * SINAPI ao vivo), pra não quebrar caso a composição saia da base num mês seguinte. */
+export interface ItemOrcamentoAnalitico {
+  id: string;
+  obraId: string;
+  atividadeId?: string; // Atividade sincronizada (cronograma/Curva S), quando o orçamento é salvo
+  composicaoCodigo: number;
+  composicaoDescricao: string;
+  grupo?: string;
+  unidade: string;
+  quantidade: number;
+  uf: string;
+  mesReferencia: string; // "2026-07"
+  desoneracao: SinapiDesoneracao;
+  custoUnitarioSinapi: number;
+  custoUnitarioReal?: number; // sobrescrita manual, quando o custo real difere do SINAPI
+  custoTotal: number; // quantidade × (custoUnitarioReal ?? custoUnitarioSinapi)
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Ajuste do usuário sobre uma linha da Lista de Materiais consolidada (que por padrão é só
+ * calculada ao vivo a partir das composições SINAPI, nunca persistida). Vale só para esta obra —
+ * não altera a base SINAPI. Duas formas:
+ * - `insumoCodigo` presente: sobrescreve um insumo que já apareceu no cálculo (ex: "Pedreiro" saiu
+ *   R$14.351,86 pelo SINAPI, mas o usuário negociou R$15.000 — `custoReal` guarda o valor real,
+ *   o SINAPI continua sendo mostrado do lado como referência).
+ * - `insumoCodigo` ausente: linha adicionada manualmente, fora da base SINAPI.
+ * `excluido`: "removido" pelo usuário, mas a linha continua visível (riscada) — só sai do total. */
+export interface ItemMaterialOrcamento {
+  id: string;
+  obraId: string;
+  insumoCodigo?: number;
+  descricao: string;
+  unidade: string;
+  custoReal?: number;
+  excluido: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ---------- Módulo 3 — PMO Mensal ----------

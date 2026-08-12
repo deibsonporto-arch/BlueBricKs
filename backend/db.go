@@ -33,6 +33,8 @@ var collections = []string{
 	"templates",
 	"usuarios",
 	"orcamento_modelos",
+	"orcamento_analitico_itens",
+	"orcamento_materiais_itens",
 }
 
 var collectionSet = func() map[string]bool {
@@ -92,6 +94,72 @@ func migrate(ctx context.Context, pool *pgxpool.Pool) error {
 			updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		)`); err != nil {
 		return fmt.Errorf("tabela anexos: %w", err)
+	}
+
+	if err := migrateSinapi(ctx, pool); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Base de referência SINAPI (insumos, composições e a árvore composição→itens).
+// Dados grandes e somente-leitura, importados mensalmente por script externo
+// (scripts/import-sinapi.mjs) — por isso ficam fora do padrão coleção/JSONB
+// (não fazem parte do fetchBootstrap/localStorage, são consultados sob demanda
+// pelos endpoints /api/sinapi/*).
+func migrateSinapi(ctx context.Context, pool *pgxpool.Pool) error {
+	if _, err := pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS sinapi_insumos (
+			codigo INTEGER NOT NULL,
+			mes_referencia TEXT NOT NULL,
+			desoneracao TEXT NOT NULL,
+			classificacao TEXT,
+			descricao TEXT NOT NULL,
+			unidade TEXT NOT NULL,
+			origem_preco TEXT,
+			precos JSONB NOT NULL,
+			PRIMARY KEY (codigo, mes_referencia, desoneracao)
+		)`); err != nil {
+		return fmt.Errorf("tabela sinapi_insumos: %w", err)
+	}
+
+	if _, err := pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS sinapi_composicoes (
+			codigo INTEGER NOT NULL,
+			mes_referencia TEXT NOT NULL,
+			desoneracao TEXT NOT NULL,
+			grupo TEXT,
+			descricao TEXT NOT NULL,
+			unidade TEXT NOT NULL,
+			custos JSONB NOT NULL,
+			PRIMARY KEY (codigo, mes_referencia, desoneracao)
+		)`); err != nil {
+		return fmt.Errorf("tabela sinapi_composicoes: %w", err)
+	}
+	if _, err := pool.Exec(ctx, `
+		CREATE INDEX IF NOT EXISTS sinapi_composicoes_busca_idx
+		ON sinapi_composicoes USING gin (to_tsvector('portuguese', descricao))`); err != nil {
+		return fmt.Errorf("índice sinapi_composicoes_busca_idx: %w", err)
+	}
+
+	if _, err := pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS sinapi_composicao_itens (
+			id SERIAL PRIMARY KEY,
+			composicao_codigo INTEGER NOT NULL,
+			mes_referencia TEXT NOT NULL,
+			tipo_item TEXT NOT NULL,
+			item_codigo INTEGER NOT NULL,
+			descricao TEXT NOT NULL,
+			unidade TEXT NOT NULL,
+			coeficiente NUMERIC NOT NULL
+		)`); err != nil {
+		return fmt.Errorf("tabela sinapi_composicao_itens: %w", err)
+	}
+	if _, err := pool.Exec(ctx, `
+		CREATE INDEX IF NOT EXISTS sinapi_composicao_itens_pai_idx
+		ON sinapi_composicao_itens (composicao_codigo, mes_referencia)`); err != nil {
+		return fmt.Errorf("índice sinapi_composicao_itens_pai_idx: %w", err)
 	}
 
 	return nil

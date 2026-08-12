@@ -17,6 +17,12 @@ func newServer(pool *pgxpool.Pool) http.Handler {
 	mux.Handle("GET /api/anexos/{id}", requireAuth(pool, handleGetAnexo(pool)))
 	mux.Handle("PUT /api/anexos/{id}", requireAuth(pool, handlePutAnexo(pool)))
 	mux.Handle("DELETE /api/anexos/{id}", requireAuth(pool, handleDeleteAnexo(pool)))
+	mux.Handle("GET /api/sinapi/meses", requireAuth(pool, handleSinapiMeses(pool)))
+	mux.Handle("GET /api/sinapi/grupos", requireAuth(pool, handleSinapiGrupos(pool)))
+	mux.Handle("GET /api/sinapi/composicoes", requireAuth(pool, handleSinapiComposicoesBusca(pool)))
+	mux.Handle("GET /api/sinapi/composicoes/{codigo}/itens", requireAuth(pool, handleSinapiComposicaoItens(pool)))
+	mux.Handle("GET /api/sinapi/insumos", requireAuth(pool, handleSinapiInsumosBusca(pool)))
+	mux.Handle("POST /api/sinapi/materiais", requireAuth(pool, handleSinapiMateriaisConsolidados(pool)))
 	mux.Handle("GET /api/{collection}", requireAuth(pool, handleListCollection(pool)))
 	mux.Handle("PUT /api/{collection}", requireAuth(pool, handleBulkReplace(pool)))
 

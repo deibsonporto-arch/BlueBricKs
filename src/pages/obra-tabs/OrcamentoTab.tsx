@@ -4,12 +4,16 @@ import { IconAlertTriangle, IconChevronDown, IconChevronUp, IconCircleCheck, Ico
 import { useObras } from '../../hooks/useObras';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useOrcamentoConfig } from '../../hooks/useOrcamentoConfig';
-import type { Atividade, EtapaOrcamentoConfig, Subatividade } from '../../types/domain';
+import { useOrcamentoAnaliticoItens } from '../../hooks/useOrcamentoAnaliticoItens';
+import { useMateriaisOrcamento } from '../../hooks/useMateriaisOrcamento';
+import { buscarItensComposicaoSinapi } from '../../data/apiSync';
+import type { Atividade, EtapaOrcamentoConfig, ItemOrcamentoAnalitico, Subatividade } from '../../types/domain';
 import { generateId } from '../../utils/id';
 import { formatBRL, formatNumberBR, parseNumberBR } from '../../utils/currency';
 import { endDateFromDuration } from '../../utils/dateUtils';
 import { getOrderedSubatividades } from '../../utils/subatividades';
 import { ETAPAS_TECNICAS_SUBATIVIDADES } from '../../data/etapasTecnicasSubatividades';
+import { OrcamentoAnaliticoSection } from '../../components/orcamento/OrcamentoAnaliticoSection';
 import './OrcamentoTab.css';
 
 export function OrcamentoTab() {
@@ -19,8 +23,10 @@ export function OrcamentoTab() {
   const obra = obras.find((o) => o.id === obraId);
   const { atividades, createAtividade, updateAtividade, deleteAtividade, createSubatividade, updateSubatividade } = useAtividades(obraId);
   const { modelos, removeEtapa } = useOrcamentoConfig();
+  const { itens: itensAnaliticos, createItem: createItemAnalitico, updateItem: updateItemAnalitico, deleteItem: deleteItemAnalitico } = useOrcamentoAnaliticoItens(obraId);
+  const { overrides: materiaisOverrides, createOverride: createMaterialOverride, updateOverride: updateMaterialOverride } = useMateriaisOrcamento(obraId);
 
-  const [fonteEtapas, setFonteEtapas] = useState<'modelo' | 'atividades'>('modelo');
+  const [fonteEtapas, setFonteEtapas] = useState<'modelo' | 'atividades' | 'analitico'>('modelo');
   const [modeloId, setModeloId] = useState('');
   const [areaInput, setAreaInput] = useState('');
   const [cubInput, setCubInput] = useState('');
@@ -50,6 +56,7 @@ export function OrcamentoTab() {
 
   const modelo = modelos.find((m) => m.id === modeloId) ?? modelos[0];
   const usaAtividades = fonteEtapas === 'atividades';
+  const usaAnalitico = fonteEtapas === 'analitico';
   const etapasOrdenadas = modelo ? [...modelo.etapas].sort((a, b) => a.ordem - b.ordem) : [];
   const valorTecnico = parseNumberBR(areaInput) * parseNumberBR(cubInput);
 
@@ -74,7 +81,9 @@ export function OrcamentoTab() {
     dentroFaixa: boolean;
   }
 
-  const etapasComIndicador: LinhaEtapa[] = usaAtividades
+  const etapasComIndicador: LinhaEtapa[] = usaAnalitico
+    ? []
+    : usaAtividades
     ? atividades.map((a) => {
         const valor = a.custoMaterial + a.custoMaoDeObra + a.custoAluguel;
         const percentualTotal = valorTecnico > 0 ? (valor / valorTecnico) * 100 : 0;
@@ -89,8 +98,9 @@ export function OrcamentoTab() {
   const todasDentro = etapasComIndicador.every((e) => e.dentroFaixa);
   const foraDaFaixa = etapasComIndicador.filter((e) => !e.dentroFaixa);
   // soma real dos valores das etapas (pode ter sido editada manualmente linha a linha, ficando diferente
-  // do valor técnico teórico de área × CUB) — é essa soma, não o teórico, que serve de base pro BDI/CCU
-  const somaValores = etapasComIndicador.reduce((s, e) => s + e.valor, 0);
+  // do valor técnico teórico de área × CUB) — é essa soma, não o teórico, que serve de base pro BDI/CCU.
+  // No modo analítico, a soma vem das composições SINAPI lançadas, não das etapas técnicas.
+  const somaValores = usaAnalitico ? itensAnaliticos.reduce((s, i) => s + i.custoTotal, 0) : etapasComIndicador.reduce((s, e) => s + e.valor, 0);
   const somaPercentual = etapasComIndicador.reduce((s, e) => s + e.percentualTotal, 0);
 
   const ccuNum = parseNumberBR(ccuInput);
@@ -142,6 +152,43 @@ export function OrcamentoTab() {
     if (vinculada) deleteAtividade(vinculada.id);
   }
 
+  // Divide o custo de uma linha do orçamento analítico entre material/mão de obra/aluguel usando a
+  // classificação real dos insumos da composição (ver Livro SINAPI - Metodologias e Conceitos, item
+  // "Classificação Material e Mão de Obra"): MAO DE OBRA e ENCARGOS COMPLEMENTARES formam a mão de
+  // obra, EQUIPAMENTO (LOCAÇÃO) forma o aluguel, o resto (MATERIAL, SERVIÇOS, EQUIPAMENTO (AQUISIÇÃO),
+  // ESPECIAIS) forma material. Cai pra proporção do modelo padrão se a busca falhar ou a composição
+  // não tiver custo calculado pra nenhum insumo.
+  async function splitCustoAnalitico(item: ItemOrcamentoAnalitico): Promise<{ custoMaterial: number; custoMaoDeObra: number; custoAluguel: number }> {
+    const fallback = () => {
+      const materialPct = modelos[0]?.materialPercentual ?? 100;
+      const maoDeObraPct = modelos[0]?.maoDeObraPercentual ?? 0;
+      return { custoMaterial: item.custoTotal * (materialPct / 100), custoMaoDeObra: item.custoTotal * (maoDeObraPct / 100), custoAluguel: 0 };
+    };
+    try {
+      const materiais = await buscarItensComposicaoSinapi(
+        item.composicaoCodigo,
+        { uf: item.uf, desoneracao: item.desoneracao, mes: item.mesReferencia },
+        item.quantidade,
+      );
+      const somaSinapi = materiais.reduce((s, m) => s + (m.custoTotal ?? 0), 0);
+      if (somaSinapi <= 0) return fallback();
+
+      const somaPorClasses = (classes: string[]) =>
+        materiais.filter((m) => m.classificacao && classes.includes(m.classificacao)).reduce((s, m) => s + (m.custoTotal ?? 0), 0);
+      const maoDeObra = somaPorClasses(['MAO DE OBRA', 'ENCARGOS COMPLEMENTARES']);
+      const aluguel = somaPorClasses(['EQUIPAMENTO (LOCAÇÃO)']);
+      const material = somaSinapi - maoDeObra - aluguel;
+
+      return {
+        custoMaterial: item.custoTotal * (material / somaSinapi),
+        custoMaoDeObra: item.custoTotal * (maoDeObra / somaSinapi),
+        custoAluguel: item.custoTotal * (aluguel / somaSinapi),
+      };
+    } catch {
+      return fallback();
+    }
+  }
+
   async function handleSalvar() {
     const obraAtual = obra!;
     const areaNum = parseNumberBR(areaInput);
@@ -161,7 +208,64 @@ export function OrcamentoTab() {
 
     // no modo "atividades" o cronograma já é a fonte da verdade — só salva os totais da obra, sem reescrever
     // os custos das atividades (que o usuário já editou diretamente em Visão Geral)
-    if (usaAtividades || !modelo) {
+    if (usaAtividades) {
+      setSalvo(true);
+      setTimeout(() => setSalvo(false), 3000);
+      return;
+    }
+
+    // modo analítico: cada composição SINAPI lançada vira/atualiza uma Atividade (mesmo mecanismo do
+    // modo "modelo"), pra reaproveitar cronograma e Curva S sem código novo ali. O split material/mão
+    // de obra/aluguel usa a classificação real dos insumos de cada composição (MAO DE OBRA/ENCARGOS
+    // COMPLEMENTARES, EQUIPAMENTO (LOCAÇÃO), o resto vira material) — cai pra proporção do primeiro
+    // modelo cadastrado só se a busca falhar (ex: composição sem custo calculado).
+    if (usaAnalitico) {
+      let atividadeAnteriorId: string | undefined;
+
+      for (const item of itensAnaliticos) {
+        const { custoMaterial, custoMaoDeObra, custoAluguel } = await splitCustoAnalitico(item);
+        const existente = item.atividadeId ? atividades.find((a) => a.id === item.atividadeId) : undefined;
+
+        if (existente) {
+          await updateAtividade(existente.id, { nome: item.composicaoDescricao, etapa: item.composicaoDescricao, custoMaterial, custoMaoDeObra, custoAluguel, updatedAt: now });
+          atividadeAnteriorId = existente.id;
+          continue;
+        }
+
+        const novaId = generateId();
+        const nova: Atividade = {
+          id: novaId,
+          obraId,
+          nome: item.composicaoDescricao,
+          etapa: item.composicaoDescricao,
+          dependeDe: atividadeAnteriorId ? [atividadeAnteriorId] : [],
+          dataInicio: obraAtual.dataInicio,
+          dataFim: obraAtual.dataInicio,
+          duracaoSemanas: 1,
+          dataAutomatica: true,
+          status: 'pendente',
+          concluida: false,
+          custoMaoDeObra,
+          custoMaterial,
+          custoAluguel,
+          materiaisNecessarios: [],
+          maoDeObraNecessaria: [],
+          equipamentosAluguel: [],
+          subatividades: [],
+          createdAt: now,
+          updatedAt: now,
+        };
+        await createAtividade(nova);
+        await updateItemAnalitico(item.id, { atividadeId: novaId });
+        atividadeAnteriorId = novaId;
+      }
+
+      setSalvo(true);
+      setTimeout(() => setSalvo(false), 3000);
+      return;
+    }
+
+    if (!modelo) {
       setSalvo(true);
       setTimeout(() => setSalvo(false), 3000);
       return;
@@ -286,10 +390,10 @@ export function OrcamentoTab() {
         <h3>Fonte das etapas</h3>
         <div className="orcamento-fonte-opcoes">
           <label>
-            <input type="radio" checked={!usaAtividades} onChange={() => setFonteEtapas('modelo')} />
+            <input type="radio" checked={fonteEtapas === 'modelo'} onChange={() => setFonteEtapas('modelo')} />
             Modelo pré-definido
           </label>
-          {!usaAtividades && (
+          {fonteEtapas === 'modelo' && (
             <select value={modeloId} onChange={(e) => setModeloId(e.target.value)}>
               {modelos.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
             </select>
@@ -298,15 +402,36 @@ export function OrcamentoTab() {
             <input type="radio" checked={usaAtividades} onChange={() => setFonteEtapas('atividades')} />
             Atividades já cadastradas nesta obra
           </label>
+          <label>
+            <input type="radio" checked={usaAnalitico} onChange={() => setFonteEtapas('analitico')} />
+            Orçamento Analítico (SINAPI)
+          </label>
         </div>
-        {usaAtividades ? (
+        {usaAtividades && (
           <p className="orcamento-fonte-hint">Usa as atividades já criadas em Visão Geral como etapas — os valores vêm de lá (edite os custos nas próprias atividades).</p>
-        ) : (
+        )}
+        {usaAnalitico && (
+          <p className="orcamento-fonte-hint">Busque composições reais do SINAPI e informe a quantidade medida no projeto — o custo direto (material, mão de obra e equipamento) é calculado a partir dos insumos oficiais.</p>
+        )}
+        {fonteEtapas === 'modelo' && (
           <p className="orcamento-fonte-hint">Modelos de etapas e faixas esperadas são gerenciados em Configurações.</p>
         )}
       </div>
 
       <div className="orcamento-grid">
+        {usaAnalitico && (
+          <OrcamentoAnaliticoSection
+            obra={obra}
+            itens={itensAnaliticos}
+            onCreateItem={createItemAnalitico}
+            onUpdateItem={updateItemAnalitico}
+            onDeleteItem={deleteItemAnalitico}
+            materiaisOverrides={materiaisOverrides}
+            onCreateMaterialOverride={createMaterialOverride}
+            onUpdateMaterialOverride={updateMaterialOverride}
+          />
+        )}
+        {!usaAnalitico && (
         <div className="orcamento-card">
           <h3>Etapas Técnicas</h3>
           <div className="scroll-x">
@@ -421,9 +546,10 @@ export function OrcamentoTab() {
             </table>
           </div>
         </div>
+        )}
 
         <div className="orcamento-side">
-          {!usaAtividades && (
+          {!usaAtividades && !usaAnalitico && (
             <div className="orcamento-card">
               <h3>Observações</h3>
               {todasDentro ? (
