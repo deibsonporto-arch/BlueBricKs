@@ -38,7 +38,7 @@ export function SCurveChart({ title, data, previstoLabel, realLabel, unit = 'per
           ) : (
             <YAxis unit="%" tick={{ fontSize: 12 }} domain={[0, 100]} />
           )}
-          <Tooltip formatter={(value: number) => (isCurrency ? formatBRL(value) : `${value}%`)} />
+          <Tooltip formatter={(value) => (isCurrency ? formatBRL(value as number) : `${value as number}%`)} />
           <Legend />
           <Line
             type="monotone"

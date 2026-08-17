@@ -28,7 +28,6 @@ export function VisaoGeralTab() {
     toggleConclusao,
     updateAtividade,
     deleteAtividade,
-    createSubatividade,
     updateSubatividade,
     deleteSubatividade,
     reorderAtividades,
@@ -96,6 +95,7 @@ export function VisaoGeralTab() {
   }
 
   async function handleSaveAsTemplate() {
+    if (!obra) return;
     if (obra.isModelo && obra.templateOrigemId) {
       await updateTemplateFromObra(
         obra.templateOrigemId,
