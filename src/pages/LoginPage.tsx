@@ -41,7 +41,7 @@ export function LoginPage() {
             autoComplete="username"
             value={nomeUsuario}
             onChange={(e) => setNomeUsuario(e.target.value)}
-            placeholder="Ex: DeibsonPorto"
+            placeholder="Digite seu usuário"
           />
         </div>
 
