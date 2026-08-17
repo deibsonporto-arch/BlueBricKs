@@ -1,53 +1,55 @@
-import { getAuthToken } from '../utils/authToken';
+import { supabase } from '../integrations/supabase/client';
 
-function authHeaders(): Record<string, string> {
-  const token = getAuthToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+/**
+ * Camada de sincronização com o Lovable Cloud (Postgres gerenciado).
+ *
+ * O front-end continua lendo/escrevendo o localStorage de forma síncrona (ver
+ * localStorageRepository). Este módulo espelha cada coleção inteira na tabela
+ * `collections`, isolada por usuário autenticado via RLS.
+ */
+
+async function currentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
 }
 
-export interface LoginResponse<TUsuario> {
-  token: string;
-  usuario: TUsuario;
-}
-
-export async function apiLogin<TUsuario>(nomeUsuario: string, senhaHash: string): Promise<LoginResponse<TUsuario> | null> {
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nomeUsuario, senhaHash }),
-  });
-  if (res.status === 401) return null;
-  if (!res.ok) throw new Error(`Falha no login: ${res.status}`);
-  return (await res.json()) as LoginResponse<TUsuario>;
-}
-
-export async function apiLogout(): Promise<void> {
-  await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() }).catch(() => undefined);
-}
-
-/** Busca todas as coleções de uma vez, pra hidratar o cache local (localStorage) no boot/login. */
+/** Busca todas as coleções do usuário logado, pra hidratar o cache local no boot/login. */
 export async function fetchBootstrap(): Promise<Record<string, unknown[]>> {
-  const res = await fetch('/api/bootstrap', { headers: authHeaders() });
-  if (!res.ok) throw new Error(`Falha ao carregar dados do servidor: ${res.status}`);
-  return (await res.json()) as Record<string, unknown[]>;
+  const userId = await currentUserId();
+  if (!userId) throw new Error('Sessão expirada — entre novamente.');
+
+  const { data, error } = await supabase
+    .from('collections')
+    .select('key, data')
+    .eq('user_id', userId);
+
+  if (error) throw new Error(`Falha ao carregar dados: ${error.message}`);
+
+  const out: Record<string, unknown[]> = {};
+  for (const row of data ?? []) {
+    out[row.key as string] = (row.data as unknown[]) ?? [];
+  }
+  return out;
 }
 
-async function putCollection<T>(key: string, items: T[]): Promise<void> {
-  const res = await fetch(`/api/${key}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(items),
-  });
-  if (!res.ok) console.error(`Falha ao sincronizar "${key}" com o servidor: ${res.status}`);
+async function upsertCollection<T>(key: string, items: T[]): Promise<void> {
+  const userId = await currentUserId();
+  if (!userId) return;
+
+  const { error } = await supabase
+    .from('collections')
+    .upsert(
+      { user_id: userId, key, data: items as unknown as never },
+      { onConflict: 'user_id,key' },
+    );
+
+  if (error) console.error(`Falha ao sincronizar "${key}":`, error.message);
 }
 
 // Fila por coleção: create/update/remove em sequência rápida (ex: seed inicial criando
-// dezenas de itens em loop) disparam vários pushCollection() para a mesma chave. Sem
-// serializar, essas requisições correm em paralelo contra a mesma tabela — o Postgres
-// pode rejeitar por conflito de transação, e a ordem de chegada no servidor não é
-// garantida (a última a chegar "vence", não necessariamente a mais completa/recente).
-// Aqui só um PUT por coleção fica em voo por vez; escritas que chegam nesse meio-tempo
-// são "coalescidas": ao terminar, reenvia uma única vez com o snapshot mais atual.
+// dezenas de itens em loop) disparam vários pushCollection() para a mesma chave. Aqui só
+// um upsert por coleção fica em voo por vez; escritas que chegam nesse meio-tempo são
+// "coalescidas": ao terminar, reenvia uma única vez com o snapshot mais atual.
 const emVoo = new Set<string>();
 const pendente = new Map<string, unknown[]>();
 
@@ -57,58 +59,66 @@ function agendarSync(key: string) {
   if (!items) return;
   pendente.delete(key);
   emVoo.add(key);
-  putCollection(key, items)
-    .catch((err) => console.error(`Falha ao sincronizar "${key}" com o servidor:`, err))
+  upsertCollection(key, items)
+    .catch((err) => console.error(`Falha ao sincronizar "${key}":`, err))
     .finally(() => {
       emVoo.delete(key);
       agendarSync(key);
     });
 }
 
-/**
- * Envia o conteúdo inteiro de uma coleção pro backend (substitui tudo), espelhando
- * o padrão local de sempre ler/escrever o array inteiro. Best-effort: não bloqueia
- * a UI nem lança erro pro chamador — só registra falha no console. Serializado por
- * coleção (ver agendarSync) pra evitar corrida/conflito quando várias escritas
- * acontecem em sequência rápida.
- */
+/** Envia o conteúdo inteiro de uma coleção pra nuvem (substitui tudo). Best-effort. */
 export function pushCollection<T>(key: string, items: T[]): void {
   pendente.set(key, items);
   agendarSync(key);
 }
 
-/** Busca um anexo direto do servidor (usado quando não está no IndexedDB local, ex: outro navegador/máquina). */
+// ---------- Anexos ----------
+
+/** Busca um anexo direto da nuvem (usado quando não está no IndexedDB local). */
 export async function fetchAnexo(id: string): Promise<string | undefined> {
-  const res = await fetch(`/api/anexos/${id}`, { headers: authHeaders() });
-  if (res.status === 404) return undefined;
-  if (!res.ok) throw new Error(`Falha ao buscar anexo: ${res.status}`);
-  const body = (await res.json()) as { dataUrl: string };
-  return body.dataUrl;
+  const userId = await currentUserId();
+  if (!userId) return undefined;
+
+  const { data, error } = await supabase
+    .from('anexos')
+    .select('data_url')
+    .eq('user_id', userId)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(`Falha ao buscar anexo: ${error.message}`);
+  return data?.data_url ?? undefined;
 }
 
-/** Envia um anexo pro servidor em segundo plano — best-effort, não bloqueia nem lança erro pro chamador. */
+/** Envia um anexo pra nuvem em segundo plano — best-effort. */
 export function pushAnexo(id: string, dataUrl: string): void {
-  fetch(`/api/anexos/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ dataUrl }),
-  })
-    .then((res) => {
-      if (!res.ok) console.error(`Falha ao sincronizar anexo "${id}" com o servidor: ${res.status}`);
-    })
-    .catch((err) => console.error(`Falha ao sincronizar anexo "${id}" com o servidor:`, err));
+  void (async () => {
+    const userId = await currentUserId();
+    if (!userId) return;
+    const { error } = await supabase
+      .from('anexos')
+      .upsert({ id, user_id: userId, data_url: dataUrl }, { onConflict: 'user_id,id' });
+    if (error) console.error(`Falha ao sincronizar anexo "${id}":`, error.message);
+  })();
 }
 
-/** Remove um anexo do servidor em segundo plano — best-effort, mesmo padrão de pushAnexo. */
+/** Remove um anexo da nuvem em segundo plano — best-effort. */
 export function deleteAnexoRemote(id: string): void {
-  fetch(`/api/anexos/${id}`, { method: 'DELETE', headers: authHeaders() })
-    .then((res) => {
-      if (!res.ok) console.error(`Falha ao remover anexo "${id}" no servidor: ${res.status}`);
-    })
-    .catch((err) => console.error(`Falha ao remover anexo "${id}" no servidor:`, err));
+  void (async () => {
+    const userId = await currentUserId();
+    if (!userId) return;
+    const { error } = await supabase.from('anexos').delete().eq('user_id', userId).eq('id', id);
+    if (error) console.error(`Falha ao remover anexo "${id}":`, error.message);
+  })();
 }
 
-// ---------- Base de referência SINAPI (somente leitura, consultada sob demanda) ----------
+// ---------- Base de referência SINAPI ----------
+//
+// A base SINAPI (insumos, composições e a árvore composição→itens) é grande e somente-leitura,
+// importada mensalmente a partir do pacote oficial da CAIXA. Ela ainda não foi carregada na
+// nuvem — as consultas abaixo devolvem vazio até a importação ser feita. O restante do app
+// (cronograma, financeiro, cotações, diário) funciona normalmente.
 
 export interface SinapiComposicaoResumo {
   codigo: number;
@@ -142,62 +152,45 @@ export interface SinapiFiltro {
   mes?: string;
 }
 
+export const SINAPI_INDISPONIVEL =
+  'A base de referência SINAPI ainda não foi importada para a nuvem.';
+
 export async function fetchSinapiMeses(): Promise<string[]> {
-  const res = await fetch('/api/sinapi/meses', { headers: authHeaders() });
-  if (!res.ok) throw new Error(`Falha ao buscar meses SINAPI: ${res.status}`);
-  return (await res.json()) as string[];
+  return [];
 }
 
-/** Lista os Grupos/Cadernos Técnicos existentes nas composições do mês (ex: "Alvenaria Estrutural - Blocos Cerâmicos"), pra filtrar a busca por categoria. */
-export async function fetchSinapiGrupos(mes?: string): Promise<string[]> {
-  const qs = new URLSearchParams();
-  if (mes) qs.set('mes', mes);
-  const res = await fetch(`/api/sinapi/grupos?${qs}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`Falha ao buscar grupos SINAPI: ${res.status}`);
-  return (await res.json()) as string[];
+export async function fetchSinapiGrupos(_mes?: string): Promise<string[]> {
+  return [];
 }
 
-export async function buscarComposicoesSinapi(q: string, filtro: SinapiFiltro, limit = 30, grupo?: string): Promise<SinapiComposicaoResumo[]> {
-  const qs = new URLSearchParams({ uf: filtro.uf, limit: String(limit) });
-  if (q) qs.set('q', q);
-  if (grupo) qs.set('grupo', grupo);
-  if (filtro.desoneracao) qs.set('desoneracao', filtro.desoneracao);
-  if (filtro.mes) qs.set('mes', filtro.mes);
-  const res = await fetch(`/api/sinapi/composicoes?${qs}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`Falha ao buscar composições SINAPI: ${res.status}`);
-  return (await res.json()) as SinapiComposicaoResumo[];
+export async function buscarComposicoesSinapi(
+  _q: string,
+  _filtro: SinapiFiltro,
+  _limit = 30,
+  _grupo?: string,
+): Promise<SinapiComposicaoResumo[]> {
+  return [];
 }
 
-export async function buscarInsumosSinapi(q: string, filtro: SinapiFiltro, limit = 30): Promise<SinapiInsumoResumo[]> {
-  const qs = new URLSearchParams({ uf: filtro.uf, limit: String(limit) });
-  if (q) qs.set('q', q);
-  if (filtro.desoneracao) qs.set('desoneracao', filtro.desoneracao);
-  if (filtro.mes) qs.set('mes', filtro.mes);
-  const res = await fetch(`/api/sinapi/insumos?${qs}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`Falha ao buscar insumos SINAPI: ${res.status}`);
-  return (await res.json()) as SinapiInsumoResumo[];
+export async function buscarInsumosSinapi(
+  _q: string,
+  _filtro: SinapiFiltro,
+  _limit = 30,
+): Promise<SinapiInsumoResumo[]> {
+  return [];
 }
 
-/** Explode uma composição isolada nos insumos-folha (materiais/mão de obra/equipamentos), já multiplicados pela quantidade informada. */
-export async function buscarItensComposicaoSinapi(codigo: number, filtro: SinapiFiltro, quantidade = 1): Promise<SinapiMaterialExplodido[]> {
-  const qs = new URLSearchParams({ uf: filtro.uf, quantidade: String(quantidade) });
-  if (filtro.desoneracao) qs.set('desoneracao', filtro.desoneracao);
-  if (filtro.mes) qs.set('mes', filtro.mes);
-  const res = await fetch(`/api/sinapi/composicoes/${codigo}/itens?${qs}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`Falha ao explodir composição SINAPI: ${res.status}`);
-  return (await res.json()) as SinapiMaterialExplodido[];
-}
-
-/** Lista de materiais consolidada entre várias linhas de orçamento (composição × quantidade). */
-export async function buscarMateriaisConsolidadosSinapi(
-  linhas: { composicaoCodigo: number; quantidade: number }[],
-  filtro: SinapiFiltro,
+export async function buscarItensComposicaoSinapi(
+  _codigo: number,
+  _filtro: SinapiFiltro,
+  _quantidade = 1,
 ): Promise<SinapiMaterialExplodido[]> {
-  const res = await fetch('/api/sinapi/materiais', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ uf: filtro.uf, desoneracao: filtro.desoneracao, mes: filtro.mes, linhas }),
-  });
-  if (!res.ok) throw new Error(`Falha ao consolidar materiais SINAPI: ${res.status}`);
-  return (await res.json()) as SinapiMaterialExplodido[];
+  return [];
+}
+
+export async function buscarMateriaisConsolidadosSinapi(
+  _linhas: { composicaoCodigo: number; quantidade: number }[],
+  _filtro: SinapiFiltro,
+): Promise<SinapiMaterialExplodido[]> {
+  return [];
 }
