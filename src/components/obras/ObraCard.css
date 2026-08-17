@@ -1,16 +1,44 @@
 .obra-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 18px;
   box-shadow: var(--shadow-card);
+  overflow: hidden;
 }
 
 .obra-card--atrasada {
   border: 1.5px solid var(--color-danger);
+}
+
+.obra-card__banner {
+  display: flex;
+  align-items: flex-end;
+  height: 84px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--banner-from), var(--banner-to));
+}
+
+.obra-card__banner--0 { --banner-from: #1c3a5e; --banner-to: #2f6fb0; }
+.obra-card__banner--1 { --banner-from: #14532d; --banner-to: #2f9e5c; }
+.obra-card__banner--2 { --banner-from: #6b1f1f; --banner-to: #a83232; }
+.obra-card__banner--3 { --banner-from: #7a4a12; --banner-to: #c4791f; }
+.obra-card__banner--4 { --banner-from: #144a4f; --banner-to: #1f8892; }
+.obra-card__banner--5 { --banner-from: #2b2f36; --banner-to: #4b515b; }
+
+.obra-card__codigo {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.obra-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
 }
 
 .obra-card__header {
@@ -20,14 +48,8 @@
   gap: 8px;
 }
 
-.obra-card__codigo {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  font-weight: 600;
-}
-
 .obra-card__nome {
-  margin: 2px 0 0;
+  margin: 0;
   font-size: 16px;
   cursor: pointer;
 }

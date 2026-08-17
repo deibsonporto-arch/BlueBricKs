@@ -14,6 +14,15 @@ const TIPO_LABEL: Record<Obra['tipo'], string> = {
   comercial: 'Comercial',
 };
 
+const BANNER_VARIANTS = 6;
+
+/** Escolhe uma cor de faixa estável por obra (mesma obra sempre cai na mesma cor). */
+function bannerVariant(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return hash % BANNER_VARIANTS;
+}
+
 interface ObraCardProps {
   obra: Obra;
   atividades: Atividade[];
@@ -32,62 +41,65 @@ export function ObraCard({ obra, atividades, lancamentos, onView, onEdit, onDele
 
   return (
     <div className={`obra-card${status === 'atrasada' ? ' obra-card--atrasada' : ''}`}>
-      <div className="obra-card__header">
-        <div>
-          <div className="obra-card__codigo">{obra.codigo}</div>
+      <div className={`obra-card__banner obra-card__banner--${bannerVariant(obra.id)}`}>
+        <span className="obra-card__codigo">{obra.codigo}</span>
+      </div>
+
+      <div className="obra-card__body">
+        <div className="obra-card__header">
           <h3 className="obra-card__nome" onClick={onView}>{obra.nome}</h3>
+          <ObraStatusBadge status={status} />
         </div>
-        <ObraStatusBadge status={status} />
-      </div>
 
-      <div className="obra-card__tipo">{TIPO_LABEL[obra.tipo]}</div>
+        <div className="obra-card__tipo">{TIPO_LABEL[obra.tipo]}</div>
 
-      <div className="obra-card__info">
-        <div className="obra-card__info-row">
-          <IconMapPin size={15} stroke={1.75} />
-          <span>{enderecoResumo}</span>
+        <div className="obra-card__info">
+          <div className="obra-card__info-row">
+            <IconMapPin size={15} stroke={1.75} />
+            <span>{enderecoResumo}</span>
+          </div>
+          <div className="obra-card__info-row">
+            <IconUser size={15} stroke={1.75} />
+            <span>{obra.responsavelTecnico}</span>
+          </div>
+          <div className="obra-card__info-row">
+            <IconCalendar size={15} stroke={1.75} />
+            <span>{formatDate(obra.dataInicio)} — {formatDate(obra.previsaoEntrega)}</span>
+          </div>
+          <div className="obra-card__info-row">
+            <IconUsers size={15} stroke={1.75} />
+            <span>{obra.colaboradoresAtivos} colaboradores ativos</span>
+          </div>
         </div>
-        <div className="obra-card__info-row">
-          <IconUser size={15} stroke={1.75} />
-          <span>{obra.responsavelTecnico}</span>
-        </div>
-        <div className="obra-card__info-row">
-          <IconCalendar size={15} stroke={1.75} />
-          <span>{formatDate(obra.dataInicio)} — {formatDate(obra.previsaoEntrega)}</span>
-        </div>
-        <div className="obra-card__info-row">
-          <IconUsers size={15} stroke={1.75} />
-          <span>{obra.colaboradoresAtivos} colaboradores ativos</span>
-        </div>
-      </div>
 
-      <div className="obra-card__financeiro">
-        <div>
-          <span className="obra-card__financeiro-label">Orçamento</span>
-          <span className="obra-card__financeiro-value">{formatBRL(obra.orcamentoTotal)}</span>
+        <div className="obra-card__financeiro">
+          <div>
+            <span className="obra-card__financeiro-label">Orçamento</span>
+            <span className="obra-card__financeiro-value">{formatBRL(obra.orcamentoTotal)}</span>
+          </div>
+          <div>
+            <span className="obra-card__financeiro-label">Gasto</span>
+            <span className="obra-card__financeiro-value">{formatBRL(gastoReal)}</span>
+          </div>
         </div>
-        <div>
-          <span className="obra-card__financeiro-label">Gasto</span>
-          <span className="obra-card__financeiro-value">{formatBRL(gastoReal)}</span>
+
+        <ProgressBar
+          value={progressoFisico}
+          color={status === 'atrasada' ? 'danger' : status === 'concluida' ? 'success' : 'primary'}
+          label={`Progresso físico · ${formatPct(progressoFisico)}`}
+        />
+
+        <div className="obra-card__actions">
+          <button type="button" className="btn btn-secondary" onClick={onView}>
+            <IconEye size={16} /> Visualizar
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={onEdit} aria-label="Editar obra">
+            <IconEdit size={16} />
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={onDelete} aria-label="Excluir obra">
+            <IconTrash size={16} />
+          </button>
         </div>
-      </div>
-
-      <ProgressBar
-        value={progressoFisico}
-        color={status === 'atrasada' ? 'danger' : status === 'concluida' ? 'success' : 'primary'}
-        label={`Progresso físico · ${formatPct(progressoFisico)}`}
-      />
-
-      <div className="obra-card__actions">
-        <button type="button" className="btn btn-secondary" onClick={onView}>
-          <IconEye size={16} /> Visualizar
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={onEdit} aria-label="Editar obra">
-          <IconEdit size={16} />
-        </button>
-        <button type="button" className="btn btn-ghost" onClick={onDelete} aria-label="Excluir obra">
-          <IconTrash size={16} />
-        </button>
       </div>
     </div>
   );
