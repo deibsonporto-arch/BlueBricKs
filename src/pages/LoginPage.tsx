@@ -4,7 +4,8 @@ import './LoginPage.css';
 
 export function LoginPage() {
   const { entrar } = useAuth();
-  const [nome, setNome] = useState('');
+  const [nomeUsuario, setNomeUsuario] = useState('');
+  const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [entrando, setEntrando] = useState(false);
 
@@ -12,13 +13,13 @@ export function LoginPage() {
     e.preventDefault();
     setErro('');
 
-    if (!nome.trim()) {
-      setErro('Informe seu nome para continuar.');
+    if (!nomeUsuario.trim() || !senha) {
+      setErro('Informe usuário e senha.');
       return;
     }
 
     setEntrando(true);
-    const msg = await entrar(nome);
+    const msg = await entrar(nomeUsuario, senha);
     setEntrando(false);
     if (msg) setErro(msg);
   }
@@ -31,16 +32,27 @@ export function LoginPage() {
           <div className="login-card__logo">BlueBRICKs</div>
           <p className="login-card__tagline">Inteligência Construtiva</p>
         </div>
-        <p className="login-card__subtitle">Digite seu nome para entrar</p>
+        <p className="login-card__subtitle">Entre com seu usuário e senha</p>
 
         <div className="form-field">
-          <label>Nome</label>
+          <label>Usuário</label>
           <input
             autoFocus
-            autoComplete="name"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Ex: Deibson Porto"
+            autoComplete="username"
+            value={nomeUsuario}
+            onChange={(e) => setNomeUsuario(e.target.value)}
+            placeholder="Ex: DeibsonPorto"
+          />
+        </div>
+
+        <div className="form-field">
+          <label>Senha</label>
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
+            placeholder="Sua senha"
           />
         </div>
 

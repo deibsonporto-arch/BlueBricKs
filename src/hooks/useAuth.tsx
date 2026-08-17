@@ -2,8 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import type { ReactNode } from 'react';
 import type { Usuario } from '../types/domain';
 import { setCurrentUserName } from '../utils/currentUser';
-import { fetchBootstrap } from '../data/apiSync';
-import { writeCollection } from '../data/storage';
+import { hashSenha } from '../utils/auth';
+import { fetchBootstrap, pushCollection } from '../data/apiSync';
+import { readCollection, writeCollection } from '../data/storage';
 import { ensureSeeded, ensureFerramentasCatalogSeed } from '../data/seed';
 import { migrateSubatividadeDependeDe } from '../data/migrations';
 
@@ -11,14 +12,14 @@ interface AuthContextValue {
   usuarios: Usuario[];
   usuarioAtual: Usuario | undefined;
   carregando: boolean;
-  entrar: (nomeExibicao: string) => Promise<string | null>;
+  entrar: (nomeUsuario: string, senha: string) => Promise<string | null>;
   logout: () => void;
   atualizarNomeExibicao: (nomeExibicao: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const NOME_KEY = 'brics:nome_usuario';
+const USUARIO_ID_KEY = 'brics:usuario_id';
 
 /**
  * Busca todas as coleções da nuvem (base única compartilhada) e sobrescreve o
@@ -35,31 +36,26 @@ async function hydrateFromServer(): Promise<void> {
   migrateSubatividadeDependeDe();
 }
 
-function montarUsuario(nome: string): Usuario {
-  return {
-    id: nome.trim().toLowerCase(),
-    nomeUsuario: nome.trim(),
-    nomeExibicao: nome.trim(),
-    senhaHash: '',
-    createdAt: new Date().toISOString(),
-  };
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuarioAtual, setUsuarioAtual] = useState<Usuario | undefined>(undefined);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    const salvo = localStorage.getItem(NOME_KEY);
-    if (!salvo) {
+    const usuarioId = localStorage.getItem(USUARIO_ID_KEY);
+    if (!usuarioId) {
       setCarregando(false);
       return;
     }
     void (async () => {
       try {
         await hydrateFromServer();
-        setUsuarioAtual(montarUsuario(salvo));
-        setCurrentUserName(salvo);
+        const usuario = readCollection<Usuario>('usuarios').find((u) => u.id === usuarioId);
+        if (usuario) {
+          setUsuarioAtual(usuario);
+          setCurrentUserName(usuario.nomeExibicao);
+        } else {
+          localStorage.removeItem(USUARIO_ID_KEY);
+        }
       } catch (err) {
         console.error('Falha ao carregar dados da nuvem:', err);
       } finally {
@@ -68,9 +64,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  const entrar = useCallback(async (nomeExibicao: string): Promise<string | null> => {
-    const nome = nomeExibicao.trim();
-    if (!nome) return 'Informe seu nome.';
+  const entrar = useCallback(async (nomeUsuario: string, senha: string): Promise<string | null> => {
+    const nome = nomeUsuario.trim();
+    if (!nome || !senha) return 'Informe usuário e senha.';
+
     setCarregando(true);
     try {
       await hydrateFromServer();
@@ -78,26 +75,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setCarregando(false);
       return err instanceof Error ? err.message : 'Falha ao carregar dados da nuvem.';
     }
-    localStorage.setItem(NOME_KEY, nome);
-    setUsuarioAtual(montarUsuario(nome));
-    setCurrentUserName(nome);
+
+    const senhaHash = await hashSenha(senha);
+    const usuario = readCollection<Usuario>('usuarios').find(
+      (u) => u.nomeUsuario.toLowerCase() === nome.toLowerCase() && u.senhaHash === senhaHash,
+    );
+    if (!usuario) {
+      setCarregando(false);
+      return 'Usuário ou senha inválidos.';
+    }
+
+    localStorage.setItem(USUARIO_ID_KEY, usuario.id);
+    setUsuarioAtual(usuario);
+    setCurrentUserName(usuario.nomeExibicao);
     setCarregando(false);
     return null;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(NOME_KEY);
+    localStorage.removeItem(USUARIO_ID_KEY);
     setUsuarioAtual(undefined);
     setCurrentUserName('');
   }, []);
 
-  const atualizarNomeExibicao = useCallback(async (nomeExibicao: string) => {
-    const nome = nomeExibicao.trim();
-    if (!nome) return;
-    localStorage.setItem(NOME_KEY, nome);
-    setUsuarioAtual(montarUsuario(nome));
-    setCurrentUserName(nome);
-  }, []);
+  const atualizarNomeExibicao = useCallback(
+    async (nomeExibicao: string) => {
+      const nome = nomeExibicao.trim();
+      if (!nome || !usuarioAtual) return;
+
+      const todos = readCollection<Usuario>('usuarios');
+      const atualizados = todos.map((u) => (u.id === usuarioAtual.id ? { ...u, nomeExibicao: nome } : u));
+      writeCollection('usuarios', atualizados);
+      pushCollection('usuarios', atualizados);
+
+      setUsuarioAtual({ ...usuarioAtual, nomeExibicao: nome });
+      setCurrentUserName(nome);
+    },
+    [usuarioAtual],
+  );
 
   return (
     <AuthContext.Provider
