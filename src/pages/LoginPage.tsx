@@ -3,48 +3,24 @@ import { useAuth } from '../hooks/useAuth';
 import './LoginPage.css';
 
 export function LoginPage() {
-  const { login, cadastrar } = useAuth();
-  const [modo, setModo] = useState<'entrar' | 'cadastrar'>('entrar');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [nomeExibicao, setNomeExibicao] = useState('');
+  const { entrar } = useAuth();
+  const [nome, setNome] = useState('');
   const [erro, setErro] = useState('');
-  const [aviso, setAviso] = useState('');
   const [entrando, setEntrando] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro('');
-    setAviso('');
 
-    if (!email.trim() || !senha.trim()) {
-      setErro('Preencha e-mail e senha.');
-      return;
-    }
-    if (modo === 'cadastrar' && !nomeExibicao.trim()) {
-      setErro('Informe seu nome de exibição.');
-      return;
-    }
-    if (modo === 'cadastrar' && senha.length < 6) {
-      setErro('A senha precisa ter pelo menos 6 caracteres.');
+    if (!nome.trim()) {
+      setErro('Informe seu nome para continuar.');
       return;
     }
 
     setEntrando(true);
-    const msg =
-      modo === 'entrar'
-        ? await login(email, senha)
-        : await cadastrar(email, senha, nomeExibicao);
+    const msg = await entrar(nome);
     setEntrando(false);
-
-    if (msg) {
-      setErro(msg);
-      return;
-    }
-    if (modo === 'cadastrar') {
-      setAviso('Conta criada. Se a confirmação por e-mail estiver ativa, confirme antes de entrar.');
-      setModo('entrar');
-    }
+    if (msg) setErro(msg);
   }
 
   return (
@@ -55,60 +31,23 @@ export function LoginPage() {
           <div className="login-card__logo">BlueBRICKs</div>
           <p className="login-card__tagline">Inteligência Construtiva</p>
         </div>
-        <p className="login-card__subtitle">
-          {modo === 'entrar' ? 'Entre com seu e-mail para continuar' : 'Crie sua conta para começar'}
-        </p>
-
-        {modo === 'cadastrar' && (
-          <div className="form-field">
-            <label>Nome de exibição</label>
-            <input
-              value={nomeExibicao}
-              onChange={(e) => setNomeExibicao(e.target.value)}
-              placeholder="Ex: Deibson Porto"
-            />
-          </div>
-        )}
+        <p className="login-card__subtitle">Digite seu nome para entrar</p>
 
         <div className="form-field">
-          <label>E-mail</label>
+          <label>Nome</label>
           <input
             autoFocus
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="voce@empresa.com.br"
-          />
-        </div>
-        <div className="form-field">
-          <label>Senha</label>
-          <input
-            type="password"
-            autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'}
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            placeholder="Sua senha"
+            autoComplete="name"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            placeholder="Ex: Deibson Porto"
           />
         </div>
 
         {erro && <p className="login-card__erro">{erro}</p>}
-        {aviso && <p className="login-card__subtitle">{aviso}</p>}
 
         <button type="submit" className="btn btn-primary login-card__submit" disabled={entrando}>
-          {entrando ? 'Aguarde...' : modo === 'entrar' ? 'Entrar' : 'Criar conta'}
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => {
-            setModo(modo === 'entrar' ? 'cadastrar' : 'entrar');
-            setErro('');
-            setAviso('');
-          }}
-        >
-          {modo === 'entrar' ? 'Não tem conta? Cadastre-se' : 'Já tenho conta — entrar'}
+          {entrando ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
     </div>

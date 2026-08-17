@@ -55,7 +55,7 @@ export function AppHeader() {
           {userMenuOpen && (
             <div className="app-header__user-dropdown">
               <Link to="/usuarios" className="app-header__user-dropdown-item" onMouseDown={() => setUserMenuOpen(false)}>
-                Gerenciar usuários
+                Meu nome
               </Link>
               <button type="button" className="app-header__user-dropdown-item" onMouseDown={logout}>
                 Sair
