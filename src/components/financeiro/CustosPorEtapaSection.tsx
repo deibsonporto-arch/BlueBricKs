@@ -39,7 +39,7 @@ export function CustosPorEtapaSection({ obra, lancamentos, atividades }: CustosP
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
             <XAxis dataKey="nome" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" interval={0} height={60} />
             <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip formatter={(value: number) => formatBRL(value)} />
+            <Tooltip formatter={(value) => formatBRL(value as number)} />
             <Bar dataKey="previsto" name="Previsto" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
             <Bar dataKey="pago" name="Pago" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
           </BarChart>

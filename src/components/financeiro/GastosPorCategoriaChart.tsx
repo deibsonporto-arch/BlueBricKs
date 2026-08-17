@@ -40,7 +40,7 @@ export function GastosPorCategoriaChart({ lancamentos }: GastosPorCategoriaChart
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
             <XAxis dataKey="categoria" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip formatter={(value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
+            <Tooltip formatter={(value) => (value as number).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} />
             <Legend />
             <Bar dataKey="previsto" name="Previsto" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
             <Bar dataKey="pago" name="Pago" fill="var(--color-success)" radius={[4, 4, 0, 0]} />
