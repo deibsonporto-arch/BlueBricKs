@@ -25,6 +25,7 @@ export interface Material {
   quantidade: number;
   unidade: UnidadeMedida;
   custoUnitario?: number;
+  marca?: string;
 }
 
 export interface MaoDeObra {

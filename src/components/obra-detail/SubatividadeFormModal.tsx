@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { IconFileInvoice } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { DynamicListField } from './DynamicListField';
-import type { Atividade, Equipamento, MaoDeObra, Material, Subatividade, UnidadeMedida } from '../../types/domain';
+import type { Atividade, Cotacao, Equipamento, MaoDeObra, Material, Subatividade, UnidadeMedida } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useListasDeMateriais } from '../../hooks/useListasDeMateriais';
 import { useMateriaisCatalogo } from '../../hooks/useMateriaisCatalogo';
+import { useCotacoes } from '../../hooks/useCotacoes';
 import { generateId } from '../../utils/id';
 import { getTaskNumber } from '../../utils/subatividades';
 import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, todayISO } from '../../utils/dateUtils';
+import { getCurrentUserName } from '../../utils/currentUser';
+import { ROUTES } from '../../routes/routes';
 
 interface SubatividadeFormModalProps {
   open: boolean;
@@ -70,11 +75,23 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
   const { createSubatividade, updateSubatividade } = useAtividades(obraId);
   const { listas } = useListasDeMateriais();
   const { materiais: catalogo } = useMateriaisCatalogo();
+  const { createCotacao } = useCotacoes(obraId);
+  const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(() => toFormState(subatividade));
+  const [materiaisSelecionados, setMateriaisSelecionados] = useState<Set<string>>(new Set());
+  const [enviandoCotacao, setEnviandoCotacao] = useState(false);
 
   useEffect(() => {
-    if (open) setForm(toFormState(subatividade));
+    if (open) { setForm(toFormState(subatividade)); setMateriaisSelecionados(new Set()); }
   }, [open, subatividade]);
+
+  function toggleMaterialSelecionado(id: string) {
+    setMateriaisSelecionados((sel) => {
+      const novo = new Set(sel);
+      if (novo.has(id)) novo.delete(id); else novo.add(id);
+      return novo;
+    });
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -126,9 +143,7 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
     update('dependeDe', [primeiraPredecessora, id].filter(Boolean));
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
+  function salvar(): Promise<void> {
     const base = {
       nome: form.nome,
       dataInicio: form.dataInicio,
@@ -154,9 +169,49 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
         iniciada: false,
         ...base,
       };
-      createSubatividade(atividadeId, nova).then(onSaved);
+      return createSubatividade(atividadeId, nova).then(() => undefined);
     } else if (subatividade) {
-      updateSubatividade(atividadeId, subatividade.id, base).then(onSaved);
+      return updateSubatividade(atividadeId, subatividade.id, base).then(() => undefined);
+    }
+    return Promise.resolve();
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    salvar().then(onSaved);
+  }
+
+  async function enviarSelecionadosParaCotacao() {
+    const selecionados = form.materiaisNecessarios.filter((m) => materiaisSelecionados.has(m.id));
+    if (selecionados.length === 0) return;
+
+    setEnviandoCotacao(true);
+    try {
+      await salvar();
+      const now = new Date().toISOString();
+      for (const material of selecionados) {
+        const cotacao: Cotacao = {
+          id: generateId(),
+          obraId,
+          atividadeId,
+          responsavel: getCurrentUserName(),
+          data: todayISO(),
+          itemServico: material.nome,
+          descricaoServico: material.marca ? `Marca: ${material.marca}` : undefined,
+          quantidade: material.quantidade,
+          unidade: material.unidade,
+          valorUnitarioPrevisto: material.custoUnitario ?? 0,
+          fornecedores: [],
+          status: 'em_cotacao',
+          createdAt: now,
+          updatedAt: now,
+        };
+        await createCotacao(cotacao);
+      }
+      onSaved();
+      navigate(ROUTES.obraMapaCotacao(obraId));
+    } finally {
+      setEnviandoCotacao(false);
     }
   }
 
@@ -282,7 +337,14 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
           newItem={() => ({ id: generateId(), nome: '', quantidade: 1, unidade: 'un' })}
           renderRowFields={(item, upd) => (
             <>
+              <input
+                type="checkbox"
+                checked={materiaisSelecionados.has(item.id)}
+                onChange={() => toggleMaterialSelecionado(item.id)}
+                title="Selecionar para enviar ao Mapa de Cotação"
+              />
               <input placeholder="Material" value={item.nome} onChange={(e) => upd({ nome: e.target.value })} style={{ flex: 2 }} />
+              <input placeholder="Marca" value={item.marca ?? ''} onChange={(e) => upd({ marca: e.target.value })} style={{ flex: 1 }} />
               <input type="number" min={0} placeholder="Qtd" value={item.quantidade} onChange={(e) => upd({ quantidade: Number(e.target.value) })} style={{ width: 70 }} />
               <select value={item.unidade} onChange={(e) => upd({ unidade: e.target.value as UnidadeMedida })} style={{ width: 80 }}>
                 {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
@@ -290,6 +352,18 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
             </>
           )}
         />
+        {form.materiaisNecessarios.length > 0 && (
+          <div className="form-field form-field--full" style={{ marginTop: -8 }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={materiaisSelecionados.size === 0 || enviandoCotacao}
+              onClick={enviarSelecionadosParaCotacao}
+            >
+              <IconFileInvoice size={14} /> {enviandoCotacao ? 'Enviando...' : `Enviar selecionados (${materiaisSelecionados.size}) para Mapa de Cotação`}
+            </button>
+          </div>
+        )}
 
         <DynamicListField<MaoDeObra>
           label="Mão de obra necessária"
