@@ -1,0 +1,39 @@
+.configuracoes-sinapi__hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.configuracoes-sinapi__hint--erro {
+  color: var(--color-danger);
+}
+
+.configuracoes-sinapi__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.configuracoes-sinapi__status strong {
+  display: block;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.configuracoes-sinapi__status span {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.configuracoes-sinapi__acoes {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}

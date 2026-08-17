@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { IconArrowDown, IconArrowUp, IconCopy, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { AppHeader } from '../components/layout/AppHeader';
 import { useOrcamentoConfig } from '../hooks/useOrcamentoConfig';
+import { SinapiImportSection } from '../components/configuracoes/SinapiImportSection';
 import './ConfiguracoesPage.css';
 
 export function ConfiguracoesPage() {
@@ -197,6 +198,8 @@ export function ConfiguracoesPage() {
             Soma: {somaSplit.toFixed(1)}%{Math.round(somaSplit) !== 100 && ' — o ideal é somar 100%'}
           </p>
         </div>
+
+        <SinapiImportSection />
       </div>
     </div>
   );

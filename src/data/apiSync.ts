@@ -91,9 +91,10 @@ export function deleteAnexoRemote(id: string): void {
 // ---------- Base de referência SINAPI ----------
 //
 // A base SINAPI (insumos, composições e a árvore composição→itens) é grande e somente-leitura,
-// importada mensalmente a partir do pacote oficial da CAIXA. Ela ainda não foi carregada na
-// nuvem — as consultas abaixo devolvem vazio até a importação ser feita. O restante do app
-// (cronograma, financeiro, cotações, diário) funciona normalmente.
+// importada mensalmente a partir do pacote oficial da CAIXA. Ela é grande demais e não muda por
+// obra/usuário, então em vez de ficar na nuvem compartilhada, cada pessoa importa o arquivo .zip
+// oficial direto no seu navegador (Configurações → Base SINAPI) e os dados ficam no IndexedDB
+// local — ver sinapiLocalImport.ts / sinapiLocalData.ts. As consultas abaixo delegam pra lá.
 
 export interface SinapiComposicaoResumo {
   codigo: number;
@@ -128,44 +129,50 @@ export interface SinapiFiltro {
 }
 
 export const SINAPI_INDISPONIVEL =
-  'A base de referência SINAPI ainda não foi importada para a nuvem.';
+  'A base de referência SINAPI ainda não foi importada neste navegador — importe o arquivo .zip em Configurações.';
 
 export async function fetchSinapiMeses(): Promise<string[]> {
-  return [];
+  const { fetchSinapiMesesLocal } = await import('../utils/sinapiLocalData');
+  return fetchSinapiMesesLocal();
 }
 
 export async function fetchSinapiGrupos(_mes?: string): Promise<string[]> {
-  return [];
+  const { fetchSinapiGruposLocal } = await import('../utils/sinapiLocalData');
+  return fetchSinapiGruposLocal();
 }
 
 export async function buscarComposicoesSinapi(
-  _q: string,
-  _filtro: SinapiFiltro,
-  _limit = 30,
-  _grupo?: string,
+  q: string,
+  filtro: SinapiFiltro,
+  limit = 30,
+  grupo?: string,
 ): Promise<SinapiComposicaoResumo[]> {
-  return [];
+  const { buscarComposicoesSinapiLocal } = await import('../utils/sinapiLocalData');
+  return buscarComposicoesSinapiLocal(q, filtro, limit, grupo);
 }
 
 export async function buscarInsumosSinapi(
-  _q: string,
-  _filtro: SinapiFiltro,
-  _limit = 30,
+  q: string,
+  filtro: SinapiFiltro,
+  limit = 30,
 ): Promise<SinapiInsumoResumo[]> {
-  return [];
+  const { buscarInsumosSinapiLocal } = await import('../utils/sinapiLocalData');
+  return buscarInsumosSinapiLocal(q, filtro, limit);
 }
 
 export async function buscarItensComposicaoSinapi(
-  _codigo: number,
-  _filtro: SinapiFiltro,
-  _quantidade = 1,
+  codigo: number,
+  filtro: SinapiFiltro,
+  quantidade = 1,
 ): Promise<SinapiMaterialExplodido[]> {
-  return [];
+  const { buscarItensComposicaoSinapiLocal } = await import('../utils/sinapiLocalData');
+  return buscarItensComposicaoSinapiLocal(codigo, filtro, quantidade);
 }
 
 export async function buscarMateriaisConsolidadosSinapi(
-  _linhas: { composicaoCodigo: number; quantidade: number }[],
-  _filtro: SinapiFiltro,
+  linhas: { composicaoCodigo: number; quantidade: number }[],
+  filtro: SinapiFiltro,
 ): Promise<SinapiMaterialExplodido[]> {
-  return [];
+  const { buscarMateriaisConsolidadosSinapiLocal } = await import('../utils/sinapiLocalData');
+  return buscarMateriaisConsolidadosSinapiLocal(linhas, filtro);
 }
