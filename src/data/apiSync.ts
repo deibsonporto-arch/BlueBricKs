@@ -5,23 +5,12 @@ import { supabase } from '../integrations/supabase/client';
  *
  * O front-end continua lendo/escrevendo o localStorage de forma síncrona (ver
  * localStorageRepository). Este módulo espelha cada coleção inteira na tabela
- * `collections`, isolada por usuário autenticado via RLS.
+ * `collections`, em uma base única compartilhada por todos.
  */
-
-async function currentUserId(): Promise<string | null> {
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
-}
 
 /** Busca todas as coleções do usuário logado, pra hidratar o cache local no boot/login. */
 export async function fetchBootstrap(): Promise<Record<string, unknown[]>> {
-  const userId = await currentUserId();
-  if (!userId) throw new Error('Sessão expirada — entre novamente.');
-
-  const { data, error } = await supabase
-    .from('collections')
-    .select('key, data')
-    .eq('user_id', userId);
+  const { data, error } = await supabase.from('collections').select('key, data');
 
   if (error) throw new Error(`Falha ao carregar dados: ${error.message}`);
 
@@ -33,15 +22,9 @@ export async function fetchBootstrap(): Promise<Record<string, unknown[]>> {
 }
 
 async function upsertCollection<T>(key: string, items: T[]): Promise<void> {
-  const userId = await currentUserId();
-  if (!userId) return;
-
   const { error } = await supabase
     .from('collections')
-    .upsert(
-      { user_id: userId, key, data: items as unknown as never },
-      { onConflict: 'user_id,key' },
-    );
+    .upsert({ key, data: items as unknown as never }, { onConflict: 'key' });
 
   if (error) console.error(`Falha ao sincronizar "${key}":`, error.message);
 }
@@ -77,13 +60,9 @@ export function pushCollection<T>(key: string, items: T[]): void {
 
 /** Busca um anexo direto da nuvem (usado quando não está no IndexedDB local). */
 export async function fetchAnexo(id: string): Promise<string | undefined> {
-  const userId = await currentUserId();
-  if (!userId) return undefined;
-
   const { data, error } = await supabase
     .from('anexos')
     .select('data_url')
-    .eq('user_id', userId)
     .eq('id', id)
     .maybeSingle();
 
@@ -94,11 +73,9 @@ export async function fetchAnexo(id: string): Promise<string | undefined> {
 /** Envia um anexo pra nuvem em segundo plano — best-effort. */
 export function pushAnexo(id: string, dataUrl: string): void {
   void (async () => {
-    const userId = await currentUserId();
-    if (!userId) return;
     const { error } = await supabase
       .from('anexos')
-      .upsert({ id, user_id: userId, data_url: dataUrl }, { onConflict: 'user_id,id' });
+      .upsert({ id, data_url: dataUrl }, { onConflict: 'id' });
     if (error) console.error(`Falha ao sincronizar anexo "${id}":`, error.message);
   })();
 }
@@ -106,9 +83,7 @@ export function pushAnexo(id: string, dataUrl: string): void {
 /** Remove um anexo da nuvem em segundo plano — best-effort. */
 export function deleteAnexoRemote(id: string): void {
   void (async () => {
-    const userId = await currentUserId();
-    if (!userId) return;
-    const { error } = await supabase.from('anexos').delete().eq('user_id', userId).eq('id', id);
+    const { error } = await supabase.from('anexos').delete().eq('id', id);
     if (error) console.error(`Falha ao remover anexo "${id}":`, error.message);
   })();
 }
