@@ -150,9 +150,31 @@
   border-top: 1px solid var(--color-border);
 }
 
+.atividade-sinapi-novo-manual-wrap {
+  margin-top: 10px;
+  position: relative;
+}
+
 .atividade-sinapi-novo-manual {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
   gap: 6px;
-  margin-top: 10px;
+}
+
+.atividade-sinapi-novo-manual__descricao {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.atividade-sinapi-novo-manual__descricao .atividade-sinapi-tag {
+  align-self: flex-start;
+}
+
+.atividade-sinapi-resultados--manual {
+  position: absolute;
+  z-index: 5;
+  width: min(420px, 100%);
+  background: var(--color-surface);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }

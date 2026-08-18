@@ -122,7 +122,37 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     onChangeInsumos(insumos.filter((i) => i.id !== id));
   }
 
-  const [novoInsumo, setNovoInsumo] = useState({ descricao: '', unidade: '', quantidade: '1', custoUnitario: '', tipo: 'material' as TipoInsumoAtividade });
+  const [novoInsumo, setNovoInsumo] = useState({ descricao: '', unidade: '', quantidade: '1', custoUnitario: '', tipo: 'material' as TipoInsumoAtividade, sinapiCodigo: undefined as string | undefined });
+  const [resultadosManual, setResultadosManual] = useState<SinapiInsumoResumo[]>([]);
+  const [buscandoManual, setBuscandoManual] = useState(false);
+
+  useEffect(() => {
+    if (!novoInsumo.descricao.trim() || !mes || novoInsumo.sinapiCodigo) {
+      setResultadosManual([]);
+      return;
+    }
+    setBuscandoManual(true);
+    const timer = setTimeout(() => {
+      buscarInsumosSinapi(novoInsumo.descricao, { uf, desoneracao, mes }, 8)
+        .then(setResultadosManual)
+        .catch(() => setResultadosManual([]))
+        .finally(() => setBuscandoManual(false));
+    }, 350);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [novoInsumo.descricao, mes, uf, desoneracao]);
+
+  function selecionarInsumoManual(item: SinapiInsumoResumo) {
+    setNovoInsumo({
+      descricao: item.descricao,
+      unidade: item.unidade,
+      quantidade: '1',
+      custoUnitario: item.preco != null ? formatNumberBR(item.preco) : '',
+      tipo: classificarTipoInsumo(item.classificacao),
+      sinapiCodigo: item.codigo,
+    });
+    setResultadosManual([]);
+  }
 
   function adicionarInsumoManual() {
     const quantidade = parseNumberBR(novoInsumo.quantidade);
@@ -130,13 +160,15 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     if (!novoInsumo.descricao.trim() || !(quantidade > 0)) return;
     onChangeInsumos([...insumos, {
       id: generateId(),
+      sinapiCodigo: novoInsumo.sinapiCodigo,
       descricao: novoInsumo.descricao.trim(),
       unidade: novoInsumo.unidade.trim() || 'vb',
       quantidade,
       custoUnitario,
       tipo: novoInsumo.tipo,
     }]);
-    setNovoInsumo({ descricao: '', unidade: '', quantidade: '1', custoUnitario: '', tipo: 'material' });
+    setNovoInsumo({ descricao: '', unidade: '', quantidade: '1', custoUnitario: '', tipo: 'material', sinapiCodigo: undefined });
+    setResultadosManual([]);
   }
 
   const temInsumos = insumos.length > 0;
@@ -265,19 +297,43 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
             </table>
           </div>
 
-          <div className="atividade-sinapi-novo-manual">
-            <input placeholder="Descrição" value={novoInsumo.descricao} onChange={(e) => setNovoInsumo((n) => ({ ...n, descricao: e.target.value }))} />
-            <input placeholder="Un." value={novoInsumo.unidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, unidade: e.target.value }))} />
-            <input type="text" inputMode="decimal" placeholder="Qtd." value={novoInsumo.quantidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, quantidade: e.target.value }))} />
-            <input type="text" inputMode="decimal" placeholder="Custo unit." value={novoInsumo.custoUnitario} onChange={(e) => setNovoInsumo((n) => ({ ...n, custoUnitario: e.target.value }))} />
-            <select value={novoInsumo.tipo} onChange={(e) => setNovoInsumo((n) => ({ ...n, tipo: e.target.value as TipoInsumoAtividade }))}>
-              {(Object.keys(TIPO_LABEL) as TipoInsumoAtividade[]).map((t) => (
-                <option key={t} value={t}>{TIPO_LABEL[t]}</option>
-              ))}
-            </select>
-            <button type="button" className="btn btn-secondary" onClick={adicionarInsumoManual}>
-              <IconPlus size={14} /> Item manual
-            </button>
+          <div className="atividade-sinapi-novo-manual-wrap">
+            <div className="atividade-sinapi-novo-manual">
+              <div className="atividade-sinapi-novo-manual__descricao">
+                <input
+                  placeholder="Descrição — busca no SINAPI ou digite livre"
+                  value={novoInsumo.descricao}
+                  onChange={(e) => setNovoInsumo((n) => ({ ...n, descricao: e.target.value, sinapiCodigo: undefined }))}
+                />
+                {novoInsumo.sinapiCodigo && <span className="atividade-sinapi-tag atividade-sinapi-tag--insumo">SINAPI {novoInsumo.sinapiCodigo}</span>}
+              </div>
+              <input placeholder="Un." value={novoInsumo.unidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, unidade: e.target.value }))} />
+              <input type="text" inputMode="decimal" placeholder="Qtd." value={novoInsumo.quantidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, quantidade: e.target.value }))} />
+              <input type="text" inputMode="decimal" placeholder="Custo unit." value={novoInsumo.custoUnitario} onChange={(e) => setNovoInsumo((n) => ({ ...n, custoUnitario: e.target.value }))} />
+              <select value={novoInsumo.tipo} onChange={(e) => setNovoInsumo((n) => ({ ...n, tipo: e.target.value as TipoInsumoAtividade }))}>
+                {(Object.keys(TIPO_LABEL) as TipoInsumoAtividade[]).map((t) => (
+                  <option key={t} value={t}>{TIPO_LABEL[t]}</option>
+                ))}
+              </select>
+              <button type="button" className="btn btn-secondary" onClick={adicionarInsumoManual}>
+                <IconPlus size={14} /> Item manual
+              </button>
+            </div>
+            {buscandoManual && <p className="atividade-orcamento-hint">Buscando no SINAPI...</p>}
+            {resultadosManual.length > 0 && (
+              <ul className="atividade-sinapi-resultados atividade-sinapi-resultados--manual">
+                {resultadosManual.map((item) => (
+                  <li key={item.codigo}>
+                    <button type="button" onClick={() => selecionarInsumoManual(item)}>
+                      <span className="atividade-sinapi-tag atividade-sinapi-tag--insumo">Insumo</span>
+                      <strong>{item.descricao}</strong>
+                      <span>{item.codigo} · {item.unidade} · {item.preco != null ? formatBRL(item.preco) : 'sem custo na UF'}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="atividade-orcamento-hint">Achou no SINAPI? Clique no resultado pra preencher automático. Não achou? Só digitar e completar os campos na mão mesmo.</p>
           </div>
         </>
       )}
