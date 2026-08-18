@@ -61,8 +61,8 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
         .then(([composicoes, insumosEncontrados]) => {
           const composicoesResultado: ResultadoBusca[] = composicoes.map((item) => ({ origem: 'composicao', item }));
           const insumosResultado: ResultadoBusca[] = insumosEncontrados.map((item) => ({ origem: 'insumo', item }));
-          const combinado = etapaNome
-            ? priorizarPorEtapa(composicoesResultado.map((r) => r.item), etapaNome).map((item) => ({ origem: 'composicao' as const, item }))
+          const combinado: ResultadoBusca[] = etapaNome
+            ? priorizarPorEtapa<SinapiComposicaoResumo>(composicoes, etapaNome).map((item) => ({ origem: 'composicao' as const, item }))
             : composicoesResultado;
           setResultados([...combinado, ...insumosResultado]);
         })
