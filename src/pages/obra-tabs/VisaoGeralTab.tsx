@@ -8,6 +8,7 @@ import { useLancamentos } from '../../hooks/useLancamentos';
 import { useFornecedores } from '../../hooks/useFornecedores';
 import { useLembretes } from '../../hooks/useLembretes';
 import { useRequisicoes } from '../../hooks/useRequisicoes';
+import { useEstoque } from '../../hooks/useEstoque';
 import { VisaoGeralMetrics } from '../../components/obra-detail/VisaoGeralMetrics';
 import { PagamentosDoDiaCard } from '../../components/obra-detail/PagamentosDoDiaCard';
 import { LembretesCard } from '../../components/obra-detail/LembretesCard';
@@ -42,6 +43,7 @@ export function VisaoGeralTab() {
   const { fornecedores } = useFornecedores();
   const { lembretes, createLembrete, toggleConcluido, deleteLembrete } = useLembretes(obraId);
   const { requisicoes, createRequisicoes, deleteRequisicao } = useRequisicoes(obraId);
+  const { entradas } = useEstoque(obraId);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -154,6 +156,13 @@ export function VisaoGeralTab() {
   const dataFimObra = atividades.length > 0 ? atividades.reduce((max, a) => (a.dataFim > max ? a.dataFim : max), atividades[0].dataFim) : obra.dataInicio;
   const totalDias = atividades.length > 0 ? businessDaysBetween(dataInicioObra, dataFimObra) : 0;
   const subatividadesComRequisicaoEnviada = new Set(requisicoes.map((r) => r.subatividadeId));
+  const entradasPorSubatividade = new Map<string, typeof entradas>();
+  for (const e of entradas) {
+    if (!e.subatividadeId) continue;
+    const lista = entradasPorSubatividade.get(e.subatividadeId) ?? [];
+    lista.push(e);
+    entradasPorSubatividade.set(e.subatividadeId, lista);
+  }
 
   return (
     <div style={{ paddingBottom: 40 }}>
@@ -191,6 +200,7 @@ export function VisaoGeralTab() {
         onUsarEtapasPadrao={() => setEtapasPadraoModalOpen(true)}
         onEnviarParaRequisicoes={handleEnviarParaRequisicoes}
         subatividadesComRequisicaoEnviada={subatividadesComRequisicaoEnviada}
+        entradasPorSubatividade={entradasPorSubatividade}
         onNewSubatividade={openNewSubatividade}
         onEditSubatividade={openEditSubatividade}
       />

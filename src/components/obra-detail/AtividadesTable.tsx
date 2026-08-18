@@ -11,7 +11,7 @@ import {
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react';
-import type { Atividade, Subatividade } from '../../types/domain';
+import type { Atividade, EntradaEstoque, Subatividade } from '../../types/domain';
 import { AtividadeStatusBadge } from '../common/StatusBadge';
 import { isBlocked } from '../../hooks/useAtividades';
 import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, formatDate } from '../../utils/dateUtils';
@@ -42,6 +42,7 @@ interface AtividadesTableProps {
   onUsarEtapasPadrao?: () => void;
   onEnviarParaRequisicoes?: (atividade: Atividade, subatividade: Subatividade) => void;
   subatividadesComRequisicaoEnviada?: Set<string>;
+  entradasPorSubatividade?: Map<string, EntradaEstoque[]>;
   onNewSubatividade: (atividadeId: string) => void;
   onEditSubatividade: (atividadeId: string, subatividade: Subatividade) => void;
 }
@@ -61,6 +62,7 @@ export function AtividadesTable({
   onUsarEtapasPadrao,
   onEnviarParaRequisicoes,
   subatividadesComRequisicaoEnviada,
+  entradasPorSubatividade,
   onNewSubatividade,
   onEditSubatividade,
 }: AtividadesTableProps) {
@@ -353,6 +355,8 @@ export function AtividadesTable({
                             const displayStatus = getSubatividadeDisplayStatus(s);
                             const subTemPredecessora = s.dependeDe.length > 0 || a.dependeDe.length > 0;
                             const temInsumos = (s.insumos?.length ?? 0) > 0;
+                            const entradasDaSub = entradasPorSubatividade?.get(s.id) ?? [];
+                            const temEntradas = entradasDaSub.length > 0;
                             const insumosExpandidos = expandedInsumos.has(s.id);
 
                             return (
@@ -382,7 +386,7 @@ export function AtividadesTable({
                                   {s.iniciada ? <IconPlayerPlayFilled size={12} /> : <IconPlayerPlay size={12} />}
                                 </button>
                                 <span className="subativ-row__numero">{getTaskNumber(displayList, s.id)}</span>
-                                {temInsumos && (
+                                {(temInsumos || temEntradas) && (
                                   <button
                                     type="button"
                                     className="subativ-row__insumos-toggle"
@@ -397,6 +401,11 @@ export function AtividadesTable({
                                   <span className="subativ-row__insumos-badges">
                                     <span className="subativ-row__badge">Mão de obra {formatBRL(s.custoMaoDeObra)}</span>
                                     <span className="subativ-row__badge">Materiais {formatBRL(s.custoMaterial)}</span>
+                                  </span>
+                                )}
+                                {temEntradas && (
+                                  <span className="subativ-row__insumos-badges">
+                                    <span className="subativ-row__badge subativ-row__badge--estoque">📦 {entradasDaSub.length} {entradasDaSub.length > 1 ? 'materiais recebidos' : 'material recebido'}</span>
                                   </span>
                                 )}
                                 {subTemPredecessora && (
@@ -483,9 +492,9 @@ export function AtividadesTable({
                                   <IconTrash size={14} />
                                 </button>
                               </div>
-                              {temInsumos && insumosExpandidos && (
+                              {(temInsumos || temEntradas) && insumosExpandidos && (
                                 <div className="subativ-insumos" style={{ marginLeft: depth * 20 + 26 }}>
-                                  {onEnviarParaRequisicoes && (
+                                  {temInsumos && onEnviarParaRequisicoes && (
                                     <div className="subativ-insumos__enviar-row">
                                       <button
                                         type="button"
@@ -499,43 +508,76 @@ export function AtividadesTable({
                                       )}
                                     </div>
                                   )}
-                                  <table className="subativ-insumos__table">
-                                    <thead>
-                                      <tr>
-                                        <th>Tipo</th>
-                                        <th>Cód.</th>
-                                        <th>Descrição</th>
-                                        <th>Un.</th>
-                                        <th>Qtd.</th>
-                                        <th>Preço unit.</th>
-                                        <th>Total</th>
-                                        <th></th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {(s.insumos ?? []).map((i) => (
-                                        <tr key={i.id}>
-                                          <td>{i.tipo === 'mao_de_obra' ? 'Mão de obra' : i.tipo === 'aluguel' ? 'Aluguel' : 'Material'}</td>
-                                          <td>{i.sinapiCodigo ?? '—'}</td>
-                                          <td>{i.descricao}</td>
-                                          <td>{i.unidade}</td>
-                                          <td>{formatNumberBR(i.quantidade)}</td>
-                                          <td>{formatBRL(i.custoUnitario)}</td>
-                                          <td>{formatBRL(i.quantidade * i.custoUnitario)}</td>
-                                          <td>
-                                            <button
-                                              type="button"
-                                              className="btn btn-ghost"
-                                              onClick={() => removerInsumoDaSubatividade(a.id, s, i.id)}
-                                              aria-label="Remover insumo"
-                                            >
-                                              <IconTrash size={12} />
-                                            </button>
-                                          </td>
+                                  {temInsumos && (
+                                    <table className="subativ-insumos__table">
+                                      <thead>
+                                        <tr>
+                                          <th>Tipo</th>
+                                          <th>Cód.</th>
+                                          <th>Descrição</th>
+                                          <th>Un.</th>
+                                          <th>Qtd.</th>
+                                          <th>Preço unit.</th>
+                                          <th>Total</th>
+                                          <th></th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                                      </thead>
+                                      <tbody>
+                                        {(s.insumos ?? []).map((i) => (
+                                          <tr key={i.id}>
+                                            <td>{i.tipo === 'mao_de_obra' ? 'Mão de obra' : i.tipo === 'aluguel' ? 'Aluguel' : 'Material'}</td>
+                                            <td>{i.sinapiCodigo ?? '—'}</td>
+                                            <td>{i.descricao}</td>
+                                            <td>{i.unidade}</td>
+                                            <td>{formatNumberBR(i.quantidade)}</td>
+                                            <td>{formatBRL(i.custoUnitario)}</td>
+                                            <td>{formatBRL(i.quantidade * i.custoUnitario)}</td>
+                                            <td>
+                                              <button
+                                                type="button"
+                                                className="btn btn-ghost"
+                                                onClick={() => removerInsumoDaSubatividade(a.id, s, i.id)}
+                                                aria-label="Remover insumo"
+                                              >
+                                                <IconTrash size={12} />
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  )}
+                                  {temEntradas && (
+                                    <>
+                                      <span className="subativ-insumos__secao-label">📦 Materiais recebidos no almoxarifado</span>
+                                      <table className="subativ-insumos__table">
+                                        <thead>
+                                          <tr>
+                                            <th>Cód.</th>
+                                            <th>Material</th>
+                                            <th>Un.</th>
+                                            <th>Qtd.</th>
+                                            <th>Data</th>
+                                            <th>Nota fiscal</th>
+                                            <th>Fornecedor</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {entradasDaSub.map((e) => (
+                                            <tr key={e.id}>
+                                              <td>{e.codigo}</td>
+                                              <td>{e.material}</td>
+                                              <td>{e.unidade}</td>
+                                              <td>{formatNumberBR(e.quantidade)}</td>
+                                              <td>{formatDate(e.data)}</td>
+                                              <td>{e.notaFiscal ?? '—'}</td>
+                                              <td>{e.fornecedor}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </>
+                                  )}
                                 </div>
                               )}
                               </Fragment>
