@@ -42,6 +42,36 @@ export interface Equipamento {
   valorDia: number;
 }
 
+export type TipoInsumoAtividade = 'material' | 'mao_de_obra' | 'aluguel';
+
+/** Um insumo (material, mão de obra ou aluguel/equipamento) decomposto de uma composição SINAPI
+ * e vinculado a uma Atividade — ou lançado manualmente. Editável linha a linha, independente da
+ * composição de origem: trocar a composição substitui todos os insumos de uma vez ("recompor"),
+ * mas depois de trocada o usuário pode ajustar/remover/adicionar itens livremente. */
+export interface ItemInsumoAtividade {
+  id: string;
+  sinapiCodigo?: number; // ausente = item lançado manualmente
+  descricao: string;
+  unidade: string;
+  quantidade: number;
+  custoUnitario: number;
+  tipo: TipoInsumoAtividade;
+}
+
+/** Snapshot reaproveitável de uma subatividade (nome + custos + insumos decompostos), salva pelo
+ * usuário a partir de uma subatividade já editada/ajustada — pra não ter que buscar e decompor a
+ * mesma composição de novo em obras futuras. Cópia independente: editar depois não afeta o modelo. */
+export interface ModeloSubatividade {
+  id: string;
+  nome: string;
+  etapaSugerida?: string; // nome da Atividade-etapa de origem, usado pra priorizar a busca (mesma lógica de classificarGrupo)
+  custoMaoDeObra: number;
+  custoMaterial: number;
+  custoAluguel: number;
+  insumos: ItemInsumoAtividade[];
+  createdAt: string;
+}
+
 // ---------- Catálogo de materiais e listas ----------
 
 export interface MaterialCatalogItem {
@@ -87,6 +117,7 @@ export interface Subatividade {
   materiaisNecessarios: Material[];
   maoDeObraNecessaria: MaoDeObra[];
   equipamentosAluguel: Equipamento[];
+  insumos?: ItemInsumoAtividade[]; // decomposição SINAPI da subatividade (material/mão de obra/aluguel linha a linha) — quando presente, dirige os totais de custoMaterial/custoMaoDeObra/custoAluguel
 }
 
 export interface Atividade {
@@ -110,6 +141,7 @@ export interface Atividade {
   materiaisNecessarios: Material[];
   maoDeObraNecessaria: MaoDeObra[];
   equipamentosAluguel: Equipamento[];
+  insumos?: ItemInsumoAtividade[]; // decomposição SINAPI da atividade (material/mão de obra/aluguel linha a linha) — quando presente, dirige os totais de custoMaterial/custoMaoDeObra/custoAluguel
   subatividades: Subatividade[];
   createdAt: string;
   updatedAt: string;
@@ -437,6 +469,77 @@ export interface Cotacao {
   melhorFornecedorId?: string; // escolha manual; se ausente, usa o de menor valor
   status: StatusCotacao;
   historico?: HistoricoEntry[]; // registros antigos podem não ter
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------- Módulo — Requisições ----------
+
+export type StatusRequisicao = 'pendente' | 'requisitado';
+
+/** Um insumo (material, mão de obra ou aluguel) enviado da lista de insumos de uma subatividade pra
+ * fila de requisições — quem faz a compra/locação vê tudo já agrupado por etapa/subetapa, sem
+ * precisar abrir cada subatividade. Snapshot: editar os insumos da subatividade depois não altera
+ * o que já foi enviado pra cá. */
+export interface ItemRequisicao {
+  id: string;
+  obraId: string;
+  atividadeId: string;
+  atividadeNome: string;
+  subatividadeId: string;
+  subatividadeNome: string;
+  descricao: string;
+  unidade: string;
+  quantidade: number;
+  custoUnitario: number;
+  tipo: TipoInsumoAtividade;
+  status: StatusRequisicao;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------- Módulo — Almoxarifado ----------
+
+/** Um recebimento de material no almoxarifado da obra, vinculado a nota fiscal. O `codigo` identifica
+ * o material de forma estável — várias entradas do mesmo material usam o mesmo código, e é por ele
+ * que o saldo em estoque é calculado (soma das entradas menos soma das saídas). */
+export interface EntradaEstoque {
+  id: string;
+  obraId: string;
+  data: string; // ISO date
+  codigo: string; // ex: "MAT-1042" — gerado automaticamente na 1ª entrada de um material novo
+  material: string;
+  marca?: string;
+  quantidade: number;
+  unidade: string;
+  medidas?: string;
+  fornecedor: string;
+  notaFiscal?: string;
+  localizacao?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Uma retirada de material do estoque, sempre vinculada a uma etapa (Atividade) da obra — é o que
+ * permite ver quanto de cada material foi consumido em cada etapa, e reduz automaticamente o saldo
+ * calculado do `codigo` correspondente. */
+export interface SaidaEstoque {
+  id: string;
+  obraId: string;
+  codigo: string; // código do material retirado — deve corresponder a uma EntradaEstoque já lançada
+  data: string;
+  material: string;
+  marca?: string;
+  quantidade: number;
+  unidade: string;
+  medidas?: string;
+  responsavel: string;
+  atividadeId?: string; // vínculo com a Atividade/etapa da obra
+  etapaNome?: string; // snapshot do nome da etapa no momento da saída — sobrevive se a atividade for renomeada/excluída depois
+  etapaServico?: string; // descrição livre do serviço específico dentro da etapa
+  local: string;
+  utilizacaoPara?: string;
+  observacao?: string;
   createdAt: string;
   updatedAt: string;
 }

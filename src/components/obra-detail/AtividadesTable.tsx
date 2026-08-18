@@ -15,7 +15,8 @@ import type { Atividade, Subatividade } from '../../types/domain';
 import { AtividadeStatusBadge } from '../common/StatusBadge';
 import { isBlocked } from '../../hooks/useAtividades';
 import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, formatDate } from '../../utils/dateUtils';
-import { formatBRL } from '../../utils/currency';
+import { formatBRL, formatNumberBR } from '../../utils/currency';
+import { totaisPorTipo } from '../../utils/insumosAtividade';
 import { buildReagendamentoPatch, deriveParentStatus, getDescendantIds, getOrderedSubatividades, getSubatividadeDisplayStatus, getTaskNumber, isAtrasado } from '../../utils/subatividades';
 import { EditableDateCell } from './EditableDateCell';
 import { EditableNumberCell } from './EditableNumberCell';
@@ -38,6 +39,8 @@ interface AtividadesTableProps {
   onEdit: (atividade: Atividade) => void;
   onDelete: (atividade: Atividade) => void;
   onNew: () => void;
+  onUsarEtapasPadrao?: () => void;
+  onEnviarParaRequisicoes?: (atividade: Atividade, subatividade: Subatividade) => void;
   onNewSubatividade: (atividadeId: string) => void;
   onEditSubatividade: (atividadeId: string, subatividade: Subatividade) => void;
 }
@@ -54,10 +57,13 @@ export function AtividadesTable({
   onEdit,
   onDelete,
   onNew,
+  onUsarEtapasPadrao,
+  onEnviarParaRequisicoes,
   onNewSubatividade,
   onEditSubatividade,
 }: AtividadesTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [expandedInsumos, setExpandedInsumos] = useState<Set<string>>(new Set());
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
 
@@ -74,6 +80,26 @@ export function AtividadesTable({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
+    });
+  }
+
+  function toggleExpandedInsumos(id: string) {
+    setExpandedInsumos((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function removerInsumoDaSubatividade(atividadeId: string, s: Subatividade, insumoId: string) {
+    const novosInsumos = (s.insumos ?? []).filter((i) => i.id !== insumoId);
+    const totais = totaisPorTipo(novosInsumos);
+    onUpdateSubatividade(atividadeId, s.id, {
+      insumos: novosInsumos,
+      custoMaterial: totais.material,
+      custoMaoDeObra: totais.mao_de_obra,
+      custoAluguel: totais.aluguel,
     });
   }
 
@@ -117,9 +143,16 @@ export function AtividadesTable({
     <div className="atividades-table-card">
       <div className="atividades-table-card__header">
         <h3>Atividades</h3>
-        <button type="button" className="btn btn-primary" onClick={onNew}>
-          <IconPlus size={16} /> Nova atividade
-        </button>
+        <div className="atividades-table-card__header-actions">
+          {onUsarEtapasPadrao && (
+            <button type="button" className="btn btn-secondary" onClick={onUsarEtapasPadrao}>
+              Usar etapas pré-cadastradas
+            </button>
+          )}
+          <button type="button" className="btn btn-primary" onClick={onNew}>
+            <IconPlus size={16} /> Nova atividade
+          </button>
+        </div>
       </div>
 
       {pendingOrder && (
@@ -317,10 +350,12 @@ export function AtividadesTable({
 
                             const displayStatus = getSubatividadeDisplayStatus(s);
                             const subTemPredecessora = s.dependeDe.length > 0 || a.dependeDe.length > 0;
+                            const temInsumos = (s.insumos?.length ?? 0) > 0;
+                            const insumosExpandidos = expandedInsumos.has(s.id);
 
                             return (
+                              <Fragment key={s.id}>
                               <div
-                                key={s.id}
                                 className={`subativ-row${draggedId === s.id ? ' is-dragging' : ''}${displayStatus === 'atrasada' ? ' is-atrasada' : ''}`}
                                 draggable
                                 onDragStart={() => setDraggedId(s.id)}
@@ -345,7 +380,23 @@ export function AtividadesTable({
                                   {s.iniciada ? <IconPlayerPlayFilled size={12} /> : <IconPlayerPlay size={12} />}
                                 </button>
                                 <span className="subativ-row__numero">{getTaskNumber(displayList, s.id)}</span>
+                                {temInsumos && (
+                                  <button
+                                    type="button"
+                                    className="subativ-row__insumos-toggle"
+                                    onClick={() => toggleExpandedInsumos(s.id)}
+                                    aria-label={insumosExpandidos ? 'Recolher insumos' : 'Expandir insumos'}
+                                  >
+                                    {insumosExpandidos ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+                                  </button>
+                                )}
                                 <span className={`subativ-row__nome${s.concluida ? ' is-concluida' : ''}`}>{s.nome}</span>
+                                {temInsumos && (
+                                  <span className="subativ-row__insumos-badges">
+                                    <span className="subativ-row__badge">Mão de obra {formatBRL(s.custoMaoDeObra)}</span>
+                                    <span className="subativ-row__badge">Materiais {formatBRL(s.custoMaterial)}</span>
+                                  </span>
+                                )}
                                 {subTemPredecessora && (
                                   <button
                                     type="button"
@@ -430,6 +481,57 @@ export function AtividadesTable({
                                   <IconTrash size={14} />
                                 </button>
                               </div>
+                              {temInsumos && insumosExpandidos && (
+                                <div className="subativ-insumos" style={{ marginLeft: depth * 20 + 26 }}>
+                                  {onEnviarParaRequisicoes && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-secondary subativ-insumos__enviar-btn"
+                                      onClick={() => onEnviarParaRequisicoes(a, s)}
+                                    >
+                                      Enviar tudo para Requisições
+                                    </button>
+                                  )}
+                                  <table className="subativ-insumos__table">
+                                    <thead>
+                                      <tr>
+                                        <th>Tipo</th>
+                                        <th>Cód.</th>
+                                        <th>Descrição</th>
+                                        <th>Un.</th>
+                                        <th>Qtd.</th>
+                                        <th>Preço unit.</th>
+                                        <th>Total</th>
+                                        <th></th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {(s.insumos ?? []).map((i) => (
+                                        <tr key={i.id}>
+                                          <td>{i.tipo === 'mao_de_obra' ? 'Mão de obra' : i.tipo === 'aluguel' ? 'Aluguel' : 'Material'}</td>
+                                          <td>{i.sinapiCodigo ?? '—'}</td>
+                                          <td>{i.descricao}</td>
+                                          <td>{i.unidade}</td>
+                                          <td>{formatNumberBR(i.quantidade)}</td>
+                                          <td>{formatBRL(i.custoUnitario)}</td>
+                                          <td>{formatBRL(i.quantidade * i.custoUnitario)}</td>
+                                          <td>
+                                            <button
+                                              type="button"
+                                              className="btn btn-ghost"
+                                              onClick={() => removerInsumoDaSubatividade(a.id, s, i.id)}
+                                              aria-label="Remover insumo"
+                                            >
+                                              <IconTrash size={12} />
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                              </Fragment>
                             );
                           })}
                         </div>

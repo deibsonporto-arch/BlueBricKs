@@ -94,6 +94,51 @@ export function useAtividades(obraId: string) {
     [obraId, refresh],
   );
 
+  /** Mescla `sourceId` dentro de `targetId`: move todas as subatividades (com seus insumos, custos
+   * etc.) para a atividade destino, repointa qualquer predecessora (de outras atividades/subatividades)
+   * que apontava pra `sourceId`, e remove a atividade de origem. Usado quando "Usar etapas
+   * pré-cadastradas" encontra uma atividade já lançada com nome diferente do padrão (ex: "Estruturas"
+   * → "Supraestrutura") e o usuário escolhe unificar em vez de manter as duas separadas. */
+  const mergeAtividade = useCallback(
+    async (sourceId: string, targetId: string) => {
+      if (sourceId === targetId) return;
+      const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
+      const source = all.find((a) => a.id === sourceId);
+      const target = all.find((a) => a.id === targetId);
+      if (!source || !target) return;
+
+      const now = new Date().toISOString();
+      const subatividadesMescladas = [...target.subatividades, ...source.subatividades];
+      const aggregates = recomputeParentAggregates({ ...target, subatividades: subatividadesMescladas });
+      const derivedStatus = deriveParentStatus(subatividadesMescladas);
+
+      atividadeRepository.update(targetId, {
+        subatividades: subatividadesMescladas,
+        ...aggregates,
+        ...derivedStatus,
+        updatedAt: now,
+      });
+
+      for (const a of all) {
+        if (a.id === sourceId || a.id === targetId) continue;
+        const novoDependeDe = a.dependeDe.map((id) => (id === sourceId ? targetId : id));
+        const novasSubatividades = a.subatividades.map((s) => ({
+          ...s,
+          dependeDe: s.dependeDe.map((id) => (id === sourceId ? targetId : id)),
+        }));
+        const mudouDependeDe = novoDependeDe.some((id, i) => id !== a.dependeDe[i]);
+        const mudouSub = novasSubatividades.some((s, i) => s.dependeDe.some((id, j) => id !== a.subatividades[i].dependeDe[j]));
+        if (mudouDependeDe || mudouSub) {
+          atividadeRepository.update(a.id, { dependeDe: novoDependeDe, subatividades: novasSubatividades, updatedAt: now });
+        }
+      }
+
+      atividadeRepository.remove(sourceId);
+      refresh();
+    },
+    [obraId, refresh],
+  );
+
   const toggleConclusao = useCallback(
     async (id: string) => {
       const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
@@ -210,6 +255,7 @@ export function useAtividades(obraId: string) {
     createAtividade,
     updateAtividade,
     deleteAtividade,
+    mergeAtividade,
     toggleConclusao,
     createSubatividade,
     updateSubatividade,

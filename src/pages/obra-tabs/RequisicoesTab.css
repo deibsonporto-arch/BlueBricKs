@@ -1,0 +1,98 @@
+.requisicoes-tab {
+  padding: 16px 0 40px;
+}
+
+.requisicoes-tab h2 {
+  margin: 0 0 4px;
+}
+
+.requisicoes-tab__hint {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+.requisicoes-etapa-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.requisicoes-etapa-card h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.requisicoes-subetapa {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.requisicoes-subetapa:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.requisicoes-subetapa__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.requisicoes-subetapa__header h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.requisicoes-subetapa__total {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+}
+
+.requisicoes-grupo {
+  margin-bottom: 10px;
+}
+
+.requisicoes-grupo__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.requisicoes-mao-de-obra-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.requisicoes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.requisicoes-table th,
+.requisicoes-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.requisicoes-table tr.is-requisitado {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}

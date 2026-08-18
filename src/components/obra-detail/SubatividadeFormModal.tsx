@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { IconFileInvoice } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { DynamicListField } from './DynamicListField';
-import type { Atividade, Cotacao, Equipamento, MaoDeObra, Material, Subatividade, UnidadeMedida } from '../../types/domain';
+import { ComposicaoInsumosField } from './ComposicaoInsumosField';
+import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, UnidadeMedida } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useListasDeMateriais } from '../../hooks/useListasDeMateriais';
 import { useMateriaisCatalogo } from '../../hooks/useMateriaisCatalogo';
 import { useCotacoes } from '../../hooks/useCotacoes';
+import { useModelosSubatividade } from '../../hooks/useModelosSubatividade';
+import { totaisPorTipo } from '../../utils/insumosAtividade';
+import { formatBRL } from '../../utils/currency';
 import { generateId } from '../../utils/id';
 import { getTaskNumber } from '../../utils/subatividades';
 import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, todayISO } from '../../utils/dateUtils';
@@ -18,6 +22,7 @@ interface SubatividadeFormModalProps {
   open: boolean;
   mode: 'create' | 'edit';
   obraId: string;
+  obra?: Obra; // quando ausente, a busca de composição SINAPI fica oculta
   atividadeId: string;
   subatividade?: Subatividade;
   todasAtividades: Atividade[];
@@ -71,19 +76,62 @@ function toFormState(s?: Subatividade): FormState {
 
 const UNIDADES: UnidadeMedida[] = ['un', 'kg', 'm', 'm2', 'm3', 'saco', 'l', 'cx', 'pç'];
 
-export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subatividade, todasAtividades, onClose, onSaved }: SubatividadeFormModalProps) {
+export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, subatividade, todasAtividades, onClose, onSaved }: SubatividadeFormModalProps) {
   const { createSubatividade, updateSubatividade } = useAtividades(obraId);
   const { listas } = useListasDeMateriais();
   const { materiais: catalogo } = useMateriaisCatalogo();
   const { createCotacao } = useCotacoes(obraId);
+  const { modelos, salvarModelo } = useModelosSubatividade();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(() => toFormState(subatividade));
   const [materiaisSelecionados, setMateriaisSelecionados] = useState<Set<string>>(new Set());
   const [enviandoCotacao, setEnviandoCotacao] = useState(false);
+  const [insumos, setInsumos] = useState<ItemInsumoAtividade[]>(() => subatividade?.insumos ?? []);
+  const [buscaModelo, setBuscaModelo] = useState('');
 
   useEffect(() => {
-    if (open) { setForm(toFormState(subatividade)); setMateriaisSelecionados(new Set()); }
+    if (open) { setForm(toFormState(subatividade)); setMateriaisSelecionados(new Set()); setInsumos(subatividade?.insumos ?? []); setBuscaModelo(''); }
   }, [open, subatividade]);
+
+  const atividadePai = todasAtividades.find((a) => a.id === atividadeId);
+  const temInsumos = insumos.length > 0;
+  const totaisInsumos = totaisPorTipo(insumos);
+
+  const modelosFiltrados = (() => {
+    const termo = buscaModelo.trim().toLowerCase();
+    const base = termo ? modelos.filter((m) => m.nome.toLowerCase().includes(termo)) : modelos;
+    if (!atividadePai) return base;
+    // modelos salvos a partir da mesma etapa aparecem primeiro
+    return [...base].sort((a, b) => {
+      const aMatch = a.etapaSugerida === atividadePai.nome ? 0 : 1;
+      const bMatch = b.etapaSugerida === atividadePai.nome ? 0 : 1;
+      return aMatch - bMatch;
+    });
+  })();
+
+  function usarModelo(modeloId: string) {
+    const modelo = modelos.find((m) => m.id === modeloId);
+    if (!modelo) return;
+    setInsumos(modelo.insumos);
+    setForm((f) => ({ ...f, nome: f.nome || modelo.nome }));
+    setBuscaModelo('');
+  }
+
+  function handleSalvarComoModelo() {
+    if (!temInsumos) return;
+    const nome = prompt('Nome do modelo (ex: "Alvenaria bloco cerâmico 14cm"):', form.nome);
+    if (!nome?.trim()) return;
+    salvarModelo({
+      id: generateId(),
+      nome: nome.trim(),
+      etapaSugerida: atividadePai?.nome,
+      custoMaoDeObra: totaisInsumos.mao_de_obra,
+      custoMaterial: totaisInsumos.material,
+      custoAluguel: totaisInsumos.aluguel,
+      insumos,
+      createdAt: new Date().toISOString(),
+    });
+  }
 
   function toggleMaterialSelecionado(id: string) {
     setMateriaisSelecionados((sel) => {
@@ -152,12 +200,13 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
       diasEsperaAposPredecessora: Number(form.diasEsperaAposPredecessora) || 0,
       dataAutomatica: form.dataAutomatica,
       contagemDias: form.contagemDias,
-      custoMaoDeObra: Number(form.custoMaoDeObra) || 0,
-      custoMaterial: Number(form.custoMaterial) || 0,
-      custoAluguel: Number(form.custoAluguel) || 0,
+      custoMaoDeObra: temInsumos ? totaisInsumos.mao_de_obra : (Number(form.custoMaoDeObra) || 0),
+      custoMaterial: temInsumos ? totaisInsumos.material : (Number(form.custoMaterial) || 0),
+      custoAluguel: temInsumos ? totaisInsumos.aluguel : (Number(form.custoAluguel) || 0),
       materiaisNecessarios: form.materiaisNecessarios,
       maoDeObraNecessaria: form.maoDeObraNecessaria,
       equipamentosAluguel: form.equipamentosAluguel,
+      insumos,
     };
 
     if (mode === 'create') {
@@ -220,7 +269,7 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
       open={open}
       title={mode === 'create' ? 'Nova subatividade' : 'Editar subatividade'}
       onClose={onClose}
-      width={960}
+      width="96vw"
       footer={
         <>
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
@@ -301,18 +350,69 @@ export function SubatividadeFormModal({ open, mode, obraId, atividadeId, subativ
           </label>
         </div>
 
-        <div className="form-field">
-          <label>Custo mão de obra (R$)</label>
-          <input type="number" min={0} step="0.01" value={form.custoMaoDeObra} onChange={(e) => update('custoMaoDeObra', e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label>Custo material (R$)</label>
-          <input type="number" min={0} step="0.01" value={form.custoMaterial} onChange={(e) => update('custoMaterial', e.target.value)} />
-        </div>
-        <div className="form-field">
-          <label>Custo aluguel (R$)</label>
-          <input type="number" min={0} step="0.01" value={form.custoAluguel} onChange={(e) => update('custoAluguel', e.target.value)} />
-        </div>
+        {modelos.length > 0 && (
+          <div className="form-field form-field--full">
+            <label>Usar modelo salvo (subatividade + insumos já ajustados antes)</label>
+            <input
+              value={buscaModelo}
+              onChange={(e) => setBuscaModelo(e.target.value)}
+              placeholder="Buscar modelo salvo..."
+            />
+            {buscaModelo && modelosFiltrados.length > 0 && (
+              <ul className="atividade-sinapi-resultados">
+                {modelosFiltrados.map((m) => (
+                  <li key={m.id}>
+                    <button type="button" onClick={() => usarModelo(m.id)}>
+                      <strong>{m.nome}</strong>
+                      <span>{m.insumos.length} insumos · {formatBRL(m.custoMaoDeObra + m.custoMaterial + m.custoAluguel)}{m.etapaSugerida ? ` · ${m.etapaSugerida}` : ''}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {obra && (
+          <div className="form-field form-field--full">
+            <ComposicaoInsumosField
+              uf={obra.endereco.estado || 'GO'}
+              etapaNome={atividadePai?.nome}
+              insumos={insumos}
+              onChangeInsumos={setInsumos}
+              onSugerirNome={(nome) => setForm((f) => ({ ...f, nome: f.nome || nome }))}
+            />
+          </div>
+        )}
+
+        {temInsumos ? (
+          <div className="form-field form-field--full">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label>Custo (calculado dos insumos acima)</label>
+              <button type="button" className="btn btn-secondary" onClick={handleSalvarComoModelo}>
+                Salvar como modelo
+              </button>
+            </div>
+            <p className="atividade-orcamento-hint">
+              Mão de obra {formatBRL(totaisInsumos.mao_de_obra)} · Material {formatBRL(totaisInsumos.material)} · Aluguel {formatBRL(totaisInsumos.aluguel)}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="form-field">
+              <label>Custo mão de obra (R$)</label>
+              <input type="number" min={0} step="0.01" value={form.custoMaoDeObra} onChange={(e) => update('custoMaoDeObra', e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label>Custo material (R$)</label>
+              <input type="number" min={0} step="0.01" value={form.custoMaterial} onChange={(e) => update('custoMaterial', e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label>Custo aluguel (R$)</label>
+              <input type="number" min={0} step="0.01" value={form.custoAluguel} onChange={(e) => update('custoAluguel', e.target.value)} />
+            </div>
+          </>
+        )}
 
         {listas.length > 0 && (
           <div className="form-field form-field--full">

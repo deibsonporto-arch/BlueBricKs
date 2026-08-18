@@ -9,7 +9,7 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
-  width?: number;
+  width?: number | string;
 }
 
 export function Modal({ open, title, onClose, children, footer, width = 640 }: ModalProps) {

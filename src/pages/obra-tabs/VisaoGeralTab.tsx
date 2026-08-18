@@ -7,6 +7,7 @@ import { useTemplates } from '../../hooks/useTemplates';
 import { useLancamentos } from '../../hooks/useLancamentos';
 import { useFornecedores } from '../../hooks/useFornecedores';
 import { useLembretes } from '../../hooks/useLembretes';
+import { useRequisicoes } from '../../hooks/useRequisicoes';
 import { VisaoGeralMetrics } from '../../components/obra-detail/VisaoGeralMetrics';
 import { PagamentosDoDiaCard } from '../../components/obra-detail/PagamentosDoDiaCard';
 import { LembretesCard } from '../../components/obra-detail/LembretesCard';
@@ -15,8 +16,10 @@ import { GanttChart } from '../../components/obra-detail/GanttChart';
 import { AtividadesTable } from '../../components/obra-detail/AtividadesTable';
 import { AtividadeFormModal } from '../../components/obra-detail/AtividadeFormModal';
 import { SubatividadeFormModal } from '../../components/obra-detail/SubatividadeFormModal';
+import { UsarEtapasPadraoModal } from '../../components/obra-detail/UsarEtapasPadraoModal';
 import type { Atividade, Subatividade } from '../../types/domain';
 import { businessDaysBetween } from '../../utils/dateUtils';
+import { generateId } from '../../utils/id';
 
 export function VisaoGeralTab() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +41,7 @@ export function VisaoGeralTab() {
   const { lancamentos } = useLancamentos(obraId);
   const { fornecedores } = useFornecedores();
   const { lembretes, createLembrete, toggleConcluido, deleteLembrete } = useLembretes(obraId);
+  const { requisicoes, createRequisicoes, deleteRequisicao } = useRequisicoes(obraId);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -48,6 +52,7 @@ export function VisaoGeralTab() {
   const [subatividadeModalMode, setSubatividadeModalMode] = useState<'create' | 'edit'>('create');
   const [subatividadeParentId, setSubatividadeParentId] = useState<string>('');
   const [editingSubatividade, setEditingSubatividade] = useState<Subatividade | undefined>(undefined);
+  const [etapasPadraoModalOpen, setEtapasPadraoModalOpen] = useState(false);
 
   if (!obra) return null;
 
@@ -67,6 +72,35 @@ export function VisaoGeralTab() {
     if (confirm(`Excluir a atividade "${atividade.nome}"? Isso também remove todas as suas subatividades. Essa ação não pode ser desfeita.`)) {
       deleteAtividade(atividade.id);
     }
+  }
+
+  async function handleEnviarParaRequisicoes(atividade: Atividade, subatividade: Subatividade) {
+    const insumos = subatividade.insumos ?? [];
+    if (insumos.length === 0) return;
+
+    // reenviar substitui o que já tinha sido mandado dessa subatividade — evita duplicar se os
+    // insumos mudaram desde o último envio
+    const jaEnviados = requisicoes.filter((r) => r.subatividadeId === subatividade.id);
+    for (const r of jaEnviados) await deleteRequisicao(r.id);
+
+    const now = new Date().toISOString();
+    const novos = insumos.map((i) => ({
+      id: generateId(),
+      obraId,
+      atividadeId: atividade.id,
+      atividadeNome: atividade.nome,
+      subatividadeId: subatividade.id,
+      subatividadeNome: subatividade.nome,
+      descricao: i.descricao,
+      unidade: i.unidade,
+      quantidade: i.quantidade,
+      custoUnitario: i.custoUnitario,
+      tipo: i.tipo,
+      status: 'pendente' as const,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    await createRequisicoes(novos);
   }
 
   function openNewSubatividade(atividadeId: string) {
@@ -153,6 +187,8 @@ export function VisaoGeralTab() {
         onEdit={openEdit}
         onDelete={handleDeleteAtividade}
         onNew={openCreate}
+        onUsarEtapasPadrao={() => setEtapasPadraoModalOpen(true)}
+        onEnviarParaRequisicoes={handleEnviarParaRequisicoes}
         onNewSubatividade={openNewSubatividade}
         onEditSubatividade={openEditSubatividade}
       />
@@ -162,6 +198,7 @@ export function VisaoGeralTab() {
         mode={modalMode}
         obraId={obraId}
         obraDataInicio={obra.dataInicio}
+        obra={obra}
         atividade={editingAtividade}
         todasAtividades={atividades}
         lancamentos={lancamentos}
@@ -176,12 +213,25 @@ export function VisaoGeralTab() {
         open={subatividadeModalOpen}
         mode={subatividadeModalMode}
         obraId={obraId}
+        obra={obra}
         atividadeId={subatividadeParentId}
         subatividade={editingSubatividade}
         todasAtividades={atividades}
         onClose={() => setSubatividadeModalOpen(false)}
         onSaved={() => {
           setSubatividadeModalOpen(false);
+          refresh();
+        }}
+      />
+
+      <UsarEtapasPadraoModal
+        open={etapasPadraoModalOpen}
+        obraId={obraId}
+        obraDataInicio={obra.dataInicio}
+        atividades={atividades}
+        onClose={() => setEtapasPadraoModalOpen(false)}
+        onApplied={() => {
+          setEtapasPadraoModalOpen(false);
           refresh();
         }}
       />

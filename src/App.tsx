@@ -14,11 +14,13 @@ import { OrcamentoTab } from './pages/obra-tabs/OrcamentoTab';
 import { PmoMensalTab } from './pages/obra-tabs/PmoMensalTab';
 import { DiarioDeObraTab } from './pages/obra-tabs/DiarioDeObraTab';
 import { ProximaSemanaTab } from './pages/obra-tabs/ProximaSemanaTab';
+import { RequisicoesTab } from './pages/obra-tabs/RequisicoesTab';
 import { MapaDeCotacaoTab } from './pages/obra-tabs/MapaDeCotacaoTab';
 import { FinanceiroTab } from './pages/obra-tabs/FinanceiroTab';
 import { EmpreitaTab } from './pages/obra-tabs/EmpreitaTab';
 import { LocacaoDeBensMoveisTab } from './pages/obra-tabs/LocacaoDeBensMoveisTab';
 import { FerramentasTab } from './pages/obra-tabs/FerramentasTab';
+import { AlmoxarifadoTab } from './pages/obra-tabs/AlmoxarifadoTab';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
@@ -55,11 +57,15 @@ function App() {
           <Route path="pmo-mensal" element={<PmoMensalTab />} />
           <Route path="diario-de-obra" element={<DiarioDeObraTab />} />
           <Route path="proxima-semana" element={<ProximaSemanaTab />} />
+          <Route path="requisicoes" element={<RequisicoesTab />} />
           <Route path="mapa-cotacao" element={<MapaDeCotacaoTab />} />
           <Route path="financeiro" element={<FinanceiroTab />} />
           <Route path="empreita" element={<EmpreitaTab />} />
           <Route path="locacao-de-bens-moveis" element={<LocacaoDeBensMoveisTab />} />
+          {/* rota mantida (sem aba visível na nav) pra não quebrar o link que a página global de
+              Ferramentas faz pra cada obra como "localização" */}
           <Route path="ferramentas" element={<FerramentasTab />} />
+          <Route path="almoxarifado" element={<AlmoxarifadoTab />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '../common/Modal';
-import type { Atividade, LancamentoFinanceiro } from '../../types/domain';
+import { ComposicaoInsumosField } from './ComposicaoInsumosField';
+import type { Atividade, ItemInsumoAtividade, LancamentoFinanceiro, Obra } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
+import { totaisPorTipo } from '../../utils/insumosAtividade';
 import { generateId } from '../../utils/id';
 import { getDescendantIds } from '../../utils/subatividades';
 import { formatBRL } from '../../utils/currency';
@@ -13,6 +15,7 @@ interface AtividadeFormModalProps {
   mode: 'create' | 'edit';
   obraId: string;
   obraDataInicio: string;
+  obra?: Obra; // quando ausente, a busca de composição SINAPI fica oculta (só custos manuais)
   atividade?: Atividade;
   todasAtividades: Atividade[];
   lancamentos: LancamentoFinanceiro[];
@@ -47,12 +50,16 @@ function toFormState(a?: Atividade): FormState {
   };
 }
 
-export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, atividade, todasAtividades, lancamentos, onClose, onSaved, onCreated }: AtividadeFormModalProps) {
+export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, obra, atividade, todasAtividades, lancamentos, onClose, onSaved, onCreated }: AtividadeFormModalProps) {
   const { createAtividade, updateAtividade } = useAtividades(obraId);
   const [form, setForm] = useState<FormState>(() => toFormState(atividade));
+  const [insumos, setInsumos] = useState<ItemInsumoAtividade[]>(() => atividade?.insumos ?? []);
 
   useEffect(() => {
-    if (open) setForm(toFormState(atividade));
+    if (open) {
+      setForm(toFormState(atividade));
+      setInsumos(atividade?.insumos ?? []);
+    }
   }, [open, atividade]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -72,6 +79,8 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
   const dependeDeOptions = todasAtividades.filter((a) => !excludedIds.has(a.id));
 
   const temSubatividades = !!atividade && atividade.subatividades.length > 0;
+  const temInsumos = insumos.length > 0;
+  const totais = totaisPorTipo(insumos);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,9 +91,9 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
       form.duracaoUnidade === 'dias'
         ? { duracaoDias: duracaoValorNum, duracaoSemanas: undefined }
         : { duracaoSemanas: duracaoValorNum, duracaoDias: undefined };
-    const custoMaoDeObra = Number(form.custoMaoDeObra) || 0;
-    const custoMaterial = Number(form.custoMaterial) || 0;
-    const custoAluguel = Number(form.custoAluguel) || 0;
+    const custoMaoDeObra = temInsumos ? totais.mao_de_obra : (Number(form.custoMaoDeObra) || 0);
+    const custoMaterial = temInsumos ? totais.material : (Number(form.custoMaterial) || 0);
+    const custoAluguel = temInsumos ? totais.aluguel : (Number(form.custoAluguel) || 0);
 
     if (mode === 'create') {
       const nova: Atividade = {
@@ -104,6 +113,7 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
         materiaisNecessarios: [],
         maoDeObraNecessaria: [],
         equipamentosAluguel: [],
+        insumos,
         subatividades: [],
         createdAt: now,
         updatedAt: now,
@@ -115,6 +125,7 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
         etapa: form.nome,
         dependeDe: form.dependeDe ? [form.dependeDe] : [],
         ...duracaoCampos,
+        insumos,
         ...(temSubatividades ? {} : { custoMaoDeObra, custoMaterial, custoAluguel }),
         updatedAt: now,
       }).then(onSaved);
@@ -126,7 +137,7 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
       open={open}
       title={mode === 'create' ? 'Nova atividade' : 'Editar atividade'}
       onClose={onClose}
-      width={760}
+      width={860}
       footer={
         <>
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
@@ -160,11 +171,27 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
           </div>
         </div>
 
+        {obra && !temSubatividades && (
+          <div className="form-field form-field--full">
+            <ComposicaoInsumosField
+              uf={obra.endereco.estado || 'GO'}
+              etapaNome={form.nome}
+              insumos={insumos}
+              onChangeInsumos={setInsumos}
+              onSugerirNome={(nome) => setForm((f) => ({ ...f, nome: f.nome || nome }))}
+            />
+          </div>
+        )}
+
         <div className="form-field form-field--full">
           <label>Orçamento previsto da etapa</label>
           {temSubatividades ? (
             <p className="atividade-orcamento-hint">
               Somado automaticamente das subtarefas — para ajustar, edite as subtarefas individualmente.
+            </p>
+          ) : temInsumos ? (
+            <p className="atividade-orcamento-hint">
+              Somado automaticamente dos insumos acima — para ajustar, edite os insumos.
             </p>
           ) : (
             <div className="atividade-orcamento-grid">
@@ -188,7 +215,9 @@ export function AtividadeFormModal({ open, mode, obraId, obraDataInicio, ativida
           const vinculados = lancamentos.filter((l) => l.atividadeId === atividade.id);
           const previsto = temSubatividades
             ? atividade.custoMaoDeObra + atividade.custoMaterial + atividade.custoAluguel
-            : (Number(form.custoMaoDeObra) || 0) + (Number(form.custoMaterial) || 0) + (Number(form.custoAluguel) || 0);
+            : temInsumos
+              ? totais.material + totais.mao_de_obra + totais.aluguel
+              : (Number(form.custoMaoDeObra) || 0) + (Number(form.custoMaterial) || 0) + (Number(form.custoAluguel) || 0);
           const pago = vinculados.filter((l) => l.status === 'pago').reduce((s, l) => s + l.valorPago, 0);
           const saldo = previsto - pago;
           return (
