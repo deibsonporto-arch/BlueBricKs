@@ -63,6 +63,11 @@ export function RequisicoesTab() {
     });
   }
 
+  async function handleExcluirGrupo(itens: ItemRequisicao[]) {
+    if (!confirm('Remover essa requisição? Isso só apaga daqui de Requisições — a subatividade e os insumos dela na Visão Geral continuam intactos. Pode reenviar depois se precisar.')) return;
+    for (const i of itens) await deleteRequisicao(i.id);
+  }
+
   if (requisicoes.length === 0) {
     return (
       <EmptyState
@@ -98,6 +103,15 @@ export function RequisicoesTab() {
                   </button>
                   <h4>{sub.subatividadeNome}</h4>
                   <span className="requisicoes-subetapa__total">{formatBRL(totalRequisitar)} a requisitar</span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost requisicoes-subetapa__excluir"
+                    onClick={() => handleExcluirGrupo(sub.itens)}
+                    aria-label="Remover essa requisição"
+                    title="Remover essa requisição (só daqui — não afeta a subatividade)"
+                  >
+                    <IconTrash size={14} />
+                  </button>
                 </div>
 
                 {!recolhida && maoDeObra.length > 0 && (

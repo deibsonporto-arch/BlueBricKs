@@ -75,6 +75,10 @@
   margin-left: auto;
 }
 
+.requisicoes-subetapa__excluir {
+  flex-shrink: 0;
+}
+
 .requisicoes-grupo {
   margin-bottom: 10px;
 }
