@@ -39,8 +39,8 @@
 
 .requisicoes-subetapa__header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
@@ -49,10 +49,30 @@
   font-size: 14px;
 }
 
+.requisicoes-subetapa__toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  margin: -6px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.requisicoes-subetapa__toggle:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
 .requisicoes-subetapa__total {
   font-size: 12px;
   font-weight: 600;
   color: var(--color-primary-dark);
+  margin-left: auto;
 }
 
 .requisicoes-grupo {

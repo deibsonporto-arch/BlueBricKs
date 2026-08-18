@@ -41,6 +41,7 @@ interface AtividadesTableProps {
   onNew: () => void;
   onUsarEtapasPadrao?: () => void;
   onEnviarParaRequisicoes?: (atividade: Atividade, subatividade: Subatividade) => void;
+  subatividadesComRequisicaoEnviada?: Set<string>;
   onNewSubatividade: (atividadeId: string) => void;
   onEditSubatividade: (atividadeId: string, subatividade: Subatividade) => void;
 }
@@ -59,6 +60,7 @@ export function AtividadesTable({
   onNew,
   onUsarEtapasPadrao,
   onEnviarParaRequisicoes,
+  subatividadesComRequisicaoEnviada,
   onNewSubatividade,
   onEditSubatividade,
 }: AtividadesTableProps) {
@@ -484,13 +486,18 @@ export function AtividadesTable({
                               {temInsumos && insumosExpandidos && (
                                 <div className="subativ-insumos" style={{ marginLeft: depth * 20 + 26 }}>
                                   {onEnviarParaRequisicoes && (
-                                    <button
-                                      type="button"
-                                      className="btn btn-secondary subativ-insumos__enviar-btn"
-                                      onClick={() => onEnviarParaRequisicoes(a, s)}
-                                    >
-                                      Enviar tudo para Requisições
-                                    </button>
+                                    <div className="subativ-insumos__enviar-row">
+                                      <button
+                                        type="button"
+                                        className="btn btn-secondary subativ-insumos__enviar-btn"
+                                        onClick={() => onEnviarParaRequisicoes(a, s)}
+                                      >
+                                        {subatividadesComRequisicaoEnviada?.has(s.id) ? 'Reenviar para Requisições' : 'Enviar tudo para Requisições'}
+                                      </button>
+                                      {subatividadesComRequisicaoEnviada?.has(s.id) && (
+                                        <span className="subativ-insumos__enviado-badge">✓ Enviado para Requisições</span>
+                                      )}
+                                    </div>
                                   )}
                                   <table className="subativ-insumos__table">
                                     <thead>

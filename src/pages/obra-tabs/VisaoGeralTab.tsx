@@ -153,6 +153,7 @@ export function VisaoGeralTab() {
   const dataInicioObra = atividades.length > 0 ? atividades.reduce((min, a) => (a.dataInicio < min ? a.dataInicio : min), atividades[0].dataInicio) : obra.dataInicio;
   const dataFimObra = atividades.length > 0 ? atividades.reduce((max, a) => (a.dataFim > max ? a.dataFim : max), atividades[0].dataFim) : obra.dataInicio;
   const totalDias = atividades.length > 0 ? businessDaysBetween(dataInicioObra, dataFimObra) : 0;
+  const subatividadesComRequisicaoEnviada = new Set(requisicoes.map((r) => r.subatividadeId));
 
   return (
     <div style={{ paddingBottom: 40 }}>
@@ -189,6 +190,7 @@ export function VisaoGeralTab() {
         onNew={openCreate}
         onUsarEtapasPadrao={() => setEtapasPadraoModalOpen(true)}
         onEnviarParaRequisicoes={handleEnviarParaRequisicoes}
+        subatividadesComRequisicaoEnviada={subatividadesComRequisicaoEnviada}
         onNewSubatividade={openNewSubatividade}
         onEditSubatividade={openEditSubatividade}
       />

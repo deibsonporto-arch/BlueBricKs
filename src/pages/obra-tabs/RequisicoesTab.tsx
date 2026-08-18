@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconTrash } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconTrash } from '@tabler/icons-react';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useRequisicoes } from '../../hooks/useRequisicoes';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -46,8 +46,17 @@ export function RequisicoesTab() {
   const obraId = id!;
   useAtividades(obraId); // mantém o cache de atividades quente pro resto da obra
   const { requisicoes, updateRequisicao, deleteRequisicao } = useRequisicoes(obraId);
+  const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
 
   const grupos = useMemo(() => agruparPorEtapa(requisicoes), [requisicoes]);
+
+  function toggleRecolhida(subatividadeId: string) {
+    setRecolhidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(subatividadeId)) next.delete(subatividadeId); else next.add(subatividadeId);
+      return next;
+    });
+  }
 
   if (requisicoes.length === 0) {
     return (
@@ -70,14 +79,23 @@ export function RequisicoesTab() {
             const maoDeObra = sub.itens.filter((i) => i.tipo === 'mao_de_obra');
             const materiaisEAlugueis = sub.itens.filter((i) => i.tipo !== 'mao_de_obra');
             const totalRequisitar = materiaisEAlugueis.reduce((s, i) => s + i.quantidade * i.custoUnitario, 0);
+            const recolhida = recolhidas.has(sub.subatividadeId);
             return (
               <div key={sub.subatividadeId} className="requisicoes-subetapa">
                 <div className="requisicoes-subetapa__header">
+                  <button
+                    type="button"
+                    className="requisicoes-subetapa__toggle"
+                    onClick={() => toggleRecolhida(sub.subatividadeId)}
+                    aria-label={recolhida ? 'Expandir' : 'Recolher'}
+                  >
+                    {recolhida ? <IconChevronRight size={14} /> : <IconChevronDown size={14} />}
+                  </button>
                   <h4>{sub.subatividadeNome}</h4>
                   <span className="requisicoes-subetapa__total">{formatBRL(totalRequisitar)} a requisitar</span>
                 </div>
 
-                {maoDeObra.length > 0 && (
+                {!recolhida && maoDeObra.length > 0 && (
                   <div className="requisicoes-grupo">
                     <span className="requisicoes-grupo__label">Mão de obra (referência)</span>
                     <ul className="requisicoes-mao-de-obra-lista">
@@ -88,7 +106,7 @@ export function RequisicoesTab() {
                   </div>
                 )}
 
-                {materiaisEAlugueis.length > 0 && (
+                {!recolhida && materiaisEAlugueis.length > 0 && (
                   <div className="requisicoes-grupo">
                     <span className="requisicoes-grupo__label">Materiais e aluguéis</span>
                     <div className="scroll-x">
