@@ -100,6 +100,7 @@
 
 .atividade-insumos-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 12px;
   margin-top: 10px;
@@ -110,13 +111,37 @@
   padding: 4px 6px;
   border-bottom: 1px solid var(--color-border);
   text-align: left;
+  overflow: hidden;
 }
+
+/* Descrição | Tipo | Un. | Qtd. | Custo unit. | Total | (remover) — a descrição ganha a maior fatia
+   pra dar pra ler o nome inteiro do insumo, o resto fica compacto. */
+.atividade-insumos-table th:nth-child(1),
+.atividade-insumos-table td:nth-child(1) { width: 42%; }
+.atividade-insumos-table th:nth-child(2),
+.atividade-insumos-table td:nth-child(2) { width: 13%; }
+.atividade-insumos-table th:nth-child(3),
+.atividade-insumos-table td:nth-child(3) { width: 8%; }
+.atividade-insumos-table th:nth-child(4),
+.atividade-insumos-table td:nth-child(4) { width: 10%; }
+.atividade-insumos-table th:nth-child(5),
+.atividade-insumos-table td:nth-child(5) { width: 12%; }
+.atividade-insumos-table th:nth-child(6),
+.atividade-insumos-table td:nth-child(6) { width: 12%; }
+.atividade-insumos-table th:nth-child(7),
+.atividade-insumos-table td:nth-child(7) { width: 3%; }
 
 .atividade-insumos-table input,
 .atividade-insumos-table select {
   width: 100%;
+  min-width: 0;
   font-size: 12px;
   padding: 2px 4px;
+  box-sizing: border-box;
+}
+
+.atividade-insumos-table td:nth-child(1) input {
+  text-overflow: ellipsis;
 }
 
 .atividade-insumos-table tfoot td {
