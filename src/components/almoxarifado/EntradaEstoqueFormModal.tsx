@@ -20,8 +20,10 @@ interface EntradaEstoqueFormModalProps {
   entradas: EntradaEstoque[];
   atividades: Atividade[];
   prefill?: EntradaEstoquePrefill;
+  editing?: EntradaEstoque;
   onClose: () => void;
   onCreate: (entrada: EntradaEstoque) => void;
+  onUpdate?: (id: string, patch: Partial<EntradaEstoque>) => void;
 }
 
 interface FormState {
@@ -54,11 +56,27 @@ function vazio(prefill?: EntradaEstoquePrefill): FormState {
   };
 }
 
-export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, prefill, onClose, onCreate }: EntradaEstoqueFormModalProps) {
-  const [form, setForm] = useState<FormState>(() => vazio(prefill));
+function deEntrada(entrada: EntradaEstoque): FormState {
+  return {
+    data: entrada.data,
+    material: entrada.material,
+    marca: entrada.marca ?? '',
+    quantidade: String(entrada.quantidade),
+    unidade: entrada.unidade,
+    medidas: entrada.medidas ?? '',
+    fornecedor: entrada.fornecedor,
+    notaFiscal: entrada.notaFiscal ?? '',
+    localizacao: entrada.localizacao ?? '',
+    atividadeId: entrada.atividadeId ?? '',
+    subatividadeId: entrada.subatividadeId ?? '',
+  };
+}
+
+export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, prefill, editing, onClose, onCreate, onUpdate }: EntradaEstoqueFormModalProps) {
+  const [form, setForm] = useState<FormState>(() => (editing ? deEntrada(editing) : vazio(prefill)));
 
   useEffect(() => {
-    if (open) setForm(vazio(prefill));
+    if (open) setForm(editing ? deEntrada(editing) : vazio(prefill));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -90,9 +108,31 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
     const quantidade = Number(form.quantidade);
     if (!(quantidade > 0) || !form.material.trim() || !form.fornecedor.trim()) return;
 
-    const codigo = materialExistente?.codigo ?? proximoCodigoMaterial(entradas);
     const atividade = atividades.find((a) => a.id === form.atividadeId);
     const subatividade = atividade?.subatividades.find((s) => s.id === form.subatividadeId);
+
+    if (editing && onUpdate) {
+      onUpdate(editing.id, {
+        data: form.data,
+        codigo: editing.codigo,
+        material: form.material.trim(),
+        marca: form.marca.trim() || undefined,
+        quantidade,
+        unidade: form.unidade.trim() || 'un',
+        medidas: form.medidas.trim() || undefined,
+        fornecedor: form.fornecedor.trim(),
+        notaFiscal: form.notaFiscal.trim() || undefined,
+        localizacao: form.localizacao.trim() || undefined,
+        atividadeId: atividade?.id,
+        subatividadeId: subatividade?.id,
+        etapaNome: atividade?.nome,
+        subetapaNome: subatividade?.nome,
+        updatedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const codigo = materialExistente?.codigo ?? proximoCodigoMaterial(entradas);
     const now = new Date().toISOString();
     onCreate({
       id: generateId(),
@@ -120,13 +160,13 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
   return (
     <Modal
       open={open}
-      title="Registrar entrada de material"
+      title={editing ? 'Editar entrada de material' : 'Registrar entrada de material'}
       onClose={onClose}
       width={720}
       footer={
         <>
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-          <button type="submit" form="entrada-estoque-form" className="btn btn-primary">Salvar entrada</button>
+          <button type="submit" form="entrada-estoque-form" className="btn btn-primary">{editing ? 'Salvar alterações' : 'Salvar entrada'}</button>
         </>
       }
     >
@@ -148,7 +188,7 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
           <datalist id="materiais-conhecidos">
             {materiaisConhecidos.map((m) => <option key={m.codigo} value={m.material} />)}
           </datalist>
-          {materialExistente && (
+          {!editing && materialExistente && (
             <span className="form-field__hint">Material já cadastrado ({materialExistente.codigo}) — essa entrada soma ao saldo existente.</span>
           )}
         </div>

@@ -21,6 +21,14 @@ export function useEstoque(obraId: string) {
     [refresh],
   );
 
+  const updateEntrada = useCallback(
+    async (id: string, patch: Partial<EntradaEstoque>) => {
+      entradaEstoqueRepository.update(id, patch);
+      refresh();
+    },
+    [refresh],
+  );
+
   const deleteEntrada = useCallback(
     async (id: string) => {
       entradaEstoqueRepository.remove(id);
@@ -45,5 +53,5 @@ export function useEstoque(obraId: string) {
     [refresh],
   );
 
-  return { entradas, saidas, createEntrada, deleteEntrada, createSaida, deleteSaida, refresh };
+  return { entradas, saidas, createEntrada, updateEntrada, deleteEntrada, createSaida, deleteSaida, refresh };
 }

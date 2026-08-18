@@ -6,12 +6,19 @@ import { generateId } from '../../utils/id';
 import { todayISO } from '../../utils/dateUtils';
 import { formatNumberBR } from '../../utils/currency';
 
+export interface SaidaEstoquePrefill {
+  codigo?: string;
+  atividadeId?: string;
+  local?: string;
+}
+
 interface SaidaEstoqueFormModalProps {
   open: boolean;
   obraId: string;
   obraNome: string;
   saldos: SaldoMaterial[];
   atividades: Atividade[];
+  prefill?: SaidaEstoquePrefill;
   onClose: () => void;
   onCreate: (saida: SaidaEstoque) => void;
 }
@@ -28,16 +35,27 @@ interface FormState {
   observacao: string;
 }
 
-function vazio(obraNome: string): FormState {
-  return { codigo: '', data: todayISO(), quantidade: '', responsavel: '', atividadeId: '', etapaServico: '', local: obraNome, utilizacaoPara: '', observacao: '' };
+function vazio(obraNome: string, prefill?: SaidaEstoquePrefill): FormState {
+  return {
+    codigo: prefill?.codigo ?? '',
+    data: todayISO(),
+    quantidade: '',
+    responsavel: '',
+    atividadeId: prefill?.atividadeId ?? '',
+    etapaServico: '',
+    local: prefill?.local ?? obraNome,
+    utilizacaoPara: '',
+    observacao: '',
+  };
 }
 
-export function SaidaEstoqueFormModal({ open, obraId, obraNome, saldos, atividades, onClose, onCreate }: SaidaEstoqueFormModalProps) {
-  const [form, setForm] = useState<FormState>(() => vazio(obraNome));
+export function SaidaEstoqueFormModal({ open, obraId, obraNome, saldos, atividades, prefill, onClose, onCreate }: SaidaEstoqueFormModalProps) {
+  const [form, setForm] = useState<FormState>(() => vazio(obraNome, prefill));
   const [erro, setErro] = useState('');
 
   useEffect(() => {
-    if (open) { setForm(vazio(obraNome)); setErro(''); }
+    if (open) { setForm(vazio(obraNome, prefill)); setErro(''); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, obraNome]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
