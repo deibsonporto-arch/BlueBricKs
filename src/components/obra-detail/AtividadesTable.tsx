@@ -40,6 +40,7 @@ interface AtividadesTableProps {
   onDelete: (atividade: Atividade) => void;
   onNew: () => void;
   onUsarEtapasPadrao?: () => void;
+  onReordenarPadrao?: () => void;
   onEnviarParaRequisicoes?: (atividade: Atividade, subatividade: Subatividade) => void;
   subatividadesComRequisicaoEnviada?: Set<string>;
   entradasPorSubatividade?: Map<string, EntradaEstoque[]>;
@@ -60,6 +61,7 @@ export function AtividadesTable({
   onDelete,
   onNew,
   onUsarEtapasPadrao,
+  onReordenarPadrao,
   onEnviarParaRequisicoes,
   subatividadesComRequisicaoEnviada,
   entradasPorSubatividade,
@@ -151,6 +153,11 @@ export function AtividadesTable({
           {onUsarEtapasPadrao && (
             <button type="button" className="btn btn-secondary" onClick={onUsarEtapasPadrao}>
               Usar etapas pré-cadastradas
+            </button>
+          )}
+          {onReordenarPadrao && (
+            <button type="button" className="btn btn-secondary" onClick={onReordenarPadrao} title="Reordena as atividades pela sequência das etapas padrão — arrastar manualmente continua funcionando depois">
+              Reordenar pela sequência padrão
             </button>
           )}
           <button type="button" className="btn btn-primary" onClick={onNew}>

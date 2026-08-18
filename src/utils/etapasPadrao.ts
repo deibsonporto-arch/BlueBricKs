@@ -61,6 +61,18 @@ export function classificarGrupo(grupo: string | null | undefined): string {
   return 'Outros';
 }
 
+const INDICE_PADRAO = new Map(ETAPAS_PADRAO.map((e, i) => [e.nome.trim().toLowerCase(), i]));
+
+/** Ordena atividades pela sequência das etapas padrão (Serviços Preliminares → ... → Outros).
+ * Atividades com nome fora da lista padrão mantêm a posição relativa entre si, intercaladas
+ * pela posição que já tinham em relação às atividades padrão vizinhas. */
+export function ordenarPorSequenciaPadrao<T extends { id: string; nome: string }>(atividades: T[]): T[] {
+  return [...atividades]
+    .map((a, i) => ({ a, i, ordem: INDICE_PADRAO.get(a.nome.trim().toLowerCase()) ?? Infinity }))
+    .sort((x, y) => (x.ordem !== y.ordem ? x.ordem - y.ordem : x.i - y.i))
+    .map((x) => x.a);
+}
+
 /** Reordena resultados de busca de composição colocando primeiro os que pertencem à etapa atual. */
 export function priorizarPorEtapa<T extends { grupo: string | null }>(resultados: T[], etapaAtual: string): T[] {
   if (!etapaAtual) return resultados;

@@ -6,6 +6,8 @@ import { useAtividades } from '../../hooks/useAtividades';
 import { useEstoque } from '../../hooks/useEstoque';
 import { EntradaEstoqueFormModal } from '../../components/almoxarifado/EntradaEstoqueFormModal';
 import { SaidaEstoqueFormModal, type SaidaEstoquePrefill } from '../../components/almoxarifado/SaidaEstoqueFormModal';
+import { EscolhaAcaoEstoqueModal } from '../../components/almoxarifado/EscolhaAcaoEstoqueModal';
+import { InventarioMaterialModal } from '../../components/almoxarifado/InventarioMaterialModal';
 import { calcularSaldos, corDaEtapa } from '../../utils/estoque';
 import { formatNumberBR } from '../../utils/currency';
 import { formatDate } from '../../utils/dateUtils';
@@ -27,6 +29,8 @@ export function AlmoxarifadoTab() {
   const [saidaPrefill, setSaidaPrefill] = useState<SaidaEstoquePrefill | undefined>(undefined);
   const [busca, setBusca] = useState('');
   const [filtroAtividadeId, setFiltroAtividadeId] = useState('');
+  const [escolhaAcaoEntrada, setEscolhaAcaoEntrada] = useState<EntradaEstoque | null>(null);
+  const [inventarioMaterial, setInventarioMaterial] = useState<EntradaEstoque | null>(null);
 
   const saldosPorCodigo = useMemo(() => calcularSaldos(entradas, saidas), [entradas, saidas]);
   const saldos = useMemo(() => [...saldosPorCodigo.values()].sort((a, b) => a.material.localeCompare(b.material)), [saldosPorCodigo]);
@@ -80,6 +84,10 @@ export function AlmoxarifadoTab() {
   function abrirNovaSaida() {
     setSaidaPrefill(undefined);
     setSaidaModalOpen(true);
+  }
+
+  function abrirEscolhaAcao(entrada: EntradaEstoque) {
+    setEscolhaAcaoEntrada(entrada);
   }
 
   if (!obra) return null;
@@ -164,7 +172,7 @@ export function AlmoxarifadoTab() {
       <section className="almoxarifado-section">
         <div className="almoxarifado-section__head">
           <h2>Entrada de materiais</h2>
-          <p>Recebimentos vinculados a nota fiscal — alimentam o saldo do estoque. Clique num item pra editar.</p>
+          <p>Recebimentos vinculados a nota fiscal — alimentam o saldo do estoque. Clique num item pra ver as opções.</p>
         </div>
         {entradasFiltradas.length === 0 ? (
           <EmptyState title="Nenhuma entrada encontrada" description={entradas.length === 0 ? 'Clique em “Registrar entrada” para lançar o primeiro recebimento de material.' : 'Nenhum lançamento bate com o filtro atual.'} />
@@ -193,7 +201,7 @@ export function AlmoxarifadoTab() {
                   const saldo = saldosPorCodigo.get(e.codigo);
                   const cor = corDaEtapa(e.etapaNome);
                   return (
-                    <tr key={e.id} className="almoxarifado-row-clickable" onClick={() => abrirEdicaoEntrada(e)}>
+                    <tr key={e.id} className="almoxarifado-row-clickable" onClick={() => abrirEscolhaAcao(e)}>
                       <td className="mono text-muted">{formatDate(e.data)}</td>
                       <td className="mono">{e.codigo}</td>
                       <td><strong>{e.material}</strong></td>
@@ -317,6 +325,25 @@ export function AlmoxarifadoTab() {
         prefill={saidaPrefill}
         onClose={() => { setSaidaModalOpen(false); setSaidaPrefill(undefined); }}
         onCreate={(saida) => { createSaida(saida); setSaidaModalOpen(false); setSaidaPrefill(undefined); }}
+      />
+
+      <EscolhaAcaoEstoqueModal
+        open={escolhaAcaoEntrada !== null}
+        entrada={escolhaAcaoEntrada}
+        onClose={() => setEscolhaAcaoEntrada(null)}
+        onEditarEntrada={(entrada) => { setEscolhaAcaoEntrada(null); abrirEdicaoEntrada(entrada); }}
+        onDarSaida={(entrada) => { setEscolhaAcaoEntrada(null); abrirSaidaAPartirDeEntrada(entrada); }}
+        onVerInventario={(entrada) => { setEscolhaAcaoEntrada(null); setInventarioMaterial(entrada); }}
+      />
+
+      <InventarioMaterialModal
+        open={inventarioMaterial !== null}
+        codigo={inventarioMaterial?.codigo ?? null}
+        material={inventarioMaterial?.material ?? ''}
+        unidade={inventarioMaterial?.unidade ?? 'un'}
+        entradas={entradas}
+        saidas={saidas}
+        onClose={() => setInventarioMaterial(null)}
       />
     </div>
   );

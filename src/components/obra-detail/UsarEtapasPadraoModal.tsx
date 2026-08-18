@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../common/Modal';
 import type { Atividade } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
-import { ETAPAS_PADRAO } from '../../utils/etapasPadrao';
+import { ETAPAS_PADRAO, ordenarPorSequenciaPadrao } from '../../utils/etapasPadrao';
 import { generateId } from '../../utils/id';
+import { atividadeRepository } from '../../data/repositories/atividadeRepository';
 import './UsarEtapasPadraoModal.css';
 
 interface UsarEtapasPadraoModalProps {
@@ -16,7 +17,7 @@ interface UsarEtapasPadraoModalProps {
 }
 
 export function UsarEtapasPadraoModal({ open, obraId, obraDataInicio, atividades, onClose, onApplied }: UsarEtapasPadraoModalProps) {
-  const { createAtividade, mergeAtividade } = useAtividades(obraId);
+  const { createAtividade, mergeAtividade, reorderAtividades } = useAtividades(obraId);
 
   const nomesPadrao = useMemo(() => new Set(ETAPAS_PADRAO.map((e) => e.nome.trim().toLowerCase())), []);
   const existentes = useMemo(() => new Set(atividades.map((a) => a.nome.trim().toLowerCase())), [atividades]);
@@ -89,6 +90,10 @@ export function UsarEtapasPadraoModal({ open, obraId, obraDataInicio, atividades
         if (!destId || destId === sourceId) continue;
         await mergeAtividade(sourceId, destId);
       }
+
+      const atualizadas = atividadeRepository.list().filter((a) => a.obraId === obraId);
+      const ordenadas = ordenarPorSequenciaPadrao(atualizadas);
+      await reorderAtividades(ordenadas.map((a) => a.id));
 
       onApplied();
     } finally {

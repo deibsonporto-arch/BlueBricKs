@@ -1,0 +1,60 @@
+.inventario-material__resumo {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.inventario-material__resumo > div {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inventario-material__resumo span {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+}
+
+.inventario-material__resumo strong {
+  font-size: 14px;
+}
+
+.inventario-material__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.inventario-material__table th {
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inventario-material__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.inventario-material__table tbody tr:last-child td { border-bottom: none; }
+
+.inventario-material__table tr.is-entrada td:nth-child(2) { color: var(--color-primary-dark); }
+.inventario-material__table tr.is-saida td:nth-child(2) { color: var(--color-danger, #b91c1c); }
+
+.inventario-material__table .text-muted { color: var(--color-text-muted); }
+.inventario-material__table .mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+
+@media (max-width: 640px) {
+  .inventario-material__resumo { grid-template-columns: repeat(2, 1fr); }
+}

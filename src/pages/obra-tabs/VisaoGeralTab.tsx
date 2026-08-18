@@ -21,6 +21,7 @@ import { UsarEtapasPadraoModal } from '../../components/obra-detail/UsarEtapasPa
 import type { Atividade, Subatividade } from '../../types/domain';
 import { businessDaysBetween } from '../../utils/dateUtils';
 import { generateId } from '../../utils/id';
+import { ordenarPorSequenciaPadrao } from '../../utils/etapasPadrao';
 
 export function VisaoGeralTab() {
   const { id } = useParams<{ id: string }>();
@@ -103,6 +104,11 @@ export function VisaoGeralTab() {
       updatedAt: now,
     }));
     await createRequisicoes(novos);
+  }
+
+  function handleReordenarPadrao() {
+    const ordenadas = ordenarPorSequenciaPadrao(atividades);
+    reorderAtividades(ordenadas.map((a) => a.id));
   }
 
   function openNewSubatividade(atividadeId: string) {
@@ -198,6 +204,7 @@ export function VisaoGeralTab() {
         onDelete={handleDeleteAtividade}
         onNew={openCreate}
         onUsarEtapasPadrao={() => setEtapasPadraoModalOpen(true)}
+        onReordenarPadrao={handleReordenarPadrao}
         onEnviarParaRequisicoes={handleEnviarParaRequisicoes}
         subatividadesComRequisicaoEnviada={subatividadesComRequisicaoEnviada}
         entradasPorSubatividade={entradasPorSubatividade}
