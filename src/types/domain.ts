@@ -516,6 +516,11 @@ export interface EntradaEstoque {
   fornecedor: string;
   notaFiscal?: string;
   localizacao?: string;
+  atividadeId?: string; // vínculo com a Atividade/etapa da obra que vai consumir esse material
+  subatividadeId?: string; // vínculo com a subetapa específica
+  etapaNome?: string; // snapshot do nome da etapa no momento da entrada
+  subetapaNome?: string; // snapshot do nome da subetapa no momento da entrada
+  requisicaoId?: string; // se essa entrada veio de uma requisição atendida, o id do ItemRequisicao de origem
   createdAt: string;
   updatedAt: string;
 }

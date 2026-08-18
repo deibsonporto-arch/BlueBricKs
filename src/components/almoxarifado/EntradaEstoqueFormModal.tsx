@@ -1,14 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../common/Modal';
-import type { EntradaEstoque } from '../../types/domain';
+import type { Atividade, EntradaEstoque } from '../../types/domain';
 import { generateId } from '../../utils/id';
 import { todayISO } from '../../utils/dateUtils';
 import { proximoCodigoMaterial } from '../../utils/estoque';
+
+export interface EntradaEstoquePrefill {
+  material?: string;
+  unidade?: string;
+  quantidade?: number;
+  atividadeId?: string;
+  subatividadeId?: string;
+  requisicaoId?: string;
+}
 
 interface EntradaEstoqueFormModalProps {
   open: boolean;
   obraId: string;
   entradas: EntradaEstoque[];
+  atividades: Atividade[];
+  prefill?: EntradaEstoquePrefill;
   onClose: () => void;
   onCreate: (entrada: EntradaEstoque) => void;
 }
@@ -23,17 +34,32 @@ interface FormState {
   fornecedor: string;
   notaFiscal: string;
   localizacao: string;
+  atividadeId: string;
+  subatividadeId: string;
 }
 
-function vazio(): FormState {
-  return { data: todayISO(), material: '', marca: '', quantidade: '', unidade: 'un', medidas: '', fornecedor: '', notaFiscal: '', localizacao: '' };
+function vazio(prefill?: EntradaEstoquePrefill): FormState {
+  return {
+    data: todayISO(),
+    material: prefill?.material ?? '',
+    marca: '',
+    quantidade: prefill?.quantidade ? String(prefill.quantidade) : '',
+    unidade: prefill?.unidade ?? 'un',
+    medidas: '',
+    fornecedor: '',
+    notaFiscal: '',
+    localizacao: '',
+    atividadeId: prefill?.atividadeId ?? '',
+    subatividadeId: prefill?.subatividadeId ?? '',
+  };
 }
 
-export function EntradaEstoqueFormModal({ open, obraId, entradas, onClose, onCreate }: EntradaEstoqueFormModalProps) {
-  const [form, setForm] = useState<FormState>(vazio());
+export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, prefill, onClose, onCreate }: EntradaEstoqueFormModalProps) {
+  const [form, setForm] = useState<FormState>(() => vazio(prefill));
 
   useEffect(() => {
-    if (open) setForm(vazio());
+    if (open) setForm(vazio(prefill));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -47,6 +73,9 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, onClose, onCre
   }, [entradas]);
 
   const materialExistente = materiaisConhecidos.find((e) => e.material.toLowerCase() === form.material.trim().toLowerCase());
+
+  const atividadeSelecionada = atividades.find((a) => a.id === form.atividadeId);
+  const subatividadesDaAtividade = atividadeSelecionada?.subatividades ?? [];
 
   function aplicarMaterialConhecido(material: string) {
     update('material', material);
@@ -62,6 +91,8 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, onClose, onCre
     if (!(quantidade > 0) || !form.material.trim() || !form.fornecedor.trim()) return;
 
     const codigo = materialExistente?.codigo ?? proximoCodigoMaterial(entradas);
+    const atividade = atividades.find((a) => a.id === form.atividadeId);
+    const subatividade = atividade?.subatividades.find((s) => s.id === form.subatividadeId);
     const now = new Date().toISOString();
     onCreate({
       id: generateId(),
@@ -76,6 +107,11 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, onClose, onCre
       fornecedor: form.fornecedor.trim(),
       notaFiscal: form.notaFiscal.trim() || undefined,
       localizacao: form.localizacao.trim() || undefined,
+      atividadeId: atividade?.id,
+      subatividadeId: subatividade?.id,
+      etapaNome: atividade?.nome,
+      subetapaNome: subatividade?.nome,
+      requisicaoId: prefill?.requisicaoId,
       createdAt: now,
       updatedAt: now,
     });
@@ -131,6 +167,20 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, onClose, onCre
         <div className="form-field">
           <label>Medidas / dimensões</label>
           <input value={form.medidas} onChange={(e) => update('medidas', e.target.value)} placeholder="ex: 14x19x29cm" />
+        </div>
+        <div className="form-field">
+          <label>Etapa</label>
+          <select value={form.atividadeId} onChange={(e) => { update('atividadeId', e.target.value); update('subatividadeId', ''); }}>
+            <option value="">Sem etapa vinculada</option>
+            {atividades.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+          </select>
+        </div>
+        <div className="form-field">
+          <label>Subetapa</label>
+          <select value={form.subatividadeId} onChange={(e) => update('subatividadeId', e.target.value)} disabled={subatividadesDaAtividade.length === 0}>
+            <option value="">{subatividadesDaAtividade.length === 0 ? 'Escolha uma etapa primeiro' : 'Sem subetapa específica'}</option>
+            {subatividadesDaAtividade.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+          </select>
         </div>
         <div className="form-field">
           <label>Fornecedor</label>

@@ -124,6 +124,7 @@ export function AlmoxarifadoTab() {
                   <th>Fornecedor</th>
                   <th>Nota fiscal</th>
                   <th>Localização</th>
+                  <th>Etapa / subetapa</th>
                   <th>Saldo disponível</th>
                   <th></th>
                 </tr>
@@ -131,6 +132,7 @@ export function AlmoxarifadoTab() {
               <tbody>
                 {entradasOrdenadas.map((e) => {
                   const saldo = saldosPorCodigo.get(e.codigo);
+                  const cor = corDaEtapa(e.etapaNome);
                   return (
                     <tr key={e.id}>
                       <td className="mono text-muted">{formatDate(e.data)}</td>
@@ -144,6 +146,13 @@ export function AlmoxarifadoTab() {
                       <td className="mono text-muted">{e.notaFiscal ?? '—'}</td>
                       <td className="text-muted">
                         {e.localizacao ? <span className="almoxarifado-loc"><IconMapPin size={12} />{e.localizacao}</span> : '—'}
+                      </td>
+                      <td>
+                        {e.etapaNome ? (
+                          <span className="almoxarifado-etapa-chip" style={{ background: cor }}>
+                            <span className="dot" />{e.etapaNome}{e.subetapaNome ? ` — ${e.subetapaNome}` : ''}
+                          </span>
+                        ) : <span className="text-faint">Sem etapa</span>}
                       </td>
                       <td className="mono almoxarifado-saldo">{saldo ? `${formatNumberBR(saldo.saldo)} ${saldo.unidade}` : '—'}</td>
                       <td>
@@ -228,6 +237,7 @@ export function AlmoxarifadoTab() {
         open={entradaModalOpen}
         obraId={obraId}
         entradas={entradas}
+        atividades={atividades}
         onClose={() => setEntradaModalOpen(false)}
         onCreate={(entrada) => { createEntrada(entrada); setEntradaModalOpen(false); }}
       />

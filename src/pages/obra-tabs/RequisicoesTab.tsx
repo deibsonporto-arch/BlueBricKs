@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconChevronDown, IconChevronRight, IconTrash } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconPackageImport, IconTrash } from '@tabler/icons-react';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useRequisicoes } from '../../hooks/useRequisicoes';
+import { useEstoque } from '../../hooks/useEstoque';
 import { EmptyState } from '../../components/common/EmptyState';
+import { EntradaEstoqueFormModal, type EntradaEstoquePrefill } from '../../components/almoxarifado/EntradaEstoqueFormModal';
 import { formatBRL, formatNumberBR } from '../../utils/currency';
 import { formatDate } from '../../utils/dateUtils';
 import type { ItemRequisicao } from '../../types/domain';
@@ -44,11 +46,14 @@ function agruparPorEtapa(requisicoes: ItemRequisicao[]): GrupoEtapa[] {
 export function RequisicoesTab() {
   const { id } = useParams<{ id: string }>();
   const obraId = id!;
-  useAtividades(obraId); // mantém o cache de atividades quente pro resto da obra
+  const { atividades } = useAtividades(obraId);
   const { requisicoes, updateRequisicao, deleteRequisicao } = useRequisicoes(obraId);
+  const { entradas, createEntrada } = useEstoque(obraId);
   const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
+  const [entradaPrefill, setEntradaPrefill] = useState<EntradaEstoquePrefill | null>(null);
 
   const grupos = useMemo(() => agruparPorEtapa(requisicoes), [requisicoes]);
+  const requisicoesComEntrada = useMemo(() => new Set(entradas.map((e) => e.requisicaoId).filter(Boolean) as string[]), [entradas]);
 
   function toggleRecolhida(subatividadeId: string) {
     setRecolhidas((prev) => {
@@ -121,11 +126,14 @@ export function RequisicoesTab() {
                             <th>Custo unit.</th>
                             <th>Total</th>
                             <th>Enviado em</th>
+                            <th>Recebimento</th>
                             <th></th>
                           </tr>
                         </thead>
                         <tbody>
-                          {materiaisEAlugueis.map((i) => (
+                          {materiaisEAlugueis.map((i) => {
+                            const jaDeuEntrada = requisicoesComEntrada.has(i.id);
+                            return (
                             <tr key={i.id} className={i.status === 'requisitado' ? 'is-requisitado' : undefined}>
                               <td>
                                 <input
@@ -143,12 +151,33 @@ export function RequisicoesTab() {
                               <td>{formatBRL(i.quantidade * i.custoUnitario)}</td>
                               <td>{formatDate(i.createdAt.slice(0, 10))}</td>
                               <td>
+                                {jaDeuEntrada ? (
+                                  <span className="requisicoes-entrada-badge">✓ Deu entrada</span>
+                                ) : i.tipo === 'material' ? (
+                                  <button
+                                    type="button"
+                                    className="btn btn-secondary requisicoes-entrada-btn"
+                                    onClick={() => setEntradaPrefill({
+                                      material: i.descricao,
+                                      unidade: i.unidade,
+                                      quantidade: Math.round(i.quantidade * 100) / 100,
+                                      atividadeId: grupo.atividadeId,
+                                      subatividadeId: sub.subatividadeId,
+                                      requisicaoId: i.id,
+                                    })}
+                                  >
+                                    <IconPackageImport size={14} /> Dar entrada
+                                  </button>
+                                ) : null}
+                              </td>
+                              <td>
                                 <button type="button" className="btn btn-ghost" onClick={() => deleteRequisicao(i.id)} aria-label="Remover da requisição">
                                   <IconTrash size={14} />
                                 </button>
                               </td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -159,6 +188,16 @@ export function RequisicoesTab() {
           })}
         </div>
       ))}
+
+      <EntradaEstoqueFormModal
+        open={entradaPrefill !== null}
+        obraId={obraId}
+        entradas={entradas}
+        atividades={atividades}
+        prefill={entradaPrefill ?? undefined}
+        onClose={() => setEntradaPrefill(null)}
+        onCreate={(entrada) => { createEntrada(entrada); setEntradaPrefill(null); }}
+      />
     </div>
   );
 }
