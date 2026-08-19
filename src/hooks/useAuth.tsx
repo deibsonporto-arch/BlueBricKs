@@ -7,6 +7,7 @@ import { fetchBootstrap, pushCollection } from '../data/apiSync';
 import { readCollection, writeCollection } from '../data/storage';
 import { ensureSeeded, ensureFerramentasCatalogSeed } from '../data/seed';
 import { migrateSubatividadeDependeDe } from '../data/migrations';
+import { sincronizarAnexosPendentes } from '../utils/attachmentStore';
 
 interface AuthContextValue {
   usuarios: Usuario[];
