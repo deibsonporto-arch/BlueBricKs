@@ -139,7 +139,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
     const novosInsumos: ItemInsumoAtividade[] = lista.itens.flatMap((item) => {
       const cat = catalogo.find((m) => m.id === item.materialId);
       if (!cat) return [];
-      return [{ id: generateId(), descricao: cat.nome, unidade: cat.unidade, quantidade: item.quantidade, custoUnitario: cat.custoUnitario, tipo: 'material' as TipoInsumoAtividade }];
+      return [{ id: generateId(), descricao: cat.nome, unidade: cat.unidade, quantidade: item.quantidade, custoUnitario: cat.custoUnitario ?? 0, tipo: 'material' as TipoInsumoAtividade }];
     });
     setInsumos((prev) => [...prev, ...novosInsumos]);
   }
@@ -236,7 +236,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
           itemServico: item.descricao,
           descricaoServico: item.sinapiCodigo ? `SINAPI ${item.sinapiCodigo}` : undefined,
           quantidade: item.quantidade,
-          unidade: item.unidade,
+          unidade: item.unidade as UnidadeMedida,
           valorUnitarioPrevisto: item.custoUnitario,
           fornecedores: [],
           status: 'em_cotacao',
