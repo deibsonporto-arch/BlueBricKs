@@ -122,7 +122,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     onChangeInsumos(insumos.filter((i) => i.id !== id));
   }
 
-  const [novoInsumo, setNovoInsumo] = useState({ descricao: '', unidade: '', quantidade: '1', custoUnitario: '', tipo: 'material' as TipoInsumoAtividade, sinapiCodigo: undefined as string | undefined });
+  const [novoInsumo, setNovoInsumo] = useState({ descricao: '', unidade: '', quantidade: '1', custoUnitario: '', tipo: 'material' as TipoInsumoAtividade, sinapiCodigo: undefined as number | undefined });
   const [resultadosManual, setResultadosManual] = useState<SinapiInsumoResumo[]>([]);
   const [buscandoManual, setBuscandoManual] = useState(false);
 

@@ -80,6 +80,24 @@ export function pushAnexo(id: string, dataUrl: string): void {
   })();
 }
 
+/** Dado um conjunto de ids, devolve quais já existem na nuvem. */
+export async function fetchAnexosExistentes(ids: string[]): Promise<Set<string>> {
+  const existentes = new Set<string>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const lote = ids.slice(i, i + 200);
+    const { data, error } = await supabase.from('anexos').select('id').in('id', lote);
+    if (error) throw new Error(`Falha ao verificar anexos: ${error.message}`);
+    for (const row of data ?? []) existentes.add(row.id as string);
+  }
+  return existentes;
+}
+
+/** Envia um anexo pra nuvem e aguarda o resultado. */
+export async function uploadAnexo(id: string, dataUrl: string): Promise<void> {
+  const { error } = await supabase.from('anexos').upsert({ id, data_url: dataUrl }, { onConflict: 'id' });
+  if (error) throw new Error(error.message);
+}
+
 /** Remove um anexo da nuvem em segundo plano — best-effort. */
 export function deleteAnexoRemote(id: string): void {
   void (async () => {

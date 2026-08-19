@@ -1,5 +1,5 @@
 import { downloadDataUrl } from './downloadDataUrl';
-import { fetchAnexo, pushAnexo, deleteAnexoRemote } from '../data/apiSync';
+import { fetchAnexo, pushAnexo, deleteAnexoRemote, fetchAnexosExistentes, uploadAnexo } from '../data/apiSync';
 
 /**
  * Guarda o conteúdo pesado dos anexos (fotos, PDFs, comprovantes) no IndexedDB em vez de embutido
@@ -113,6 +113,40 @@ export function deleteBlob(id: string): Promise<void> {
   );
 }
 
+function getAllBlobIds(): Promise<string[]> {
+  return openDb().then(
+    (db) =>
+      new Promise<string[]>((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).getAllKeys();
+        req.onsuccess = () => resolve(req.result as string[]);
+        req.onerror = () => reject(req.error ?? new Error('Não foi possível listar os anexos.'));
+      }),
+  );
+}
+
+/**
+ * Anexos criados antes da migração pra nuvem (ou enquanto ela falhou) ficaram só no
+ * IndexedDB deste navegador — em outra máquina o download não encontra nada. Aqui subimos
+ * pra nuvem todos os que ainda não estão lá. Best-effort, roda em segundo plano no boot.
+ */
+export async function sincronizarAnexosPendentes(): Promise<void> {
+  const ids = await getAllBlobIds();
+  if (ids.length === 0) return;
+  const existentes = await fetchAnexosExistentes(ids);
+  const faltando = ids.filter((id) => !existentes.has(id));
+  for (const id of faltando) {
+    const dataUrl = await getBlobLocal(id);
+    if (!dataUrl) continue;
+    try {
+      await uploadAnexo(id, dataUrl);
+    } catch (err) {
+      console.error(`Falha ao enviar anexo "${id}" para a nuvem:`, err);
+    }
+  }
+  if (faltando.length) console.info(`Anexos enviados para a nuvem: ${faltando.length}`);
+}
+
 /** Usado só pelo backup — lê tudo em N transações sequenciais (não uma transação compartilhada entre awaits). */
 export function getAllBlobsRaw(): Promise<Record<string, string>> {
   return openDb().then(
@@ -165,7 +199,18 @@ export function loadAnexoDataUrl(item: { id: string; dataUrl: string }): Promise
 }
 
 export function downloadAnexo(item: { id: string; dataUrl: string; nome: string }): Promise<void> {
-  return loadAnexoDataUrl(item).then((url) => {
-    if (url) downloadDataUrl(url, item.nome);
-  });
+  return loadAnexoDataUrl(item)
+    .then((url) => {
+      if (!url) {
+        alert(
+          `O arquivo "${item.nome}" não está disponível nesta máquina. Ele foi anexado em outro navegador antes da sincronização com a nuvem — abra o app naquele navegador para que o envio automático o suba.`,
+        );
+        return;
+      }
+      downloadDataUrl(url, item.nome);
+    })
+    .catch((err: unknown) => {
+      console.error(`Falha ao baixar anexo "${item.nome}":`, err);
+      alert(`Não foi possível baixar "${item.nome}". Tente novamente.`);
+    });
 }
