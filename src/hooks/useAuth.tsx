@@ -34,6 +34,11 @@ async function hydrateFromServer(): Promise<void> {
   ensureSeeded();
   ensureFerramentasCatalogSeed();
   migrateSubatividadeDependeDe();
+
+  // Sobe pra nuvem anexos que ficaram só neste navegador (best-effort, em segundo plano).
+  void sincronizarAnexosPendentes().catch((err: unknown) =>
+    console.error('Falha ao sincronizar anexos pendentes:', err),
+  );
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
