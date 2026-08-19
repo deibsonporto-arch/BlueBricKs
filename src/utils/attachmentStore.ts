@@ -199,12 +199,18 @@ export function loadAnexoDataUrl(item: { id: string; dataUrl: string }): Promise
 }
 
 export function downloadAnexo(item: { id: string; dataUrl: string; nome: string }): Promise<void> {
-  return loadAnexoDataUrl(item).then((url) => {
-    if (!url) {
-      throw new Error(
-        `O arquivo "${item.nome}" não foi encontrado — ele foi anexado em outro navegador antes da sincronização com a nuvem e só pode ser baixado lá.`,
-      );
-    }
-    downloadDataUrl(url, item.nome);
-  });
+  return loadAnexoDataUrl(item)
+    .then((url) => {
+      if (!url) {
+        alert(
+          `O arquivo "${item.nome}" não está disponível nesta máquina. Ele foi anexado em outro navegador antes da sincronização com a nuvem — abra o app naquele navegador para que o envio automático o suba.`,
+        );
+        return;
+      }
+      downloadDataUrl(url, item.nome);
+    })
+    .catch((err: unknown) => {
+      console.error(`Falha ao baixar anexo "${item.nome}":`, err);
+      alert(`Não foi possível baixar "${item.nome}". Tente novamente.`);
+    });
 }
