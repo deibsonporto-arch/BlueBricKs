@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IconFileInvoice } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { ComposicaoInsumosField } from './ComposicaoInsumosField';
-import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, TipoInsumoAtividade } from '../../types/domain';
+import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, TipoInsumoAtividade, UnidadeMedida } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useListasDeMateriais } from '../../hooks/useListasDeMateriais';
 import { useMateriaisCatalogo } from '../../hooks/useMateriaisCatalogo';
