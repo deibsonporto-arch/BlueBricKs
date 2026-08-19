@@ -165,7 +165,16 @@ export function loadAnexoDataUrl(item: { id: string; dataUrl: string }): Promise
 }
 
 export function downloadAnexo(item: { id: string; dataUrl: string; nome: string }): Promise<void> {
-  return loadAnexoDataUrl(item).then((url) => {
-    if (url) downloadDataUrl(url, item.nome);
-  });
+  return loadAnexoDataUrl(item)
+    .then((url) => {
+      if (!url) {
+        alert(`Não foi possível baixar "${item.nome}" — o arquivo não está salvo neste navegador nem na nuvem. Provavelmente ele foi anexado noutro dispositivo e falhou ao sincronizar; será preciso anexar de novo.`);
+        return;
+      }
+      downloadDataUrl(url, item.nome);
+    })
+    .catch((err: unknown) => {
+      console.error(`Falha ao baixar anexo "${item.nome}":`, err);
+      alert(`Não foi possível baixar "${item.nome}": ${err instanceof Error ? err.message : 'erro desconhecido'}.`);
+    });
 }
