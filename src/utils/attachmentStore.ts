@@ -1,5 +1,5 @@
 import { downloadDataUrl } from './downloadDataUrl';
-import { fetchAnexo, pushAnexo, deleteAnexoRemote } from '../data/apiSync';
+import { fetchAnexo, pushAnexo, deleteAnexoRemote, fetchAnexosExistentes, uploadAnexo } from '../data/apiSync';
 
 /**
  * Guarda o conteúdo pesado dos anexos (fotos, PDFs, comprovantes) no IndexedDB em vez de embutido
