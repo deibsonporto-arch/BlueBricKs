@@ -200,6 +200,11 @@ export function loadAnexoDataUrl(item: { id: string; dataUrl: string }): Promise
 
 export function downloadAnexo(item: { id: string; dataUrl: string; nome: string }): Promise<void> {
   return loadAnexoDataUrl(item).then((url) => {
-    if (url) downloadDataUrl(url, item.nome);
+    if (!url) {
+      throw new Error(
+        `O arquivo "${item.nome}" não foi encontrado — ele foi anexado em outro navegador antes da sincronização com a nuvem e só pode ser baixado lá.`,
+      );
+    }
+    downloadDataUrl(url, item.nome);
   });
 }
