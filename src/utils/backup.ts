@@ -1,4 +1,5 @@
 import { clearAllBlobs, getAllBlobsRaw, restoreAllBlobs } from './attachmentStore';
+import { pushAnexo } from '../data/apiSync';
 
 const PREFIX = 'brics';
 
@@ -34,6 +35,14 @@ export function importBackup(file: File): Promise<void> {
         // nem chega a ser tocado, então uma falha no meio do caminho não deixa o app num estado misto.
         await clearAllBlobs();
         await restoreAllBlobs(parsed.anexos ?? {});
+
+        // Reenvia todo anexo restaurado pra nuvem — cobre o caso de anexos que nunca sincronizaram
+        // originalmente (ex: falha de rede no momento do upload). Fazer backup + importar o mesmo
+        // arquivo de volta, no mesmo navegador, vira assim um "ressincronizar tudo" sem precisar
+        // reanexar nada manualmente.
+        for (const [id, dataUrl] of Object.entries(parsed.anexos ?? {})) {
+          pushAnexo(id, dataUrl);
+        }
 
         for (let i = localStorage.length - 1; i >= 0; i--) {
           const key = localStorage.key(i);
