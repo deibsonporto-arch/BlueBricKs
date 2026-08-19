@@ -74,6 +74,17 @@ export function buildItensSemana(atividades: Atividade[], cotacoes: Cotacao[], r
         dia,
       });
     }
+    for (const s of a.subatividades) {
+      for (const i of s.insumos ?? []) {
+        itens.push({
+          key: `${a.id}:ins:${i.id}`,
+          tipo: i.tipo === 'mao_de_obra' ? 'mobilizacao' : i.tipo === 'aluguel' ? 'aluguel' : 'compra',
+          label: `${i.descricao} (${i.quantidade} ${i.unidade})`,
+          atividadeNome: a.nome,
+          dia,
+        });
+      }
+    }
   }
 
   const idsAtividadesDaSemana = new Set(atividadesDaSemana.map((a) => a.id));

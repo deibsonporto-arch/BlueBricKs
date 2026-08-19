@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconFileInvoice } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
-import { DynamicListField } from './DynamicListField';
 import { ComposicaoInsumosField } from './ComposicaoInsumosField';
-import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, UnidadeMedida } from '../../types/domain';
+import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, TipoInsumoAtividade } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useListasDeMateriais } from '../../hooks/useListasDeMateriais';
 import { useMateriaisCatalogo } from '../../hooks/useMateriaisCatalogo';
@@ -74,8 +73,6 @@ function toFormState(s?: Subatividade): FormState {
   };
 }
 
-const UNIDADES: UnidadeMedida[] = ['un', 'kg', 'm', 'm2', 'm3', 'saco', 'l', 'cx', 'pç'];
-
 export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, subatividade, todasAtividades, onClose, onSaved }: SubatividadeFormModalProps) {
   const { createSubatividade, updateSubatividade } = useAtividades(obraId);
   const { listas } = useListasDeMateriais();
@@ -84,13 +81,12 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   const { modelos, salvarModelo } = useModelosSubatividade();
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(() => toFormState(subatividade));
-  const [materiaisSelecionados, setMateriaisSelecionados] = useState<Set<string>>(new Set());
   const [enviandoCotacao, setEnviandoCotacao] = useState(false);
   const [insumos, setInsumos] = useState<ItemInsumoAtividade[]>(() => subatividade?.insumos ?? []);
   const [buscaModelo, setBuscaModelo] = useState('');
 
   useEffect(() => {
-    if (open) { setForm(toFormState(subatividade)); setMateriaisSelecionados(new Set()); setInsumos(subatividade?.insumos ?? []); setBuscaModelo(''); }
+    if (open) { setForm(toFormState(subatividade)); setInsumos(subatividade?.insumos ?? []); setBuscaModelo(''); }
   }, [open, subatividade]);
 
   const atividadePai = todasAtividades.find((a) => a.id === atividadeId);
@@ -133,14 +129,6 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
     });
   }
 
-  function toggleMaterialSelecionado(id: string) {
-    setMateriaisSelecionados((sel) => {
-      const novo = new Set(sel);
-      if (novo.has(id)) novo.delete(id); else novo.add(id);
-      return novo;
-    });
-  }
-
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
@@ -148,12 +136,12 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   function aplicarListaDeMateriais(listaId: string) {
     const lista = listas.find((l) => l.id === listaId);
     if (!lista) return;
-    const novosMateriais: Material[] = lista.itens.flatMap((item) => {
+    const novosInsumos: ItemInsumoAtividade[] = lista.itens.flatMap((item) => {
       const cat = catalogo.find((m) => m.id === item.materialId);
       if (!cat) return [];
-      return [{ id: generateId(), nome: cat.nome, quantidade: item.quantidade, unidade: cat.unidade, custoUnitario: cat.custoUnitario }];
+      return [{ id: generateId(), descricao: cat.nome, unidade: cat.unidade, quantidade: item.quantidade, custoUnitario: cat.custoUnitario, tipo: 'material' as TipoInsumoAtividade }];
     });
-    setForm((f) => ({ ...f, materiaisNecessarios: [...f.materiaisNecessarios, ...novosMateriais] }));
+    setInsumos((prev) => [...prev, ...novosInsumos]);
   }
 
   const duracaoDias = form.contagemDias === 'uteis' ? businessDaysBetween(form.dataInicio, form.dataFim) : durationDays(form.dataInicio, form.dataFim);
@@ -230,26 +218,26 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
     salvar().then(onSaved);
   }
 
-  async function enviarSelecionadosParaCotacao() {
-    const selecionados = form.materiaisNecessarios.filter((m) => materiaisSelecionados.has(m.id));
-    if (selecionados.length === 0) return;
+  async function enviarInsumosParaCotacao() {
+    const materiaisInsumos = insumos.filter((i) => i.tipo === 'material');
+    if (materiaisInsumos.length === 0) return;
 
     setEnviandoCotacao(true);
     try {
       await salvar();
       const now = new Date().toISOString();
-      for (const material of selecionados) {
+      for (const item of materiaisInsumos) {
         const cotacao: Cotacao = {
           id: generateId(),
           obraId,
           atividadeId,
           responsavel: getCurrentUserName(),
           data: todayISO(),
-          itemServico: material.nome,
-          descricaoServico: material.marca ? `Marca: ${material.marca}` : undefined,
-          quantidade: material.quantidade,
-          unidade: material.unidade,
-          valorUnitarioPrevisto: material.custoUnitario ?? 0,
+          itemServico: item.descricao,
+          descricaoServico: item.sinapiCodigo ? `SINAPI ${item.sinapiCodigo}` : undefined,
+          quantidade: item.quantidade,
+          unidade: item.unidade,
+          valorUnitarioPrevisto: item.custoUnitario,
           fornecedores: [],
           status: 'em_cotacao',
           createdAt: now,
@@ -387,11 +375,18 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
 
         {temInsumos ? (
           <div className="form-field form-field--full">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <label>Custo (calculado dos insumos acima)</label>
-              <button type="button" className="btn btn-secondary" onClick={handleSalvarComoModelo}>
-                Salvar como modelo
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {insumos.some((i) => i.tipo === 'material') && (
+                  <button type="button" className="btn btn-secondary" disabled={enviandoCotacao} onClick={enviarInsumosParaCotacao}>
+                    <IconFileInvoice size={14} /> {enviandoCotacao ? 'Enviando...' : 'Enviar materiais para Mapa de Cotação'}
+                  </button>
+                )}
+                <button type="button" className="btn btn-secondary" onClick={handleSalvarComoModelo}>
+                  Salvar como modelo
+                </button>
+              </div>
             </div>
             <p className="atividade-orcamento-hint">
               Mão de obra {formatBRL(totaisInsumos.mao_de_obra)} · Material {formatBRL(totaisInsumos.material)} · Aluguel {formatBRL(totaisInsumos.aluguel)}
@@ -424,73 +419,11 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
                 e.target.value = '';
               }}
             >
-              <option value="">Escolher uma lista para adicionar em lote...</option>
+              <option value="">Escolher uma lista para adicionar em lote nos insumos...</option>
               {listas.map((l) => <option key={l.id} value={l.id}>{l.nome} ({l.itens.length} itens)</option>)}
             </select>
           </div>
         )}
-
-        <DynamicListField<Material>
-          label="Materiais necessários"
-          items={form.materiaisNecessarios}
-          onChange={(items) => update('materiaisNecessarios', items)}
-          newItem={() => ({ id: generateId(), nome: '', quantidade: 1, unidade: 'un' })}
-          renderRowFields={(item, upd) => (
-            <>
-              <input
-                type="checkbox"
-                checked={materiaisSelecionados.has(item.id)}
-                onChange={() => toggleMaterialSelecionado(item.id)}
-                title="Selecionar para enviar ao Mapa de Cotação"
-              />
-              <input placeholder="Material" value={item.nome} onChange={(e) => upd({ nome: e.target.value })} style={{ flex: 2 }} />
-              <input placeholder="Marca" value={item.marca ?? ''} onChange={(e) => upd({ marca: e.target.value })} style={{ flex: 1 }} />
-              <input type="number" min={0} placeholder="Qtd" value={item.quantidade} onChange={(e) => upd({ quantidade: Number(e.target.value) })} style={{ width: 70 }} />
-              <select value={item.unidade} onChange={(e) => upd({ unidade: e.target.value as UnidadeMedida })} style={{ width: 80 }}>
-                {UNIDADES.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </>
-          )}
-        />
-        {form.materiaisNecessarios.length > 0 && (
-          <div className="form-field form-field--full" style={{ marginTop: -8 }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              disabled={materiaisSelecionados.size === 0 || enviandoCotacao}
-              onClick={enviarSelecionadosParaCotacao}
-            >
-              <IconFileInvoice size={14} /> {enviandoCotacao ? 'Enviando...' : `Enviar selecionados (${materiaisSelecionados.size}) para Mapa de Cotação`}
-            </button>
-          </div>
-        )}
-
-        <DynamicListField<MaoDeObra>
-          label="Mão de obra necessária"
-          items={form.maoDeObraNecessaria}
-          onChange={(items) => update('maoDeObraNecessaria', items)}
-          newItem={() => ({ id: generateId(), tipo: '', quantidadePessoas: 1 })}
-          renderRowFields={(item, upd) => (
-            <>
-              <input placeholder="Tipo (ex: Pedreiro)" value={item.tipo} onChange={(e) => upd({ tipo: e.target.value })} style={{ flex: 2 }} />
-              <input type="number" min={0} placeholder="Pessoas" value={item.quantidadePessoas} onChange={(e) => upd({ quantidadePessoas: Number(e.target.value) })} style={{ width: 90 }} />
-            </>
-          )}
-        />
-
-        <DynamicListField<Equipamento>
-          label="Equipamentos / aluguel"
-          items={form.equipamentosAluguel}
-          onChange={(items) => update('equipamentosAluguel', items)}
-          newItem={() => ({ id: generateId(), nome: '', dias: 1, valorDia: 0 })}
-          renderRowFields={(item, upd) => (
-            <>
-              <input placeholder="Equipamento" value={item.nome} onChange={(e) => upd({ nome: e.target.value })} style={{ flex: 2 }} />
-              <input type="number" min={0} placeholder="Dias" value={item.dias} onChange={(e) => upd({ dias: Number(e.target.value) })} style={{ width: 70 }} />
-              <input type="number" min={0} placeholder="R$/dia" value={item.valorDia} onChange={(e) => upd({ valorDia: Number(e.target.value) })} style={{ width: 90 }} />
-            </>
-          )}
-        />
       </form>
     </Modal>
   );
