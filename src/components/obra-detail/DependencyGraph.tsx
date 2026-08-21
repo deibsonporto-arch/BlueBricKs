@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -7,10 +7,14 @@ import {
   Handle,
   Position,
   MarkerType,
+  applyNodeChanges,
+  applyEdgeChanges,
   type Node,
   type Edge,
   type Connection,
   type NodeProps,
+  type NodeChange,
+  type EdgeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { Atividade, Subatividade, StatusAtividade } from '../../types/domain';
@@ -267,6 +271,24 @@ export function DependencyGraph({ atividades, onUpdateAtividade, onUpdateSubativ
     return { rfNodes: nodes, rfEdges: edges };
   }, [flatNodes, visiveis, atividades]);
 
+  // Estado controlado do React Flow: sem isso, arrastar um card não fica — o RF precisa que a gente
+  // aplique as mudanças de posição/seleção via onNodesChange/onEdgesChange. Ao recalcular o layout
+  // (edição em qualquer card muda `atividades`), preserva a posição que o usuário já arrastou pra
+  // cada nó, e só usa a posição calculada por nível pra nós novos.
+  const [nodes, setNodes] = useState<Node[]>(rfNodes);
+  const [edges, setEdges] = useState<Edge[]>(rfEdges);
+
+  useEffect(() => {
+    setNodes((atual) => {
+      const posicaoAtual = new Map(atual.map((n) => [n.id, n.position]));
+      return rfNodes.map((n) => (posicaoAtual.has(n.id) ? { ...n, position: posicaoAtual.get(n.id)! } : n));
+    });
+    setEdges(rfEdges);
+  }, [rfNodes, rfEdges]);
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
+
   function onConnect(connection: Connection) {
     const { source, target } = connection;
     if (!source || !target || source === target) return;
@@ -310,9 +332,11 @@ export function DependencyGraph({ atividades, onUpdateAtividade, onUpdateSubativ
       <div className="dep-graph-card__canvas">
         <ReactFlowProvider>
           <ReactFlow
-            nodes={rfNodes}
-            edges={rfEdges}
+            nodes={nodes}
+            edges={edges}
             nodeTypes={NODE_TYPES}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onEdgesDelete={onEdgesDelete}
             fitView

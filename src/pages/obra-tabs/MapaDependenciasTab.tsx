@@ -4,6 +4,7 @@ import { useObras } from '../../hooks/useObras';
 import { useAtividades } from '../../hooks/useAtividades';
 import { DependencyGraph } from '../../components/obra-detail/DependencyGraph';
 import { NoDetalhePanel, type ItemPath } from '../../components/obra-detail/NoDetalhePanel';
+import { SubatividadeFormModal } from '../../components/obra-detail/SubatividadeFormModal';
 
 export function MapaDependenciasTab() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ export function MapaDependenciasTab() {
   const { atividades, updateAtividade, updateSubatividade, updateSubSubatividade } = useAtividades(obraId);
 
   const [painelPath, setPainelPath] = useState<ItemPath | null>(null);
+  const [novoItemPath, setNovoItemPath] = useState<ItemPath | null>(null);
 
   function handleToggleSubatividade(atividadeId: string, subatividadeId: string) {
     const atividade = atividades.find((a) => a.id === atividadeId);
@@ -54,6 +56,19 @@ export function MapaDependenciasTab() {
         onToggleSubSubatividade={handleToggleSubSubatividade}
         onUpdateSubSubatividade={updateSubSubatividade}
         onNavigateTo={setPainelPath}
+        onAddChild={setNovoItemPath}
+      />
+
+      <SubatividadeFormModal
+        open={!!novoItemPath}
+        mode="create"
+        obraId={obraId}
+        obra={obra}
+        atividadeId={novoItemPath?.atividadeId ?? ''}
+        subatividadePaiId={novoItemPath?.subatividadeId}
+        todasAtividades={atividades}
+        onClose={() => setNovoItemPath(null)}
+        onSaved={() => setNovoItemPath(null)}
       />
     </div>
   );

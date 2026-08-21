@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { AtividadeStatusBadge } from '../common/StatusBadge';
 import type { Atividade, Subatividade } from '../../types/domain';
@@ -35,6 +35,8 @@ interface NoDetalhePanelProps {
   onToggleSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividadeId: string) => void;
   onUpdateSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividadeId: string, patch: Partial<Subatividade>) => void;
   onNavigateTo: (path: ItemPath) => void;
+  /** Abre o formulário de criação já apontando pro pai certo (atividade, ou subatividade quando `path.subatividadeId` vem preenchido). */
+  onAddChild: (path: ItemPath) => void;
 }
 
 /** Duração em dias de um item com data própria (Atividade sem subatividades) ou com filhos (soma). */
@@ -70,6 +72,7 @@ export function NoDetalhePanel({
   onToggleSubSubatividade,
   onUpdateSubSubatividade,
   onNavigateTo,
+  onAddChild,
 }: NoDetalhePanelProps) {
   const [netosExpandidos, setNetosExpandidos] = useState<Set<string>>(new Set());
 
@@ -105,6 +108,7 @@ export function NoDetalhePanel({
   }
 
   const isSubatividadeOuNeto = !!subatividade;
+  const podeTerFilhos = !neto; // netos são o 3º nível — não têm mais um nível abaixo
 
   return (
     <Modal open={open} title={`${numero} — ${item.nome}`} onClose={onClose} width={480}>
@@ -155,9 +159,19 @@ export function NoDetalhePanel({
           </div>
         </div>
 
-        {temFilhos && (
+        {podeTerFilhos && (
           <div className="no-detalhe-panel__filhos">
-            <h4>Itens dentro de "{item.nome}"</h4>
+            <div className="no-detalhe-panel__filhos-header">
+              <h4>Itens dentro de "{item.nome}"</h4>
+              <button
+                type="button"
+                className="btn btn-secondary no-detalhe-panel__add-btn"
+                onClick={() => onAddChild(subatividade ? { atividadeId: atividade.id, subatividadeId: subatividade.id } : { atividadeId: atividade.id })}
+              >
+                <IconPlus size={13} /> Adicionar
+              </button>
+            </div>
+            {!temFilhos && <p className="no-detalhe-panel__filhos-empty">Nenhum item ainda.</p>}
             {!subatividade &&
               atividade.subatividades.map((s) => (
                 <div key={s.id} className="no-detalhe-panel__filho-row">
