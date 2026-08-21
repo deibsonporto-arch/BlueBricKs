@@ -118,6 +118,7 @@ export interface Subatividade {
   maoDeObraNecessaria: MaoDeObra[];
   equipamentosAluguel: Equipamento[];
   insumos?: ItemInsumoAtividade[]; // decomposição SINAPI da subatividade (material/mão de obra/aluguel linha a linha) — quando presente, dirige os totais de custoMaterial/custoMaoDeObra/custoAluguel
+  subatividades?: Subatividade[]; // 3º nível (subatividade dentro de subatividade) — quando presente, datas/custos/status desta subatividade são derivados dos filhos, igual a Atividade deriva de subatividades
 }
 
 export interface Atividade {

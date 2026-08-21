@@ -17,7 +17,7 @@ import { isBlocked } from '../../hooks/useAtividades';
 import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, formatDate } from '../../utils/dateUtils';
 import { formatBRL, formatNumberBR } from '../../utils/currency';
 import { totaisPorTipo } from '../../utils/insumosAtividade';
-import { buildReagendamentoPatch, deriveParentStatus, getDescendantIds, getOrderedSubatividades, getSubatividadeDisplayStatus, getTaskNumber, isAtrasado } from '../../utils/subatividades';
+import { buildReagendamentoPatch, deriveParentStatus, getDescendantIds, getOrderedSubatividades, getSubatividadeDisplayStatus, getTaskNumber, isAtrasado, temNetos } from '../../utils/subatividades';
 import { EditableDateCell } from './EditableDateCell';
 import { EditableNumberCell } from './EditableNumberCell';
 import { EditablePredecessorCell } from './EditablePredecessorCell';
@@ -46,6 +46,11 @@ interface AtividadesTableProps {
   entradasPorSubatividade?: Map<string, EntradaEstoque[]>;
   onNewSubatividade: (atividadeId: string) => void;
   onEditSubatividade: (atividadeId: string, subatividade: Subatividade) => void;
+  onToggleSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividadeId: string) => void;
+  onUpdateSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividadeId: string, patch: Partial<Subatividade>) => void;
+  onDeleteSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividadeId: string) => void;
+  onNewSubSubatividade: (atividadeId: string, subatividadeId: string) => void;
+  onEditSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividade: Subatividade) => void;
 }
 
 export function AtividadesTable({
@@ -67,9 +72,15 @@ export function AtividadesTable({
   entradasPorSubatividade,
   onNewSubatividade,
   onEditSubatividade,
+  onToggleSubSubatividade,
+  onUpdateSubSubatividade,
+  onDeleteSubSubatividade,
+  onNewSubSubatividade,
+  onEditSubSubatividade,
 }: AtividadesTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [expandedInsumos, setExpandedInsumos] = useState<Set<string>>(new Set());
+  const [expandedNetos, setExpandedNetos] = useState<Set<string>>(new Set());
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [pendingOrder, setPendingOrder] = useState<string[] | null>(null);
 
@@ -82,6 +93,15 @@ export function AtividadesTable({
 
   function toggleExpanded(id: string) {
     setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleExpandedNetos(id: string) {
+    setExpandedNetos((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -398,6 +418,17 @@ export function AtividadesTable({
                                   {s.iniciada ? <IconPlayerPlayFilled size={12} /> : <IconPlayerPlay size={12} />}
                                 </button>
                                 <span className="subativ-row__numero">{getTaskNumber(displayList, s.id)}</span>
+                                {temNetos(s) && (
+                                  <button
+                                    type="button"
+                                    className="subativ-row__insumos-toggle"
+                                    onClick={() => toggleExpandedNetos(s.id)}
+                                    title={expandedNetos.has(s.id) ? 'Recolher itens' : 'Expandir itens'}
+                                    aria-label={expandedNetos.has(s.id) ? 'Recolher itens' : 'Expandir itens'}
+                                  >
+                                    {expandedNetos.has(s.id) ? <IconChevronDown size={12} /> : <IconChevronRight size={12} />}
+                                  </button>
+                                )}
                                 {(temInsumos || temEntradas) && (
                                   <button
                                     type="button"
@@ -452,24 +483,36 @@ export function AtividadesTable({
                                   </span>
                                 )}
                                 <span className="subativ-row__campo">
-                                  <EditableNumberCell
-                                    value={s.contagemDias === 'uteis' ? businessDaysBetween(s.dataInicio, s.dataFim) : durationDays(s.dataInicio, s.dataFim)}
-                                    suffix="dias"
-                                    onSave={(v) =>
-                                      onUpdateSubatividade(a.id, s.id, {
-                                        dataFim: s.contagemDias === 'uteis' ? endDateFromDurationUteis(s.dataInicio, v) : endDateFromDuration(s.dataInicio, v),
-                                      })
-                                    }
-                                  />
+                                  {temNetos(s) ? (
+                                    <span className="editable-cell editable-cell--disabled" title="Soma da duração (dias) dos itens">
+                                      {(s.subatividades ?? []).reduce(
+                                        (soma, n) => soma + (n.contagemDias === 'uteis' ? businessDaysBetween(n.dataInicio, n.dataFim) : durationDays(n.dataInicio, n.dataFim)),
+                                        0,
+                                      )}{' '}
+                                      dias
+                                    </span>
+                                  ) : (
+                                    <EditableNumberCell
+                                      value={s.contagemDias === 'uteis' ? businessDaysBetween(s.dataInicio, s.dataFim) : durationDays(s.dataInicio, s.dataFim)}
+                                      suffix="dias"
+                                      onSave={(v) =>
+                                        onUpdateSubatividade(a.id, s.id, {
+                                          dataFim: s.contagemDias === 'uteis' ? endDateFromDurationUteis(s.dataInicio, v) : endDateFromDuration(s.dataInicio, v),
+                                        })
+                                      }
+                                    />
+                                  )}
                                 </span>
-                                <button
-                                  type="button"
-                                  className="subativ-row__modo-btn"
-                                  onClick={() => onUpdateSubatividade(a.id, s.id, { contagemDias: s.contagemDias === 'uteis' ? 'corridos' : 'uteis' })}
-                                  title="Alternar entre dias corridos (conta sáb/dom) e dias úteis (pula sáb/dom)"
-                                >
-                                  {s.contagemDias === 'uteis' ? 'úteis' : 'corridos'}
-                                </button>
+                                {!temNetos(s) && (
+                                  <button
+                                    type="button"
+                                    className="subativ-row__modo-btn"
+                                    onClick={() => onUpdateSubatividade(a.id, s.id, { contagemDias: s.contagemDias === 'uteis' ? 'corridos' : 'uteis' })}
+                                    title="Alternar entre dias corridos (conta sáb/dom) e dias úteis (pula sáb/dom)"
+                                  >
+                                    {s.contagemDias === 'uteis' ? 'úteis' : 'corridos'}
+                                  </button>
+                                )}
                                 <span className="subativ-row__campo">
                                   <EditablePredecessorCell
                                     values={s.dependeDe}
@@ -489,6 +532,15 @@ export function AtividadesTable({
                                 <AtividadeStatusBadge status={displayStatus} />
                                 <button
                                   type="button"
+                                  className="btn btn-ghost"
+                                  onClick={() => onNewSubSubatividade(a.id, s.id)}
+                                  aria-label="Adicionar item dentro desta subatividade"
+                                  title="Adicionar item dentro desta subatividade"
+                                >
+                                  <IconPlus size={14} />
+                                </button>
+                                <button
+                                  type="button"
                                   className="btn btn-ghost subativ-row__edit"
                                   onClick={() => onEditSubatividade(a.id, s)}
                                   aria-label="Editar subatividade"
@@ -504,6 +556,27 @@ export function AtividadesTable({
                                   <IconTrash size={14} />
                                 </button>
                               </div>
+                              {temNetos(s) && expandedNetos.has(s.id) && (
+                                <div className="subativ-list subativ-list--nested" style={{ marginLeft: depth * 20 + 26 }}>
+                                  {getOrderedSubatividades(s.subatividades ?? []).map(({ subatividade: n, depth: netoDepth }) => (
+                                    <SubSubatividadeRow
+                                      key={n.id}
+                                      neto={n}
+                                      numero={getTaskNumber(displayList, n.id)}
+                                      depth={netoDepth}
+                                      todasAtividades={displayList}
+                                      excludeIds={new Set([n.id, ...getDescendantIds(n.id, displayList)])}
+                                      onToggle={() => onToggleSubSubatividade(a.id, s.id, n.id)}
+                                      onUpdate={(patch) => onUpdateSubSubatividade(a.id, s.id, n.id, patch)}
+                                      onDelete={() => onDeleteSubSubatividade(a.id, s.id, n.id)}
+                                      onEdit={() => onEditSubSubatividade(a.id, s.id, n)}
+                                    />
+                                  ))}
+                                  <button type="button" className="btn btn-secondary subativ-list__add" onClick={() => onNewSubSubatividade(a.id, s.id)}>
+                                    <IconPlus size={14} /> Item
+                                  </button>
+                                </div>
+                              )}
                               {(temInsumos || temEntradas) && insumosExpandidos && (
                                 <div className="subativ-insumos" style={{ marginLeft: depth * 20 + 26 }}>
                                   {temInsumos && onEnviarParaRequisicoes && (
@@ -616,6 +689,100 @@ export function AtividadesTable({
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+interface SubSubatividadeRowProps {
+  neto: Subatividade;
+  numero: string;
+  depth: number;
+  todasAtividades: Atividade[];
+  excludeIds: Set<string>;
+  onToggle: () => void;
+  onUpdate: (patch: Partial<Subatividade>) => void;
+  onDelete: () => void;
+  onEdit: () => void;
+}
+
+/** Linha do 3º nível (subatividade dentro de subatividade) — subconjunto dos campos da linha de subatividade (sem insumos/requisições/drag, que ficam só até o 2º nível por ora). */
+function SubSubatividadeRow({ neto: n, numero, depth, todasAtividades, excludeIds, onToggle, onUpdate, onDelete, onEdit }: SubSubatividadeRowProps) {
+  const displayStatus = getSubatividadeDisplayStatus(n);
+  const opcoesPredecessora = todasAtividades
+    .flatMap((a) => [
+      { id: a.id, label: `${getTaskNumber(todasAtividades, a.id)} — ${a.nome}`, concluida: isAtividadeConcluida(a) },
+      ...a.subatividades.flatMap((s) => [
+        { id: s.id, label: `${getTaskNumber(todasAtividades, s.id)} — ${s.nome}`, concluida: s.concluida },
+        ...(s.subatividades ?? []).map((m) => ({ id: m.id, label: `${getTaskNumber(todasAtividades, m.id)} — ${m.nome}`, concluida: m.concluida })),
+      ]),
+    ])
+    .filter((o) => !excludeIds.has(o.id));
+  const temPredecessora = n.dependeDe.length > 0;
+
+  return (
+    <div className={`subativ-row${displayStatus === 'atrasada' ? ' is-atrasada' : ''}`}>
+      <span className="subativ-row__indent" style={{ width: depth * 20 }} />
+      <input type="checkbox" checked={n.concluida} onChange={onToggle} />
+      <button
+        type="button"
+        className={`subativ-row__iniciar-btn${n.iniciada ? ' is-iniciada' : ''}`}
+        onClick={() => onUpdate({ iniciada: !n.iniciada })}
+        title={n.iniciada ? 'Marcada como iniciada' : 'Marcar como iniciada'}
+      >
+        {n.iniciada ? <IconPlayerPlayFilled size={12} /> : <IconPlayerPlay size={12} />}
+      </button>
+      <span className="subativ-row__numero">{numero}</span>
+      <span className={`subativ-row__nome${n.concluida ? ' is-concluida' : ''}`}>{n.nome}</span>
+      <span className="subativ-row__campo">
+        <EditableDateCell
+          value={n.dataInicio}
+          disabled={temPredecessora && n.dataAutomatica !== false}
+          disabledTitle="Data automática — clique no cadeado para editar manualmente"
+          onSave={(v) => onUpdate(buildReagendamentoPatch(n, v))}
+        />
+      </span>
+      <span className="subativ-row__campo-sep">—</span>
+      <span className="subativ-row__campo">
+        <EditableDateCell value={n.dataFim} onSave={(v) => onUpdate({ dataFim: v })} />
+      </span>
+      <span className="subativ-row__campo">
+        <EditableNumberCell
+          value={n.contagemDias === 'uteis' ? businessDaysBetween(n.dataInicio, n.dataFim) : durationDays(n.dataInicio, n.dataFim)}
+          suffix="dias"
+          onSave={(v) =>
+            onUpdate({
+              dataFim: n.contagemDias === 'uteis' ? endDateFromDurationUteis(n.dataInicio, v) : endDateFromDuration(n.dataInicio, v),
+            })
+          }
+        />
+      </span>
+      <button
+        type="button"
+        className="subativ-row__modo-btn"
+        onClick={() => onUpdate({ contagemDias: n.contagemDias === 'uteis' ? 'corridos' : 'uteis' })}
+        title="Alternar entre dias corridos (conta sáb/dom) e dias úteis (pula sáb/dom)"
+      >
+        {n.contagemDias === 'uteis' ? 'úteis' : 'corridos'}
+      </button>
+      <span className="subativ-row__campo">
+        <EditablePredecessorCell values={n.dependeDe} options={opcoesPredecessora} onSave={(v) => onUpdate({ dependeDe: v })} />
+      </span>
+      {temPredecessora && (
+        <span className="subativ-row__campo" title="Dias de espera/cura após o fim da predecessora">
+          <EditableNumberCell
+            value={n.diasEsperaAposPredecessora ?? 0}
+            suffix="d espera"
+            onSave={(v) => onUpdate({ diasEsperaAposPredecessora: Math.max(0, v) })}
+          />
+        </span>
+      )}
+      <AtividadeStatusBadge status={displayStatus} />
+      <button type="button" className="btn btn-ghost subativ-row__edit" onClick={onEdit} aria-label="Editar item">
+        <IconEdit size={14} />
+      </button>
+      <button type="button" className="btn btn-ghost subativ-row__remove" onClick={onDelete} aria-label="Remover item">
+        <IconTrash size={14} />
+      </button>
     </div>
   );
 }
