@@ -310,8 +310,13 @@ export function AtividadesTable({
                     </td>
                     <td>
                       {temSubatividades ? (
-                        <span className="editable-cell editable-cell--disabled" title="Calculado a partir das subatividades">
-                          {Math.max(1, Math.round(durationDays(a.dataInicio, a.dataFim) / 7))} sem
+                        <span className="editable-cell editable-cell--disabled" title="Soma da duração (dias) das subatividades">
+                          {a.subatividades.reduce(
+                            (soma, s) =>
+                              soma + (s.contagemDias === 'uteis' ? businessDaysBetween(s.dataInicio, s.dataFim) : durationDays(s.dataInicio, s.dataFim)),
+                            0,
+                          )}{' '}
+                          dias
                         </span>
                       ) : a.duracaoDias != null ? (
                         <EditableNumberCell
