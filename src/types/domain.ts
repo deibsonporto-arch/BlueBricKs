@@ -201,6 +201,7 @@ export interface TemplateSubatividade {
   materiaisNecessarios: Material[];
   maoDeObraNecessaria: MaoDeObra[];
   equipamentosAluguel: Equipamento[];
+  subatividades?: TemplateSubatividade[]; // 3º nível (item dentro da subatividade), espelhando Subatividade.subatividades
 }
 
 export interface TemplateAtividade {
