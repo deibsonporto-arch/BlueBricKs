@@ -1,0 +1,116 @@
+.dep-graph-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.dep-graph-card__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dep-graph-card__toolbar h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.dep-graph-card__toggles {
+  display: flex;
+  gap: 16px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.dep-graph-card__toggles label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.dep-graph-card__canvas {
+  height: 640px;
+  width: 100%;
+}
+
+.dep-node {
+  width: 220px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.dep-node--atrasada {
+  border-color: var(--status-atrasada);
+}
+
+.dep-node--concluida {
+  border-color: var(--color-success, #2f9e44);
+  opacity: 0.75;
+}
+
+.dep-node__header {
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.dep-node__body {
+  padding: 8px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dep-node__nome {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.dep-node__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dep-node__dias,
+.dep-node__filhos-count {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.dep-node__dias-input {
+  width: 44px;
+  font-size: 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.dep-fase-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.react-flow__attribution {
+  display: none;
+}
