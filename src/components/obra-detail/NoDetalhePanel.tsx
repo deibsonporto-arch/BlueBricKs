@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
+import { IconChevronDown, IconChevronRight, IconFileInvoice, IconPlus } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { AtividadeStatusBadge } from '../common/StatusBadge';
-import type { Atividade, Subatividade } from '../../types/domain';
+import { ComposicaoInsumosField } from './ComposicaoInsumosField';
+import type { Atividade, Cotacao, Obra, Subatividade, UnidadeMedida } from '../../types/domain';
 import { EditableDateCell } from './EditableDateCell';
 import { EditableNumberCell } from './EditableNumberCell';
 import { EditablePredecessorCell } from './EditablePredecessorCell';
+import { useCotacoes } from '../../hooks/useCotacoes';
 import {
   buildReagendamentoPatch,
   deriveParentStatus,
@@ -15,7 +18,10 @@ import {
   isAtrasado,
   temNetos,
 } from '../../utils/subatividades';
-import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis } from '../../utils/dateUtils';
+import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, todayISO } from '../../utils/dateUtils';
+import { getCurrentUserName } from '../../utils/currentUser';
+import { generateId } from '../../utils/id';
+import { ROUTES } from '../../routes/routes';
 import './NoDetalhePanel.css';
 
 export interface ItemPath {
@@ -28,6 +34,7 @@ interface NoDetalhePanelProps {
   open: boolean;
   path: ItemPath | null;
   atividades: Atividade[];
+  obra: Obra;
   onClose: () => void;
   onUpdateAtividade: (id: string, patch: Partial<Atividade>) => void;
   onToggleSubatividade: (atividadeId: string, subatividadeId: string) => void;
@@ -80,6 +87,7 @@ export function NoDetalhePanel({
   open,
   path,
   atividades,
+  obra,
   onClose,
   onUpdateAtividade,
   onToggleSubatividade,
@@ -90,6 +98,9 @@ export function NoDetalhePanel({
   onAddChild,
 }: NoDetalhePanelProps) {
   const [netosExpandidos, setNetosExpandidos] = useState<Set<string>>(new Set());
+  const [enviandoCotacao, setEnviandoCotacao] = useState(false);
+  const navigate = useNavigate();
+  const { createCotacao } = useCotacoes(obra.id);
 
   if (!path) return null;
   const atividade = atividades.find((a) => a.id === path.atividadeId);
@@ -125,6 +136,42 @@ export function NoDetalhePanel({
 
   const isSubatividadeOuNeto = !!subatividade;
   const podeTerFilhos = !neto; // netos são o 3º nível — não têm mais um nível abaixo
+  // insumos (materiais/mão de obra/aluguel) só fazem sentido pra quem não tem filhos — quando tem
+  // filhos, o custo já vem agregado deles, igual acontece nas datas/status.
+  const podeTerInsumos = isSubatividadeOuNeto && !temFilhos;
+  const insumosAtuais = (item as Subatividade).insumos ?? [];
+
+  async function enviarInsumosParaCotacao() {
+    const materiaisInsumos = insumosAtuais.filter((i) => i.tipo === 'material');
+    if (materiaisInsumos.length === 0) return;
+    setEnviandoCotacao(true);
+    try {
+      const now = new Date().toISOString();
+      for (const i of materiaisInsumos) {
+        const cotacao: Cotacao = {
+          id: generateId(),
+          obraId: obra.id,
+          atividadeId: atividade.id,
+          responsavel: getCurrentUserName(),
+          data: todayISO(),
+          itemServico: i.descricao,
+          descricaoServico: i.sinapiCodigo ? `SINAPI ${i.sinapiCodigo}` : undefined,
+          quantidade: i.quantidade,
+          unidade: i.unidade as UnidadeMedida,
+          valorUnitarioPrevisto: i.custoUnitario,
+          fornecedores: [],
+          status: 'em_cotacao',
+          createdAt: now,
+          updatedAt: now,
+        };
+        await createCotacao(cotacao);
+      }
+      onClose();
+      navigate(ROUTES.obraMapaCotacao(obra.id));
+    } finally {
+      setEnviandoCotacao(false);
+    }
+  }
 
   return (
     <Modal open={open} title={`${numero} — ${item.nome}`} onClose={onClose} width={480}>
@@ -194,6 +241,22 @@ export function NoDetalhePanel({
             <AtividadeStatusBadge status={isSubatividadeOuNeto ? displayStatus : (isAtrasado({ dataFim: atividade.dataFim, concluida }) ? 'atrasada' : displayStatus)} />
           </div>
         </div>
+
+        {podeTerInsumos && (
+          <div className="no-detalhe-panel__insumos">
+            <ComposicaoInsumosField
+              uf={obra.endereco.estado || 'GO'}
+              etapaNome={atividade.nome}
+              insumos={insumosAtuais}
+              onChangeInsumos={(novo) => salvar({ insumos: novo })}
+            />
+            {insumosAtuais.some((i) => i.tipo === 'material') && (
+              <button type="button" className="btn btn-secondary" disabled={enviandoCotacao} onClick={enviarInsumosParaCotacao}>
+                <IconFileInvoice size={14} /> {enviandoCotacao ? 'Enviando...' : 'Enviar materiais para Mapa de Cotação'}
+              </button>
+            )}
+          </div>
+        )}
 
         {podeTerFilhos && (
           <div className="no-detalhe-panel__filhos">

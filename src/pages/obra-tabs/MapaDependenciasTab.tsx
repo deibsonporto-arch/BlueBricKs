@@ -53,6 +53,7 @@ export function MapaDependenciasTab() {
         open={!!painelPath}
         path={painelPath}
         atividades={atividades}
+        obra={obra}
         onClose={() => setPainelPath(null)}
         onUpdateAtividade={updateAtividade}
         onToggleSubatividade={handleToggleSubatividade}
