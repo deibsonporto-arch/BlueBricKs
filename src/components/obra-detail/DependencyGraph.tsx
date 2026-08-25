@@ -89,10 +89,12 @@ function isAtividadeConcluida(a: Atividade): boolean {
   return a.subatividades.length > 0 ? (deriveParentStatus(a.subatividades)?.concluida ?? a.concluida) : a.concluida;
 }
 
-/** Duração em dias de um item com filhos (soma recursiva) ou folha (a partir das próprias datas). */
+/** Duração em dias de um item: do início mais cedo ao fim mais tarde entre os filhos (span, já que
+ * filhos em paralelo não devem somar duração — só quem depende um do outro estica o prazo), ou a
+ * partir das próprias datas quando é folha (sem filhos). */
 function duracaoDias(item: { dataInicio: string; dataFim: string; contagemDias?: 'corridos' | 'uteis'; subatividades?: Subatividade[] }): number {
   if (item.subatividades && item.subatividades.length > 0) {
-    return item.subatividades.reduce((soma, filho) => soma + duracaoDias(filho), 0);
+    return durationDays(item.dataInicio, item.dataFim);
   }
   return item.contagemDias === 'uteis' ? businessDaysBetween(item.dataInicio, item.dataFim) : durationDays(item.dataInicio, item.dataFim);
 }

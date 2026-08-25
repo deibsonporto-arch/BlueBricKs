@@ -330,13 +330,8 @@ export function AtividadesTable({
                     </td>
                     <td>
                       {temSubatividades ? (
-                        <span className="editable-cell editable-cell--disabled" title="Soma da duração (dias) das subatividades">
-                          {a.subatividades.reduce(
-                            (soma, s) =>
-                              soma + (s.contagemDias === 'uteis' ? businessDaysBetween(s.dataInicio, s.dataFim) : durationDays(s.dataInicio, s.dataFim)),
-                            0,
-                          )}{' '}
-                          dias
+                        <span className="editable-cell editable-cell--disabled" title="Do início mais cedo ao fim mais tarde das subatividades — itens em paralelo (mesmo período) não somam duração, só quem depende um do outro">
+                          {durationDays(a.dataInicio, a.dataFim)} dias
                         </span>
                       ) : a.duracaoDias != null ? (
                         <EditableNumberCell
@@ -484,12 +479,8 @@ export function AtividadesTable({
                                 )}
                                 <span className="subativ-row__campo">
                                   {temNetos(s) ? (
-                                    <span className="editable-cell editable-cell--disabled" title="Soma da duração (dias) dos itens">
-                                      {(s.subatividades ?? []).reduce(
-                                        (soma, n) => soma + (n.contagemDias === 'uteis' ? businessDaysBetween(n.dataInicio, n.dataFim) : durationDays(n.dataInicio, n.dataFim)),
-                                        0,
-                                      )}{' '}
-                                      dias
+                                    <span className="editable-cell editable-cell--disabled" title="Do início mais cedo ao fim mais tarde dos itens — em paralelo não soma duração">
+                                      {durationDays(s.dataInicio, s.dataFim)} dias
                                     </span>
                                   ) : (
                                     <EditableNumberCell

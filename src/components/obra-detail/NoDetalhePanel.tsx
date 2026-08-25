@@ -49,7 +49,8 @@ interface NoDetalhePanelProps {
 /** Duração em dias de um item com data própria (Atividade sem subatividades) ou com filhos (soma). */
 function duracaoDias(item: { dataInicio: string; dataFim: string; contagemDias?: 'corridos' | 'uteis'; subatividades?: Subatividade[] }): number {
   if (item.subatividades && item.subatividades.length > 0) {
-    return item.subatividades.reduce((soma, filho) => soma + duracaoDias(filho), 0);
+    // span do início mais cedo ao fim mais tarde dos filhos — filhos em paralelo não somam duração
+    return durationDays(item.dataInicio, item.dataFim);
   }
   return item.contagemDias === 'uteis' ? businessDaysBetween(item.dataInicio, item.dataFim) : durationDays(item.dataInicio, item.dataFim);
 }
