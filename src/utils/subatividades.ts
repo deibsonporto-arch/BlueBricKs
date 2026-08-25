@@ -1,5 +1,5 @@
 import type { Atividade, Equipamento, MaoDeObra, Material, StatusAtividade, Subatividade } from '../types/domain';
-import { addDays, businessDaysBetween, diffDays, durationDays, endDateFromDuration, endDateFromDurationUteis, isPast } from './dateUtils';
+import { addDays, businessDaysBetween, diffDays, durationDays, endDateFromDuration, endDateFromDurationUteis, isPast, proximoDiaUtil } from './dateUtils';
 
 /** Profundidade de recuo (cascata) de uma subatividade: sobe a cadeia de predecessoras locais (mesma atividade) contando quantos elos até chegar numa sem predecessora local. Com 2 predecessoras, usa a mais profunda. Só para exibição — não afeta a ordem da lista. */
 function computeDepth(s: Subatividade, byId: Map<string, Subatividade>, seen: Set<string>): number {
@@ -79,7 +79,9 @@ export function resolveSubatividadeDates(sub: Subatividade, atividades: Atividad
   }
   if (!predecessorFim) return sub;
 
-  const novaDataInicio = addDays(predecessorFim, 1 + espera);
+  const dataCalculada = addDays(predecessorFim, 1 + espera);
+  // em "dias úteis", nunca deixa o início automático cair num sábado/domingo — empurra pra 2ª-feira
+  const novaDataInicio = sub.contagemDias === 'uteis' ? proximoDiaUtil(dataCalculada) : dataCalculada;
   if (novaDataInicio === sub.dataInicio) return sub;
 
   const duracao = subatividadeDuracao(sub);

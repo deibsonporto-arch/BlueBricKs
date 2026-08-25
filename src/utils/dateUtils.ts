@@ -118,6 +118,16 @@ export function endDateFromDurationUteis(start: string, duration: number): strin
   return result;
 }
 
+/** Empurra a data pra segunda-feira se ela cair num sábado/domingo — usado pra início automático de
+ * itens em "dias úteis" nunca cair num fim de semana. */
+export function proximoDiaUtil(value: string): string {
+  const d = parseISODate(value);
+  const day = d.getDay();
+  if (day === 6) return addDays(value, 2);
+  if (day === 0) return addDays(value, 1);
+  return value;
+}
+
 const WEEKDAY_ABBR = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 export function weekdayAbbr(value: string): string {
