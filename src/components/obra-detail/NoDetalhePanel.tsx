@@ -152,7 +152,7 @@ export function NoDetalhePanel({
         const cotacao: Cotacao = {
           id: generateId(),
           obraId: obra.id,
-          atividadeId: atividade.id,
+          atividadeId: atividade!.id,
           responsavel: getCurrentUserName(),
           data: todayISO(),
           itemServico: i.descricao,
