@@ -37,6 +37,8 @@ export function VisaoGeralTab() {
     deleteSubatividade,
     reorderAtividades,
     reorderSubatividades,
+    updateSubSubatividade,
+    deleteSubSubatividade,
     refresh,
   } = useAtividades(obraId);
   const { saveTemplateFromObra, updateTemplateFromObra } = useTemplates();
@@ -54,6 +56,7 @@ export function VisaoGeralTab() {
   const [subatividadeModalOpen, setSubatividadeModalOpen] = useState(false);
   const [subatividadeModalMode, setSubatividadeModalMode] = useState<'create' | 'edit'>('create');
   const [subatividadeParentId, setSubatividadeParentId] = useState<string>('');
+  const [subSubatividadePaiId, setSubSubatividadePaiId] = useState<string>('');
   const [editingSubatividade, setEditingSubatividade] = useState<Subatividade | undefined>(undefined);
   const [etapasPadraoModalOpen, setEtapasPadraoModalOpen] = useState(false);
 
@@ -115,6 +118,7 @@ export function VisaoGeralTab() {
     setSubatividadeModalMode('create');
     setEditingSubatividade(undefined);
     setSubatividadeParentId(atividadeId);
+    setSubSubatividadePaiId('');
     setSubatividadeModalOpen(true);
   }
 
@@ -122,6 +126,7 @@ export function VisaoGeralTab() {
     setSubatividadeModalMode('edit');
     setEditingSubatividade(subatividade);
     setSubatividadeParentId(atividadeId);
+    setSubSubatividadePaiId('');
     setSubatividadeModalOpen(true);
   }
 
@@ -131,6 +136,34 @@ export function VisaoGeralTab() {
     if (!sub) return;
     const willBeConcluida = !sub.concluida;
     updateSubatividade(atividadeId, subatividadeId, {
+      concluida: willBeConcluida,
+      status: willBeConcluida ? 'concluida' : 'pendente',
+    });
+  }
+
+  function openNewSubSubatividade(atividadeId: string, subatividadeId: string) {
+    setSubatividadeModalMode('create');
+    setEditingSubatividade(undefined);
+    setSubatividadeParentId(atividadeId);
+    setSubSubatividadePaiId(subatividadeId);
+    setSubatividadeModalOpen(true);
+  }
+
+  function openEditSubSubatividade(atividadeId: string, subatividadeId: string, subSubatividade: Subatividade) {
+    setSubatividadeModalMode('edit');
+    setEditingSubatividade(subSubatividade);
+    setSubatividadeParentId(atividadeId);
+    setSubSubatividadePaiId(subatividadeId);
+    setSubatividadeModalOpen(true);
+  }
+
+  function handleToggleSubSubatividade(atividadeId: string, subatividadeId: string, subSubatividadeId: string) {
+    const atividade = atividades.find((a) => a.id === atividadeId);
+    const sub = atividade?.subatividades.find((s) => s.id === subatividadeId);
+    const neto = sub?.subatividades?.find((n) => n.id === subSubatividadeId);
+    if (!neto) return;
+    const willBeConcluida = !neto.concluida;
+    updateSubSubatividade(atividadeId, subatividadeId, subSubatividadeId, {
       concluida: willBeConcluida,
       status: willBeConcluida ? 'concluida' : 'pendente',
     });
@@ -210,6 +243,11 @@ export function VisaoGeralTab() {
         entradasPorSubatividade={entradasPorSubatividade}
         onNewSubatividade={openNewSubatividade}
         onEditSubatividade={openEditSubatividade}
+        onToggleSubSubatividade={handleToggleSubSubatividade}
+        onUpdateSubSubatividade={updateSubSubatividade}
+        onDeleteSubSubatividade={deleteSubSubatividade}
+        onNewSubSubatividade={openNewSubSubatividade}
+        onEditSubSubatividade={openEditSubSubatividade}
       />
 
       <AtividadeFormModal
@@ -234,6 +272,7 @@ export function VisaoGeralTab() {
         obraId={obraId}
         obra={obra}
         atividadeId={subatividadeParentId}
+        subatividadePaiId={subSubatividadePaiId || undefined}
         subatividade={editingSubatividade}
         todasAtividades={atividades}
         onClose={() => setSubatividadeModalOpen(false)}

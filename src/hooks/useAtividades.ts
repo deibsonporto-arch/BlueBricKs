@@ -26,6 +26,19 @@ function cascadeScheduleUpdates(obraId: string) {
       if (atividade.subatividades.length > 0) {
         let changed = false;
         const novasSubatividades = atividade.subatividades.map((s) => {
+          if ((s.subatividades?.length ?? 0) > 0) {
+            let changedNeto = false;
+            const novosNetos = (s.subatividades ?? []).map((n) => {
+              const resolved = resolveSubatividadeDates(n, all, s.dependeDe);
+              if (resolved.dataInicio !== n.dataInicio || resolved.dataFim !== n.dataFim) changedNeto = true;
+              return resolved;
+            });
+            if (!changedNeto) return s;
+            changed = true;
+            const aggregatesSub = recomputeParentAggregates({ ...s, subatividades: novosNetos });
+            const derivedStatusSub = deriveParentStatus(novosNetos);
+            return { ...s, subatividades: novosNetos, ...aggregatesSub, ...(derivedStatusSub ?? {}) };
+          }
           const resolved = resolveSubatividadeDates(s, all, atividade.dependeDe);
           if (resolved.dataInicio !== s.dataInicio || resolved.dataFim !== s.dataFim) changed = true;
           return resolved;
@@ -57,6 +70,40 @@ function cascadeScheduleUpdates(obraId: string) {
 
     if (!anyChange) break;
   }
+}
+
+/**
+ * Aplica uma mutação nos netos (3º nível) de uma subatividade e recalcula os agregados em cascata:
+ * primeiro a subatividade-mãe a partir dos seus netos, depois a atividade-avó a partir das
+ * subatividades — o mesmo encadeamento de `recomputeParentAggregates`/`deriveParentStatus` que já
+ * existe entre atividade e subatividade, só que um nível abaixo.
+ */
+function applySubSubatividadeMutation(
+  obraId: string,
+  atividadeId: string,
+  subatividadeId: string,
+  mutateNetos: (netos: Subatividade[], all: Atividade[], atividade: Atividade, sub: Subatividade) => Subatividade[],
+) {
+  const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
+  const atividade = all.find((a) => a.id === atividadeId);
+  if (!atividade) return;
+  const sub = atividade.subatividades.find((s) => s.id === subatividadeId);
+  if (!sub) return;
+
+  const novosNetos = mutateNetos(sub.subatividades ?? [], all, atividade, sub);
+  const aggregatesSub = recomputeParentAggregates({ ...sub, subatividades: novosNetos });
+  const derivedStatusSub = deriveParentStatus(novosNetos);
+  const subAtualizada: Subatividade = { ...sub, subatividades: novosNetos, ...aggregatesSub, ...(derivedStatusSub ?? {}) };
+
+  const novasSubatividades = atividade.subatividades.map((s) => (s.id === subatividadeId ? subAtualizada : s));
+  const aggregates = recomputeParentAggregates({ ...atividade, subatividades: novasSubatividades });
+  const derivedStatus = deriveParentStatus(novasSubatividades);
+  atividadeRepository.update(atividadeId, {
+    subatividades: novasSubatividades,
+    ...aggregates,
+    ...derivedStatus,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 export function useAtividades(obraId: string) {
@@ -225,6 +272,46 @@ export function useAtividades(obraId: string) {
     [obraId, refresh],
   );
 
+  const createSubSubatividade = useCallback(
+    async (atividadeId: string, subatividadeId: string, novoNeto: Subatividade) => {
+      applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos, all, _atividade, sub) => [
+        ...netos,
+        resolveSubatividadeDates(novoNeto, all, sub.dependeDe),
+      ]);
+      refresh();
+    },
+    [obraId, refresh],
+  );
+
+  const updateSubSubatividade = useCallback(
+    async (atividadeId: string, subatividadeId: string, subSubatividadeId: string, patch: Partial<Subatividade>) => {
+      applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos, all, _atividade, sub) =>
+        netos.map((n) => (n.id === subSubatividadeId ? resolveSubatividadeDates({ ...n, ...patch }, all, sub.dependeDe) : n)),
+      );
+      refresh();
+    },
+    [obraId, refresh],
+  );
+
+  const deleteSubSubatividade = useCallback(
+    async (atividadeId: string, subatividadeId: string, subSubatividadeId: string) => {
+      applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos) => netos.filter((n) => n.id !== subSubatividadeId));
+      refresh();
+    },
+    [obraId, refresh],
+  );
+
+  const reorderSubSubatividades = useCallback(
+    async (atividadeId: string, subatividadeId: string, idsNaNovaOrdem: string[]) => {
+      applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos) => {
+        const ordemMap = new Map(idsNaNovaOrdem.map((id, i) => [id, i]));
+        return netos.map((n) => ({ ...n, ordem: ordemMap.get(n.id) ?? n.ordem }));
+      });
+      refresh();
+    },
+    [obraId, refresh],
+  );
+
   const reorderAtividades = useCallback(
     async (idsNaNovaOrdem: string[]) => {
       atividadeRepository.reorderByObra(obraId, idsNaNovaOrdem);
@@ -262,6 +349,10 @@ export function useAtividades(obraId: string) {
     deleteSubatividade,
     reorderAtividades,
     reorderSubatividades,
+    createSubSubatividade,
+    updateSubSubatividade,
+    deleteSubSubatividade,
+    reorderSubSubatividades,
     refresh,
   };
 }

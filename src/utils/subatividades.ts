@@ -23,8 +23,11 @@ export function getOrderedSubatividades(subatividades: Subatividade[]): { subati
 function findPredecessorDataFim(predecessorId: string, atividades: Atividade[]): string | undefined {
   for (const a of atividades) {
     if (a.id === predecessorId) return a.dataFim;
-    const found = a.subatividades.find((s) => s.id === predecessorId);
-    if (found) return found.dataFim;
+    for (const s of a.subatividades) {
+      if (s.id === predecessorId) return s.dataFim;
+      const neto = (s.subatividades ?? []).find((n) => n.id === predecessorId);
+      if (neto) return neto.dataFim;
+    }
   }
   return undefined;
 }
@@ -95,8 +98,20 @@ export interface ParentAggregates {
   equipamentosAluguel: Equipamento[];
 }
 
-/** Agregados efetivos da atividade a partir das subatividades: datas (menor início, maior fim), custos (soma) e materiais/mão de obra/equipamentos (concatenados). Sem subatividades, mantém os valores atuais da própria atividade (fallback). */
-export function recomputeParentAggregates(atividade: Atividade): ParentAggregates {
+interface AggregatableParent {
+  dataInicio: string;
+  dataFim: string;
+  custoMaoDeObra: number;
+  custoMaterial: number;
+  custoAluguel: number;
+  materiaisNecessarios: Material[];
+  maoDeObraNecessaria: MaoDeObra[];
+  equipamentosAluguel: Equipamento[];
+  subatividades: Subatividade[];
+}
+
+/** Agregados efetivos do pai a partir dos filhos: datas (menor início, maior fim), custos (soma) e materiais/mão de obra/equipamentos (concatenados). Sem filhos, mantém os valores atuais do próprio pai (fallback). Usado tanto para Atividade← Subatividade[] quanto para Subatividade← Subatividade[] (3º nível), já que as duas têm exatamente os mesmos campos agregáveis. */
+export function recomputeParentAggregates(atividade: AggregatableParent): ParentAggregates {
   if (atividade.subatividades.length === 0) {
     return {
       dataInicio: atividade.dataInicio,
@@ -176,7 +191,12 @@ export function buildReagendamentoAtrasoPatch(
   return { ...buildReagendamentoPatch(item, novaDataInicio), dataFim: novaDataFim };
 }
 
-/** Numeração hierárquica: "2" para atividade top-level, "2.1" para subatividade. */
+/** Tem subatividades próprias (3º nível) — equivalente a `temSubatividades` de uma Atividade. */
+export function temNetos(s: Subatividade): boolean {
+  return (s.subatividades?.length ?? 0) > 0;
+}
+
+/** Numeração hierárquica: "2" para atividade top-level, "2.1" para subatividade, "2.1.3" para o 3º nível. */
 export function getTaskNumber(atividades: Atividade[], id: string): string {
   const parentIndex = atividades.findIndex((a) => a.id === id);
   if (parentIndex !== -1) return String(parentIndex + 1);
@@ -185,6 +205,12 @@ export function getTaskNumber(atividades: Atividade[], id: string): string {
     const ordered = getOrderedSubatividades(atividades[i].subatividades);
     const subIndex = ordered.findIndex(({ subatividade }) => subatividade.id === id);
     if (subIndex !== -1) return `${i + 1}.${subIndex + 1}`;
+
+    for (let j = 0; j < ordered.length; j++) {
+      const netos = getOrderedSubatividades(ordered[j].subatividade.subatividades ?? []);
+      const netoIndex = netos.findIndex(({ subatividade }) => subatividade.id === id);
+      if (netoIndex !== -1) return `${i + 1}.${j + 1}.${netoIndex + 1}`;
+    }
   }
   return '?';
 }
@@ -192,19 +218,25 @@ export function getTaskNumber(atividades: Atividade[], id: string): string {
 export function getTaskLabel(atividades: Atividade[], id: string): string {
   for (const a of atividades) {
     if (a.id === id) return a.nome;
-    const found = a.subatividades.find((s) => s.id === id);
-    if (found) return found.nome;
+    for (const s of a.subatividades) {
+      if (s.id === id) return s.nome;
+      const neto = (s.subatividades ?? []).find((n) => n.id === id);
+      if (neto) return neto.nome;
+    }
   }
   return '';
 }
 
-/** ids que dependem (direta ou transitivamente) de `id`, considerando atividades e subatividades num único grafo — usado para excluir ciclos nos seletores de predecessora. */
+/** ids que dependem (direta ou transitivamente) de `id`, considerando atividades e subatividades (todos os níveis) num único grafo — usado para excluir ciclos nos seletores de predecessora. */
 export function getDescendantIds(id: string, atividades: Atividade[]): Set<string> {
   const edges: { id: string; dependeDe: string[] }[] = [];
   for (const a of atividades) {
     edges.push({ id: a.id, dependeDe: a.dependeDe });
     for (const s of a.subatividades) {
       edges.push({ id: s.id, dependeDe: s.dependeDe });
+      for (const n of s.subatividades ?? []) {
+        edges.push({ id: n.id, dependeDe: n.dependeDe });
+      }
     }
   }
 

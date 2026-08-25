@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IconFileInvoice } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { ComposicaoInsumosField } from './ComposicaoInsumosField';
-import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, TipoInsumoAtividade } from '../../types/domain';
+import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, TipoInsumoAtividade, UnidadeMedida } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useListasDeMateriais } from '../../hooks/useListasDeMateriais';
 import { useMateriaisCatalogo } from '../../hooks/useMateriaisCatalogo';
@@ -23,6 +23,7 @@ interface SubatividadeFormModalProps {
   obraId: string;
   obra?: Obra; // quando ausente, a busca de composição SINAPI fica oculta
   atividadeId: string;
+  subatividadePaiId?: string; // quando presente, cria/edita um 3º nível (item dentro desta subatividade) em vez de uma subatividade direto da atividade
   subatividade?: Subatividade;
   todasAtividades: Atividade[];
   onClose: () => void;
@@ -73,8 +74,8 @@ function toFormState(s?: Subatividade): FormState {
   };
 }
 
-export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, subatividade, todasAtividades, onClose, onSaved }: SubatividadeFormModalProps) {
-  const { createSubatividade, updateSubatividade } = useAtividades(obraId);
+export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, subatividadePaiId, subatividade, todasAtividades, onClose, onSaved }: SubatividadeFormModalProps) {
+  const { createSubatividade, updateSubatividade, createSubSubatividade, updateSubSubatividade } = useAtividades(obraId);
   const { listas } = useListasDeMateriais();
   const { materiais: catalogo } = useMateriaisCatalogo();
   const { createCotacao } = useCotacoes(obraId);
@@ -139,7 +140,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
     const novosInsumos: ItemInsumoAtividade[] = lista.itens.flatMap((item) => {
       const cat = catalogo.find((m) => m.id === item.materialId);
       if (!cat) return [];
-      return [{ id: generateId(), descricao: cat.nome, unidade: cat.unidade, quantidade: item.quantidade, custoUnitario: cat.custoUnitario, tipo: 'material' as TipoInsumoAtividade }];
+      return [{ id: generateId(), descricao: cat.nome, unidade: cat.unidade, quantidade: item.quantidade, custoUnitario: cat.custoUnitario ?? 0, tipo: 'material' as TipoInsumoAtividade }];
     });
     setInsumos((prev) => [...prev, ...novosInsumos]);
   }
@@ -163,6 +164,13 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
       a.subatividades
         .filter((s) => s.id !== subatividade?.id)
         .map((s) => ({ id: s.id, label: `${getTaskNumber(todasAtividades, s.id)} — ${s.nome}` })),
+    ),
+    ...todasAtividades.flatMap((a) =>
+      a.subatividades.flatMap((s) =>
+        (s.subatividades ?? [])
+          .filter((n) => n.id !== subatividade?.id)
+          .map((n) => ({ id: n.id, label: `${getTaskNumber(todasAtividades, n.id)} — ${n.nome}` })),
+      ),
     ),
   ];
 
@@ -206,9 +214,13 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
         iniciada: false,
         ...base,
       };
-      return createSubatividade(atividadeId, nova).then(() => undefined);
+      return subatividadePaiId
+        ? createSubSubatividade(atividadeId, subatividadePaiId, nova).then(() => undefined)
+        : createSubatividade(atividadeId, nova).then(() => undefined);
     } else if (subatividade) {
-      return updateSubatividade(atividadeId, subatividade.id, base).then(() => undefined);
+      return subatividadePaiId
+        ? updateSubSubatividade(atividadeId, subatividadePaiId, subatividade.id, base).then(() => undefined)
+        : updateSubatividade(atividadeId, subatividade.id, base).then(() => undefined);
     }
     return Promise.resolve();
   }
@@ -236,7 +248,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
           itemServico: item.descricao,
           descricaoServico: item.sinapiCodigo ? `SINAPI ${item.sinapiCodigo}` : undefined,
           quantidade: item.quantidade,
-          unidade: item.unidade,
+          unidade: item.unidade as UnidadeMedida,
           valorUnitarioPrevisto: item.custoUnitario,
           fornecedores: [],
           status: 'em_cotacao',
@@ -255,7 +267,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   return (
     <Modal
       open={open}
-      title={mode === 'create' ? 'Nova subatividade' : 'Editar subatividade'}
+      title={subatividadePaiId ? (mode === 'create' ? 'Novo item' : 'Editar item') : mode === 'create' ? 'Nova subatividade' : 'Editar subatividade'}
       onClose={onClose}
       width="96vw"
       footer={

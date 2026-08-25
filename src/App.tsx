@@ -10,6 +10,7 @@ import { UsuariosPage } from './pages/UsuariosPage';
 import { LoginPage } from './pages/LoginPage';
 import { ObraDetailPage } from './pages/ObraDetailPage';
 import { VisaoGeralTab } from './pages/obra-tabs/VisaoGeralTab';
+import { MapaDependenciasTab } from './pages/obra-tabs/MapaDependenciasTab';
 import { OrcamentoTab } from './pages/obra-tabs/OrcamentoTab';
 import { PmoMensalTab } from './pages/obra-tabs/PmoMensalTab';
 import { DiarioDeObraTab } from './pages/obra-tabs/DiarioDeObraTab';
@@ -53,6 +54,7 @@ function App() {
         <Route path="/obras/:id" element={<ObraDetailPage />}>
           <Route index element={<Navigate to="visao-geral" replace />} />
           <Route path="visao-geral" element={<VisaoGeralTab />} />
+          <Route path="mapa-dependencias" element={<MapaDependenciasTab />} />
           <Route path="orcamento" element={<OrcamentoTab />} />
           <Route path="pmo-mensal" element={<PmoMensalTab />} />
           <Route path="diario-de-obra" element={<DiarioDeObraTab />} />

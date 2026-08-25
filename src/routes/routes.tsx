@@ -3,6 +3,7 @@ export const ROUTES = {
   configuracoes: '/configuracoes',
   obraDetail: (id: string) => `/obras/${id}`,
   obraVisaoGeral: (id: string) => `/obras/${id}/visao-geral`,
+  obraMapaDependencias: (id: string) => `/obras/${id}/mapa-dependencias`,
   obraOrcamento: (id: string) => `/obras/${id}/orcamento`,
   obraPmoMensal: (id: string) => `/obras/${id}/pmo-mensal`,
   obraDiarioDeObra: (id: string) => `/obras/${id}/diario-de-obra`,
@@ -20,6 +21,7 @@ export const ROUTES = {
 
 export const OBRA_TABS: { path: string; label: string }[] = [
   { path: 'visao-geral', label: 'Visão Geral' },
+  { path: 'mapa-dependencias', label: 'Mapa de Dependências' },
   { path: 'orcamento', label: 'Orçamento' },
   { path: 'pmo-mensal', label: 'PMO Mensal' },
   { path: 'diario-de-obra', label: 'Diário de Obra' },
