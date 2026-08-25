@@ -27,7 +27,7 @@ import {
   temNetos,
 } from '../../utils/subatividades';
 import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, formatDateShort } from '../../utils/dateUtils';
-import { computeNiveis, corDaEtapa } from '../../utils/dependencyGraph';
+import { corDaEtapa } from '../../utils/dependencyGraph';
 import type { ItemPath } from './NoDetalhePanel';
 import './DependencyGraph.css';
 
@@ -71,6 +71,7 @@ interface FlatNode {
   numero: string;
   nome: string;
   faseNome: string;
+  faseCol: number;
   paiId?: string;
   dependeDe: string[];
   dataInicio: string;
@@ -101,6 +102,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
   atividades.forEach((a, ai) => {
     const cor = corDaEtapa(ai);
     const aTemFilhos = a.subatividades.length > 0;
+    const faseCol = faseDe(a);
     out.push({
       id: a.id,
       path: { atividadeId: a.id },
@@ -108,6 +110,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
       numero: getTaskNumber(atividades, a.id),
       nome: a.nome,
       faseNome: a.nome,
+      faseCol,
       dependeDe: a.dependeDe,
       dataInicio: a.dataInicio,
       dataFim: a.dataFim,
@@ -129,6 +132,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
         numero: getTaskNumber(atividades, s.id),
         nome: s.nome,
         faseNome: a.nome,
+        faseCol,
         paiId: a.id,
         dependeDe: s.dependeDe,
         dataInicio: s.dataInicio,
@@ -150,6 +154,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
           numero: getTaskNumber(atividades, n.id),
           nome: n.nome,
           faseNome: a.nome,
+          faseCol,
           paiId: s.id,
           dependeDe: n.dependeDe,
           dataInicio: n.dataInicio,
@@ -170,6 +175,11 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
 
 const COL_WIDTH = 260;
 const ROW_HEIGHT = 96;
+const MAX_FASE = 10;
+
+function faseDe(a: Atividade): number {
+  return Math.min(MAX_FASE, Math.max(0, a.faseMapa ?? 0));
+}
 
 interface ItemNodeData extends Record<string, unknown> {
   numero: string;
@@ -250,13 +260,6 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
     else onUpdateAtividade(n.path.atividadeId, patch as Partial<Atividade>);
   }
 
-  // níveis calculados sobre TODOS os nós (sem filtro de busca/kind) só pra popular as opções do
-  // seletor de fase — assim a lista de fases não some quando o usuário já filtrou algo.
-  const maxNivelGeral = useMemo(() => {
-    const niveis = computeNiveis(flatNodes.map((n) => ({ id: n.id, dependeDe: n.dependeDe })));
-    return Math.max(0, ...[...niveis.values()]);
-  }, [flatNodes]);
-
   const { rfNodes, rfEdges } = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     let visibleNodes = flatNodes.filter((n) => visiveis[n.kind]);
@@ -265,37 +268,26 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
         (n) => n.nome.toLowerCase().includes(termo) || n.faseNome.toLowerCase().includes(termo) || n.numero.toLowerCase().includes(termo),
       );
     }
-    const visibleIds = new Set(visibleNodes.map((n) => n.id));
-    const niveis = computeNiveis(visibleNodes.map((n) => ({ id: n.id, dependeDe: n.dependeDe })));
-
     if (nivelFiltro !== '') {
-      const nivelAlvo = Number(nivelFiltro);
-      visibleNodes = visibleNodes.filter((n) => (niveis.get(n.id) ?? 0) === nivelAlvo);
-      for (const id of [...visibleIds]) {
-        if ((niveis.get(id) ?? 0) !== nivelAlvo) visibleIds.delete(id);
-      }
+      const faseAlvo = Number(nivelFiltro);
+      visibleNodes = visibleNodes.filter((n) => n.faseCol === faseAlvo);
     }
+    const visibleIds = new Set(visibleNodes.map((n) => n.id));
 
-    const contadorPorNivel = new Map<number, number>();
-    let ativIndex = 0;
+    // Cada coluna (0..MAX_FASE) é uma fase manual. Dentro da coluna, empilha os itens verticalmente
+    // na ordem em que aparecem (atividade, depois suas subatividades/netos, depois a próxima
+    // atividade da mesma fase...) — arrastar um card de atividade pra outra coluna muda sua fase.
+    const contadorPorColuna = new Map<number, number>();
     const nodes: Node[] = [];
-    let maxNivel = 0;
 
     for (const n of visibleNodes) {
-      const nivel = niveis.get(n.id) ?? 0;
-      maxNivel = Math.max(maxNivel, nivel);
+      const indice = contadorPorColuna.get(n.faseCol) ?? 0;
+      contadorPorColuna.set(n.faseCol, indice + 1);
+      const posicaoPadrao = { x: n.faseCol * COL_WIDTH, y: indice * ROW_HEIGHT };
 
-      // Atividades (fases) ficam sempre numa linha só no topo, em ordem, sem se misturar com a
-      // grade das subatividades/serviços logo abaixo — essa grade começa uma linha mais pra baixo.
-      let posicaoPadrao: { x: number; y: number };
-      if (n.kind === 'atividade') {
-        posicaoPadrao = { x: ativIndex * COL_WIDTH, y: 0 };
-        ativIndex += 1;
-      } else {
-        const indice = contadorPorNivel.get(nivel) ?? 0;
-        contadorPorNivel.set(nivel, indice + 1);
-        posicaoPadrao = { x: nivel * COL_WIDTH, y: (indice + 1) * ROW_HEIGHT };
-      }
+      // Posição de atividade sempre reflete a fase atual (não fica "presa" numa posição arrastada
+      // antiga); subatividades/netos podem ter ajuste fino salvo pelo usuário.
+      const posicaoSalva = n.kind === 'atividade' ? undefined : posicoesSalvasRef[n.id];
 
       // busca o item real pra recalcular data de fim ao editar dias, sem precisar guardar tudo no FlatNode
       const atividade = atividades.find((a) => a.id === n.path.atividadeId)!;
@@ -305,7 +297,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       nodes.push({
         id: n.id,
         type: 'item',
-        position: posicoesSalvasRef[n.id] ?? posicaoPadrao,
+        position: posicaoSalva ?? posicaoPadrao,
         data: {
           numero: n.numero,
           nome: n.nome,
@@ -330,13 +322,13 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       });
     }
 
-    for (let nivel = 0; nivel <= maxNivel; nivel++) {
-      if (nivelFiltro !== '' && Number(nivelFiltro) !== nivel) continue;
+    for (let fase = 0; fase <= MAX_FASE; fase++) {
+      if (nivelFiltro !== '' && Number(nivelFiltro) !== fase) continue;
       nodes.push({
-        id: `fase-label-${nivel}`,
+        id: `fase-label-${fase}`,
         type: 'faseLabel',
-        position: { x: nivel * COL_WIDTH, y: -70 },
-        data: { label: nivel === 0 ? 'Fase 0 (livre)' : `Fase ${nivel}` },
+        position: { x: fase * COL_WIDTH, y: -70 },
+        data: { label: fase === 0 ? 'Fase 0 (livre)' : `Fase ${fase}` },
         draggable: false,
         selectable: false,
       });
@@ -378,8 +370,15 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
 
   useEffect(() => {
     setNodes((atual) => {
-      const posicaoAtual = new Map(atual.map((n) => [n.id, n.position]));
-      return rfNodes.map((n) => (posicaoAtual.has(n.id) ? { ...n, position: posicaoAtual.get(n.id)! } : n));
+      const anteriores = new Map(atual.map((n) => [n.id, n]));
+      return rfNodes.map((n) => {
+        const anterior = anteriores.get(n.id);
+        // atividade (fase) sempre usa a posição recém-calculada pra coluna/ordem atual — nunca fica
+        // "presa" no pixel exato de um arraste antigo; subatividade/neto preserva o ajuste fino.
+        const ehFase = n.type === 'item' && (n.data as ItemNodeData).mostrarFase === false;
+        if (anterior && !ehFase) return { ...n, position: anterior.position };
+        return n;
+      });
     });
     setEdges(rfEdges);
   }, [rfNodes, rfEdges]);
@@ -387,11 +386,20 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
   const onNodesChange = useCallback((changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
 
-  // Guarda a posição no localStorage assim que o usuário solta o arraste, pra sobreviver a sair e
-  // voltar da aba (o layout automático por nível só é usado como ponto de partida, na 1ª vez).
+  // Ao soltar o arraste: se for um card de atividade (fase), a coluna onde ele caiu vira a nova
+  // fase do item — arrastar "joga" a atividade pra dentro daquela fase. Pra subatividade/neto,
+  // guarda o ajuste fino de posição no localStorage, como antes.
   const onNodeDragStop = useCallback(
-    (_event: unknown, node: Node) => salvarPosicao(obraId, node.id, node.position),
-    [obraId],
+    (_event: unknown, node: Node) => {
+      const flat = flatById.get(node.id);
+      if (flat?.kind === 'atividade') {
+        const novaFase = Math.min(MAX_FASE, Math.max(0, Math.round(node.position.x / COL_WIDTH)));
+        onUpdateAtividade(node.id, { faseMapa: novaFase });
+      } else {
+        salvarPosicao(obraId, node.id, node.position);
+      }
+    },
+    [obraId, flatById, onUpdateAtividade],
   );
 
   function onConnect(connection: Connection) {
@@ -429,8 +437,8 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
           />
           <select value={nivelFiltro} onChange={(e) => setNivelFiltro(e.target.value)}>
             <option value="">Todas as fases</option>
-            {Array.from({ length: maxNivelGeral + 1 }, (_, nivel) => (
-              <option key={nivel} value={nivel}>{nivel === 0 ? 'Fase 0 (livre)' : `Fase ${nivel}`}</option>
+            {Array.from({ length: MAX_FASE + 1 }, (_, fase) => (
+              <option key={fase} value={fase}>{fase === 0 ? 'Fase 0 (livre)' : `Fase ${fase}`}</option>
             ))}
           </select>
         </div>
