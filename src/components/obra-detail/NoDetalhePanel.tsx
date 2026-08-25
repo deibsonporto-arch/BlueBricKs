@@ -173,8 +173,11 @@ export function NoDetalhePanel({
     }
   }
 
+  // no título, mostra de qual fase/etapa (atividade-mãe) o item é — ex: "2.1 INST. HIDRAULICA / ESGOTO — WC-TÉRREO" — pra não ficar só o número solto, difícil de saber a que fase pertence.
+  const tituloModal = isSubatividadeOuNeto ? `${numero} ${atividade.nome} — ${item.nome}` : `${numero} — ${item.nome}`;
+
   return (
-    <Modal open={open} title={`${numero} — ${item.nome}`} onClose={onClose} width={480}>
+    <Modal open={open} title={tituloModal} onClose={onClose} width={480}>
       <div className="no-detalhe-panel">
         <div className="no-detalhe-panel__campos">
           {isSubatividadeOuNeto && (

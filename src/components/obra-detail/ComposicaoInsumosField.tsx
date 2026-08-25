@@ -239,8 +239,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       )}
 
       {temInsumos && (
-        <>
-          <div className="scroll-x">
+        <div className="scroll-x">
             <table className="atividade-insumos-table">
               <thead>
                 <tr>
@@ -295,48 +294,47 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                 </tr>
               </tfoot>
             </table>
-          </div>
-
-          <div className="atividade-sinapi-novo-manual-wrap">
-            <div className="atividade-sinapi-novo-manual">
-              <div className="atividade-sinapi-novo-manual__descricao">
-                <input
-                  placeholder="Descrição — busca no SINAPI ou digite livre"
-                  value={novoInsumo.descricao}
-                  onChange={(e) => setNovoInsumo((n) => ({ ...n, descricao: e.target.value, sinapiCodigo: undefined }))}
-                />
-                {novoInsumo.sinapiCodigo && <span className="atividade-sinapi-tag atividade-sinapi-tag--insumo">SINAPI {novoInsumo.sinapiCodigo}</span>}
-              </div>
-              <input placeholder="Un." value={novoInsumo.unidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, unidade: e.target.value }))} />
-              <input type="text" inputMode="decimal" placeholder="Qtd." value={novoInsumo.quantidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, quantidade: e.target.value }))} />
-              <input type="text" inputMode="decimal" placeholder="Custo unit." value={novoInsumo.custoUnitario} onChange={(e) => setNovoInsumo((n) => ({ ...n, custoUnitario: e.target.value }))} />
-              <select value={novoInsumo.tipo} onChange={(e) => setNovoInsumo((n) => ({ ...n, tipo: e.target.value as TipoInsumoAtividade }))}>
-                {(Object.keys(TIPO_LABEL) as TipoInsumoAtividade[]).map((t) => (
-                  <option key={t} value={t}>{TIPO_LABEL[t]}</option>
-                ))}
-              </select>
-              <button type="button" className="btn btn-secondary" onClick={adicionarInsumoManual}>
-                <IconPlus size={14} /> Item manual
-              </button>
-            </div>
-            {buscandoManual && <p className="atividade-orcamento-hint">Buscando no SINAPI...</p>}
-            {resultadosManual.length > 0 && (
-              <ul className="atividade-sinapi-resultados atividade-sinapi-resultados--manual">
-                {resultadosManual.map((item) => (
-                  <li key={item.codigo}>
-                    <button type="button" onClick={() => selecionarInsumoManual(item)}>
-                      <span className="atividade-sinapi-tag atividade-sinapi-tag--insumo">Insumo</span>
-                      <strong>{item.descricao}</strong>
-                      <span>{item.codigo} · {item.unidade} · {item.preco != null ? formatBRL(item.preco) : 'sem custo na UF'}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="atividade-orcamento-hint">Achou no SINAPI? Clique no resultado pra preencher automático. Não achou? Só digitar e completar os campos na mão mesmo.</p>
-          </div>
-        </>
+        </div>
       )}
+
+      <div className="atividade-sinapi-novo-manual-wrap">
+        <div className="atividade-sinapi-novo-manual">
+          <div className="atividade-sinapi-novo-manual__descricao">
+            <input
+              placeholder="Descrição — busca no SINAPI ou digite livre"
+              value={novoInsumo.descricao}
+              onChange={(e) => setNovoInsumo((n) => ({ ...n, descricao: e.target.value, sinapiCodigo: undefined }))}
+            />
+            {novoInsumo.sinapiCodigo && <span className="atividade-sinapi-tag atividade-sinapi-tag--insumo">SINAPI {novoInsumo.sinapiCodigo}</span>}
+          </div>
+          <input placeholder="Un." value={novoInsumo.unidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, unidade: e.target.value }))} />
+          <input type="text" inputMode="decimal" placeholder="Qtd." value={novoInsumo.quantidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, quantidade: e.target.value }))} />
+          <input type="text" inputMode="decimal" placeholder="Custo unit." value={novoInsumo.custoUnitario} onChange={(e) => setNovoInsumo((n) => ({ ...n, custoUnitario: e.target.value }))} />
+          <select value={novoInsumo.tipo} onChange={(e) => setNovoInsumo((n) => ({ ...n, tipo: e.target.value as TipoInsumoAtividade }))}>
+            {(Object.keys(TIPO_LABEL) as TipoInsumoAtividade[]).map((t) => (
+              <option key={t} value={t}>{TIPO_LABEL[t]}</option>
+            ))}
+          </select>
+          <button type="button" className="btn btn-secondary" onClick={adicionarInsumoManual}>
+            <IconPlus size={14} /> Item manual
+          </button>
+        </div>
+        {buscandoManual && <p className="atividade-orcamento-hint">Buscando no SINAPI...</p>}
+        {resultadosManual.length > 0 && (
+          <ul className="atividade-sinapi-resultados atividade-sinapi-resultados--manual">
+            {resultadosManual.map((item) => (
+              <li key={item.codigo}>
+                <button type="button" onClick={() => selecionarInsumoManual(item)}>
+                  <span className="atividade-sinapi-tag atividade-sinapi-tag--insumo">Insumo</span>
+                  <strong>{item.descricao}</strong>
+                  <span>{item.codigo} · {item.unidade} · {item.preco != null ? formatBRL(item.preco) : 'sem custo na UF'}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="atividade-orcamento-hint">Achou no SINAPI? Clique no resultado pra preencher automático. Não achou? Só digitar e completar os campos na mão mesmo.</p>
+      </div>
     </div>
   );
 }
