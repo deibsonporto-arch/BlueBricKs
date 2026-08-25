@@ -177,7 +177,7 @@ export function NoDetalhePanel({
   const tituloModal = isSubatividadeOuNeto ? `${numero} ${atividade.nome} — ${item.nome}` : `${numero} — ${item.nome}`;
 
   return (
-    <Modal open={open} title={tituloModal} onClose={onClose} width={760}>
+    <Modal open={open} title={tituloModal} onClose={onClose} width="min(1200px, 96vw)">
       <div className="no-detalhe-panel">
         <div className="no-detalhe-panel__campos">
           {isSubatividadeOuNeto && (
