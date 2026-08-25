@@ -181,9 +181,11 @@ function ItemNode({ data }: NodeProps) {
   return (
     <div className={`dep-node${d.concluida ? ' dep-node--concluida' : ''}${d.status === 'atrasada' ? ' dep-node--atrasada' : ''}`}>
       <Handle type="target" position={Position.Left} />
-      <div className="dep-node__header" style={{ background: d.cor }}>{d.numero}</div>
+      <div className="dep-node__header" style={{ background: d.cor }}>
+        <span>{d.numero}</span>
+        {d.mostrarFase && <span className="dep-node__header-fase" title={d.faseNome}>{d.faseNome}</span>}
+      </div>
       <div className="dep-node__body" onClick={d.onOpenPanel}>
-        {d.mostrarFase && <div className="dep-node__fase" title={d.faseNome}>{d.faseNome}</div>}
         <div className="dep-node__nome" title={d.nome}>{d.nome}</div>
         <div className="dep-node__meta">
           {d.editavel ? (
@@ -207,11 +209,7 @@ function ItemNode({ data }: NodeProps) {
   );
 }
 
-function FaseLabelNode({ data }: NodeProps) {
-  return <div className="dep-fase-label">{(data as { label: string }).label}</div>;
-}
-
-const NODE_TYPES = { item: ItemNode, faseLabel: FaseLabelNode };
+const NODE_TYPES = { item: ItemNode };
 
 interface NiveisVisiveis {
   atividade: boolean;
@@ -239,11 +237,9 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
 
     const contadorPorNivel = new Map<number, number>();
     const nodes: Node[] = [];
-    let maxNivel = 0;
 
     for (const n of visibleNodes) {
       const nivel = niveis.get(n.id) ?? 0;
-      maxNivel = Math.max(maxNivel, nivel);
       const indice = contadorPorNivel.get(nivel) ?? 0;
       contadorPorNivel.set(nivel, indice + 1);
 
@@ -275,17 +271,6 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
             aplicarPatch(n, { dataFim });
           },
         } satisfies ItemNodeData,
-      });
-    }
-
-    for (let nivel = 0; nivel <= maxNivel; nivel++) {
-      nodes.push({
-        id: `fase-label-${nivel}`,
-        type: 'faseLabel',
-        position: { x: nivel * COL_WIDTH, y: -70 },
-        data: { label: nivel === 0 ? 'Fase 0 (livre)' : `Fase ${nivel}` },
-        draggable: false,
-        selectable: false,
       });
     }
 
