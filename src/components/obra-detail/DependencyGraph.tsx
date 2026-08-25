@@ -173,13 +173,14 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
 }
 
 const COL_WIDTH = 260;
-const ROW_HEIGHT = 96;
+const ROW_HEIGHT = 150;
 const MAX_FASE = 10;
-// Linha 0 do canvas: atividades (Alvenaria, Reboco, Pintura...) em ordem, lado a lado.
-// Linha 1: rótulos das fases (Fase 0 livre, Fase 1, Fase 2...). Da linha 2 pra baixo: as
-// subatividades (1.1, 1.2...) empilhadas dentro da coluna da fase que foram arrastadas.
-const LINHA_ROTULOS_FASE = 1;
-const LINHA_SUBATIVIDADES = 2;
+// Linha 0 do canvas: atividades (Alvenaria, Reboco, Pintura...) em ordem, lado a lado — a altura
+// real do card passa de 130px, então precisa de folga aqui pra não colidir com a linha de baixo.
+// Depois vem a linha de rótulos das fases (Fase 0 livre, Fase 1, Fase 2...), com sua própria folga,
+// e só então as subatividades (1.1, 1.2...) empilhadas dentro da coluna da fase.
+const Y_ROTULOS_FASE = ROW_HEIGHT + 40;
+const Y_SUBATIVIDADES = ROW_HEIGHT + 110;
 
 function faseDe(item: { faseMapa?: number }): number {
   return Math.min(MAX_FASE, Math.max(0, item.faseMapa ?? 0));
@@ -296,7 +297,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       } else {
         const indice = contadorPorColuna.get(n.faseCol) ?? 0;
         contadorPorColuna.set(n.faseCol, indice + 1);
-        posicaoPadrao = { x: n.faseCol * COL_WIDTH, y: (LINHA_SUBATIVIDADES + indice) * ROW_HEIGHT };
+        posicaoPadrao = { x: n.faseCol * COL_WIDTH, y: Y_SUBATIVIDADES + indice * ROW_HEIGHT };
       }
 
       // Posição de atividade sempre reflete a linha fixa do topo (não fica "presa" numa posição
@@ -341,7 +342,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       nodes.push({
         id: `fase-label-${fase}`,
         type: 'faseLabel',
-        position: { x: fase * COL_WIDTH, y: LINHA_ROTULOS_FASE * ROW_HEIGHT - 50 },
+        position: { x: fase * COL_WIDTH, y: Y_ROTULOS_FASE },
         data: { label: fase === 0 ? 'Fase 0 (livre)' : `Fase ${fase}` },
         draggable: false,
         selectable: false,
@@ -400,17 +401,30 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
   const onNodesChange = useCallback((changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
 
-  // Ao soltar o arraste de uma subatividade/neto: a coluna onde ele caiu vira a fase do item —
-  // arrastar "joga" o item pra dentro daquela fase. A coluna de atividades não é arrastável.
+  // Ao soltar o arraste de uma subatividade: a coluna onde ele caiu vira a fase do item — arrastar
+  // "joga" o item pra dentro daquela fase. A linha de atividades não é arrastável. Encaixa a posição
+  // final numa grade (coluna x linha) e empurra pro próximo slot livre se já tiver outro card ali,
+  // pra nunca deixar dois cards um em cima do outro.
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
       const flat = flatById.get(node.id);
       if (!flat || flat.kind === 'atividade') return;
       const novaFase = Math.min(MAX_FASE, Math.max(0, Math.round(node.position.x / COL_WIDTH)));
+      let slot = Math.max(0, Math.round((node.position.y - Y_SUBATIVIDADES) / ROW_HEIGHT));
+
+      const ocupados = new Set(
+        nodes
+          .filter((n) => n.id !== node.id && n.type === 'item' && Math.round(n.position.x / COL_WIDTH) === novaFase && n.position.y >= Y_SUBATIVIDADES - ROW_HEIGHT / 2)
+          .map((n) => Math.max(0, Math.round((n.position.y - Y_SUBATIVIDADES) / ROW_HEIGHT))),
+      );
+      while (ocupados.has(slot)) slot += 1;
+
+      const posicaoFinal = { x: novaFase * COL_WIDTH, y: Y_SUBATIVIDADES + slot * ROW_HEIGHT };
       aplicarPatch(flat, { faseMapa: novaFase });
-      salvarPosicao(obraId, node.id, node.position);
+      salvarPosicao(obraId, node.id, posicaoFinal);
+      setNodes((atual) => atual.map((n) => (n.id === node.id ? { ...n, position: posicaoFinal } : n)));
     },
-    [obraId, flatById],
+    [obraId, flatById, nodes],
   );
 
   function onConnect(connection: Connection) {
