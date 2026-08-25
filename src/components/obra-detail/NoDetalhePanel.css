@@ -26,6 +26,14 @@
   font-weight: 600;
 }
 
+.no-detalhe-panel__sucessoras-select {
+  font-size: 12.5px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  max-width: 220px;
+}
+
 .no-detalhe-panel__label {
   color: var(--color-text-muted);
   font-weight: 600;

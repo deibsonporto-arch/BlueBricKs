@@ -277,14 +277,25 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
     }
 
     const contadorPorNivel = new Map<number, number>();
+    let ativIndex = 0;
     const nodes: Node[] = [];
     let maxNivel = 0;
 
     for (const n of visibleNodes) {
       const nivel = niveis.get(n.id) ?? 0;
       maxNivel = Math.max(maxNivel, nivel);
-      const indice = contadorPorNivel.get(nivel) ?? 0;
-      contadorPorNivel.set(nivel, indice + 1);
+
+      // Atividades (fases) ficam sempre numa linha só no topo, em ordem, sem se misturar com a
+      // grade das subatividades/serviços logo abaixo — essa grade começa uma linha mais pra baixo.
+      let posicaoPadrao: { x: number; y: number };
+      if (n.kind === 'atividade') {
+        posicaoPadrao = { x: ativIndex * COL_WIDTH, y: 0 };
+        ativIndex += 1;
+      } else {
+        const indice = contadorPorNivel.get(nivel) ?? 0;
+        contadorPorNivel.set(nivel, indice + 1);
+        posicaoPadrao = { x: nivel * COL_WIDTH, y: (indice + 1) * ROW_HEIGHT };
+      }
 
       // busca o item real pra recalcular data de fim ao editar dias, sem precisar guardar tudo no FlatNode
       const atividade = atividades.find((a) => a.id === n.path.atividadeId)!;
@@ -294,7 +305,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       nodes.push({
         id: n.id,
         type: 'item',
-        position: posicoesSalvasRef[n.id] ?? { x: nivel * COL_WIDTH, y: indice * ROW_HEIGHT },
+        position: posicoesSalvasRef[n.id] ?? posicaoPadrao,
         data: {
           numero: n.numero,
           nome: n.nome,

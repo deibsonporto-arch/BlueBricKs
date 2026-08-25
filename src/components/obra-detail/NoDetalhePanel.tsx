@@ -61,6 +61,21 @@ function opcoesPredecessora(atividades: Atividade[], excludeIds: Set<string>) {
   ]).filter((o) => !excludeIds.has(o.id));
 }
 
+/** Itens que têm este como predecessora — "pra frente" na cadeia, o inverso da Predecessora. */
+function opcoesSucessoras(atividades: Atividade[], itemId: string): { path: ItemPath; label: string }[] {
+  const out: { path: ItemPath; label: string }[] = [];
+  for (const a of atividades) {
+    if (a.dependeDe.includes(itemId)) out.push({ path: { atividadeId: a.id }, label: `${getTaskNumber(atividades, a.id)} — ${a.nome}` });
+    for (const s of a.subatividades) {
+      if (s.dependeDe.includes(itemId)) out.push({ path: { atividadeId: a.id, subatividadeId: s.id }, label: `${getTaskNumber(atividades, s.id)} — ${s.nome}` });
+      for (const n of s.subatividades ?? []) {
+        if (n.dependeDe.includes(itemId)) out.push({ path: { atividadeId: a.id, subatividadeId: s.id, netoId: n.id }, label: `${getTaskNumber(atividades, n.id)} — ${n.nome}` });
+      }
+    }
+  }
+  return out;
+}
+
 export function NoDetalhePanel({
   open,
   path,
@@ -86,6 +101,7 @@ export function NoDetalhePanel({
   const numero = getTaskNumber(atividades, item.id);
   const excludeIds = new Set([item.id, ...getDescendantIds(item.id, atividades)]);
   const opcoes = opcoesPredecessora(atividades, excludeIds);
+  const sucessoras = opcoesSucessoras(atividades, item.id);
 
   const displayStatus = neto
     ? getSubatividadeDisplayStatus(neto)
@@ -153,6 +169,26 @@ export function NoDetalhePanel({
             <span className="no-detalhe-panel__label">Predecessora</span>
             <EditablePredecessorCell values={item.dependeDe} options={opcoes} onSave={(v) => salvar({ dependeDe: v })} />
           </div>
+          {sucessoras.length > 0 && (
+            <div className="no-detalhe-panel__campo">
+              <span className="no-detalhe-panel__label">Sucessoras (depende deste)</span>
+              <select
+                className="no-detalhe-panel__sucessoras-select"
+                value=""
+                onChange={(e) => {
+                  const alvo = sucessoras.find((s) => `${s.path.atividadeId}:${s.path.subatividadeId ?? ''}:${s.path.netoId ?? ''}` === e.target.value);
+                  if (alvo) onNavigateTo(alvo.path);
+                }}
+              >
+                <option value="">Ir para uma sucessora...</option>
+                {sucessoras.map((s) => (
+                  <option key={`${s.path.atividadeId}:${s.path.subatividadeId ?? ''}:${s.path.netoId ?? ''}`} value={`${s.path.atividadeId}:${s.path.subatividadeId ?? ''}:${s.path.netoId ?? ''}`}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="no-detalhe-panel__campo">
             <span className="no-detalhe-panel__label">Status</span>
             <AtividadeStatusBadge status={isSubatividadeOuNeto ? displayStatus : (isAtrasado({ dataFim: atividade.dataFim, concluida }) ? 'atrasada' : displayStatus)} />
