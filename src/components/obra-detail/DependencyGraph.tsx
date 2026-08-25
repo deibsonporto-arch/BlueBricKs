@@ -109,7 +109,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
       numero: getTaskNumber(atividades, a.id),
       nome: a.nome,
       faseNome: a.nome,
-      faseCol: COLUNA_ATIVIDADES,
+      faseCol: 0,
       dependeDe: a.dependeDe,
       dataInicio: a.dataInicio,
       dataFim: a.dataFim,
@@ -175,9 +175,11 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
 const COL_WIDTH = 260;
 const ROW_HEIGHT = 96;
 const MAX_FASE = 10;
-// Coluna fixa à esquerda da "Fase 0 (livre)" que sempre lista todas as atividades (Alvenaria,
-// Reboco, Pintura...) pelo nome — não é uma fase, é o "menu" de onde as subatividades pertencem.
-const COLUNA_ATIVIDADES = -1;
+// Linha 0 do canvas: atividades (Alvenaria, Reboco, Pintura...) em ordem, lado a lado.
+// Linha 1: rótulos das fases (Fase 0 livre, Fase 1, Fase 2...). Da linha 2 pra baixo: as
+// subatividades (1.1, 1.2...) empilhadas dentro da coluna da fase que foram arrastadas.
+const LINHA_ROTULOS_FASE = 1;
+const LINHA_SUBATIVIDADES = 2;
 
 function faseDe(item: { faseMapa?: number }): number {
   return Math.min(MAX_FASE, Math.max(0, item.faseMapa ?? 0));
@@ -264,38 +266,46 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
 
   const { rfNodes, rfEdges } = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    let visibleNodes = flatNodes.filter((n) => visiveis[n.kind]);
+    // netos (3º nível) nunca aparecem soltos no mapa — só dentro do card da subatividade, pra
+    // edição — então nem entram na lista de nós visíveis do canvas.
+    let visibleNodes = flatNodes.filter((n) => n.kind !== 'neto' && visiveis[n.kind]);
     if (termo) {
       visibleNodes = visibleNodes.filter(
         (n) => n.nome.toLowerCase().includes(termo) || n.faseNome.toLowerCase().includes(termo) || n.numero.toLowerCase().includes(termo),
       );
     }
     if (nivelFiltro !== '') {
-      // a coluna de atividades (menu) fica sempre visível, mesmo filtrando por uma fase específica
+      // a linha de atividades fica sempre visível, mesmo filtrando por uma fase específica
       const faseAlvo = Number(nivelFiltro);
       visibleNodes = visibleNodes.filter((n) => n.kind === 'atividade' || n.faseCol === faseAlvo);
     }
     const visibleIds = new Set(visibleNodes.map((n) => n.id));
 
-    // Coluna -1 (fixa, à esquerda) lista todas as atividades pelo nome — não é arrastável.
-    // Colunas 0..MAX_FASE são as fases: cada subatividade/neto pertence à fase pra onde foi
-    // arrastado (faseMapa), empilhados verticalmente dentro da coluna.
+    // Linha 0: atividades lado a lado, em ordem, sem se misturar com a grade abaixo.
+    // Colunas 0..MAX_FASE (a partir da linha de rótulos): cada subatividade pertence à fase pra
+    // onde foi arrastada (faseMapa), empilhadas verticalmente dentro da coluna.
     const contadorPorColuna = new Map<number, number>();
     const nodes: Node[] = [];
+    let ativIndex = 0;
 
     for (const n of visibleNodes) {
-      const indice = contadorPorColuna.get(n.faseCol) ?? 0;
-      contadorPorColuna.set(n.faseCol, indice + 1);
-      const posicaoPadrao = { x: n.faseCol * COL_WIDTH, y: indice * ROW_HEIGHT };
+      let posicaoPadrao: { x: number; y: number };
+      if (n.kind === 'atividade') {
+        posicaoPadrao = { x: ativIndex * COL_WIDTH, y: 0 };
+        ativIndex += 1;
+      } else {
+        const indice = contadorPorColuna.get(n.faseCol) ?? 0;
+        contadorPorColuna.set(n.faseCol, indice + 1);
+        posicaoPadrao = { x: n.faseCol * COL_WIDTH, y: (LINHA_SUBATIVIDADES + indice) * ROW_HEIGHT };
+      }
 
-      // Posição de atividade sempre reflete a coluna fixa (não fica "presa" numa posição arrastada
-      // antiga); subatividades/netos podem ter ajuste fino salvo pelo usuário.
+      // Posição de atividade sempre reflete a linha fixa do topo (não fica "presa" numa posição
+      // arrastada antiga); subatividades podem ter ajuste fino salvo pelo usuário.
       const posicaoSalva = n.kind === 'atividade' ? undefined : posicoesSalvasRef[n.id];
 
       // busca o item real pra recalcular data de fim ao editar dias, sem precisar guardar tudo no FlatNode
       const atividade = atividades.find((a) => a.id === n.path.atividadeId)!;
-      const subatividade = n.path.subatividadeId ? atividade.subatividades.find((s) => s.id === n.path.subatividadeId) : undefined;
-      const item: Subatividade | undefined = n.path.netoId ? (subatividade?.subatividades ?? []).find((x) => x.id === n.path.netoId) : subatividade;
+      const item: Subatividade | undefined = n.path.subatividadeId ? atividade.subatividades.find((s) => s.id === n.path.subatividadeId) : undefined;
 
       nodes.push({
         id: n.id,
@@ -326,21 +336,12 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       });
     }
 
-    nodes.push({
-      id: 'fase-label-atividades',
-      type: 'faseLabel',
-      position: { x: COLUNA_ATIVIDADES * COL_WIDTH, y: -70 },
-      data: { label: 'Atividades' },
-      draggable: false,
-      selectable: false,
-    });
-
     for (let fase = 0; fase <= MAX_FASE; fase++) {
       if (nivelFiltro !== '' && Number(nivelFiltro) !== fase) continue;
       nodes.push({
         id: `fase-label-${fase}`,
         type: 'faseLabel',
-        position: { x: fase * COL_WIDTH, y: -70 },
+        position: { x: fase * COL_WIDTH, y: LINHA_ROTULOS_FASE * ROW_HEIGHT - 50 },
         data: { label: fase === 0 ? 'Fase 0 (livre)' : `Fase ${fase}` },
         draggable: false,
         selectable: false,
@@ -465,10 +466,6 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
           <label>
             <input type="checkbox" checked={visiveis.subatividade} onChange={(e) => setVisiveis((v) => ({ ...v, subatividade: e.target.checked }))} />
             Subfases
-          </label>
-          <label>
-            <input type="checkbox" checked={visiveis.neto} onChange={(e) => setVisiveis((v) => ({ ...v, neto: e.target.checked }))} />
-            Serviços
           </label>
         </div>
         </div>
