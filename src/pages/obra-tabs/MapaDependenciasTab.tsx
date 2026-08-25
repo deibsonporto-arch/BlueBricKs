@@ -5,6 +5,7 @@ import { useAtividades } from '../../hooks/useAtividades';
 import { DependencyGraph } from '../../components/obra-detail/DependencyGraph';
 import { NoDetalhePanel, type ItemPath } from '../../components/obra-detail/NoDetalhePanel';
 import { SubatividadeFormModal } from '../../components/obra-detail/SubatividadeFormModal';
+import { AtividadeFormModal } from '../../components/obra-detail/AtividadeFormModal';
 
 export function MapaDependenciasTab() {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export function MapaDependenciasTab() {
 
   const [painelPath, setPainelPath] = useState<ItemPath | null>(null);
   const [novoItemPath, setNovoItemPath] = useState<ItemPath | null>(null);
+  const [novaFaseModalOpen, setNovaFaseModalOpen] = useState(false);
 
   function handleToggleSubatividade(atividadeId: string, subatividadeId: string) {
     const atividade = atividades.find((a) => a.id === atividadeId);
@@ -44,6 +46,7 @@ export function MapaDependenciasTab() {
         onUpdateSubatividade={updateSubatividade}
         onUpdateSubSubatividade={updateSubSubatividade}
         onOpenPanel={setPainelPath}
+        onNovaFase={() => setNovaFaseModalOpen(true)}
       />
 
       <NoDetalhePanel
@@ -70,6 +73,18 @@ export function MapaDependenciasTab() {
         todasAtividades={atividades}
         onClose={() => setNovoItemPath(null)}
         onSaved={() => setNovoItemPath(null)}
+      />
+
+      <AtividadeFormModal
+        open={novaFaseModalOpen}
+        mode="create"
+        obraId={obraId}
+        obraDataInicio={obra.dataInicio}
+        obra={obra}
+        todasAtividades={atividades}
+        lancamentos={[]}
+        onClose={() => setNovaFaseModalOpen(false)}
+        onSaved={() => setNovaFaseModalOpen(false)}
       />
     </div>
   );

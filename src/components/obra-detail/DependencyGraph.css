@@ -20,6 +20,12 @@
   font-size: 15px;
 }
 
+.dep-graph-card__toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .dep-graph-card__toggles {
   display: flex;
   gap: 16px;
@@ -71,6 +77,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.dep-node__fase {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dep-node__nome {

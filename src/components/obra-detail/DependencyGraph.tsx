@@ -38,6 +38,7 @@ interface DependencyGraphProps {
   onUpdateSubatividade: (atividadeId: string, subatividadeId: string, patch: Partial<Subatividade>) => void;
   onUpdateSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividadeId: string, patch: Partial<Subatividade>) => void;
   onOpenPanel: (path: ItemPath) => void;
+  onNovaFase?: () => void;
 }
 
 type PosicoesSalvas = Record<string, { x: number; y: number }>;
@@ -69,6 +70,7 @@ interface FlatNode {
   kind: NodeKind;
   numero: string;
   nome: string;
+  faseNome: string;
   dependeDe: string[];
   dias: number;
   editavel: boolean;
@@ -102,6 +104,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
       kind: 'atividade',
       numero: getTaskNumber(atividades, a.id),
       nome: a.nome,
+      faseNome: a.nome,
       dependeDe: a.dependeDe,
       dias: duracaoDias(a),
       editavel: false,
@@ -120,6 +123,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
         kind: 'subatividade',
         numero: getTaskNumber(atividades, s.id),
         nome: s.nome,
+        faseNome: a.nome,
         dependeDe: s.dependeDe,
         dias: duracaoDias(s),
         editavel: !sTemFilhos,
@@ -137,6 +141,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
           kind: 'neto',
           numero: getTaskNumber(atividades, n.id),
           nome: n.nome,
+          faseNome: a.nome,
           dependeDe: n.dependeDe,
           dias: duracaoDias(n),
           editavel: true,
@@ -158,6 +163,8 @@ const ROW_HEIGHT = 96;
 interface ItemNodeData extends Record<string, unknown> {
   numero: string;
   nome: string;
+  faseNome: string;
+  mostrarFase: boolean;
   dias: number;
   editavel: boolean;
   temFilhos: boolean;
@@ -176,6 +183,7 @@ function ItemNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Left} />
       <div className="dep-node__header" style={{ background: d.cor }}>{d.numero}</div>
       <div className="dep-node__body" onClick={d.onOpenPanel}>
+        {d.mostrarFase && <div className="dep-node__fase" title={d.faseNome}>{d.faseNome}</div>}
         <div className="dep-node__nome" title={d.nome}>{d.nome}</div>
         <div className="dep-node__meta">
           {d.editavel ? (
@@ -211,7 +219,7 @@ interface NiveisVisiveis {
   neto: boolean;
 }
 
-export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdateSubatividade, onUpdateSubSubatividade, onOpenPanel }: DependencyGraphProps) {
+export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdateSubatividade, onUpdateSubSubatividade, onOpenPanel, onNovaFase }: DependencyGraphProps) {
   const [visiveis, setVisiveis] = useState<NiveisVisiveis>({ atividade: true, subatividade: true, neto: true });
   const posicoesSalvasRef = useMemo(() => carregarPosicoes(obraId), [obraId]);
 
@@ -251,6 +259,8 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
         data: {
           numero: n.numero,
           nome: n.nome,
+          faseNome: n.faseNome,
+          mostrarFase: n.kind !== 'atividade',
           dias: n.dias,
           editavel: n.editavel,
           temFilhos: n.temFilhos,
@@ -344,6 +354,12 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
     <div className="dep-graph-card">
       <div className="dep-graph-card__toolbar">
         <h3>Mapa de Dependências</h3>
+        <div className="dep-graph-card__toolbar-right">
+        {onNovaFase && (
+          <button type="button" className="btn btn-secondary" onClick={onNovaFase}>
+            + Nova fase
+          </button>
+        )}
         <div className="dep-graph-card__toggles">
           <label>
             <input type="checkbox" checked={visiveis.atividade} onChange={(e) => setVisiveis((v) => ({ ...v, atividade: e.target.checked }))} />
@@ -357,6 +373,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
             <input type="checkbox" checked={visiveis.neto} onChange={(e) => setVisiveis((v) => ({ ...v, neto: e.target.checked }))} />
             Serviços
           </label>
+        </div>
         </div>
       </div>
       <div className="dep-graph-card__canvas">
