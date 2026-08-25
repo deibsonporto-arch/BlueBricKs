@@ -284,25 +284,30 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
 
     // Linha 0: atividades lado a lado, em ordem, sem se misturar com a grade abaixo.
     // Colunas 0..MAX_FASE (a partir da linha de rótulos): cada subatividade pertence à fase pra
-    // onde foi arrastada (faseMapa), empilhadas verticalmente dentro da coluna.
-    const contadorPorColuna = new Map<number, number>();
+    // onde foi arrastada (faseMapa), empilhada num slot livre dentro da coluna — o slot salvo (se
+    // houver) tem prioridade, mas nunca dois itens dividem o mesmo slot: quem colidir desce um.
+    const ocupadosPorColuna = new Map<number, Set<number>>();
+    const proximoSlotPorColuna = new Map<number, number>();
     const nodes: Node[] = [];
     let ativIndex = 0;
 
     for (const n of visibleNodes) {
-      let posicaoPadrao: { x: number; y: number };
+      let posicaoFinal: { x: number; y: number };
       if (n.kind === 'atividade') {
-        posicaoPadrao = { x: ativIndex * COL_WIDTH, y: 0 };
+        // Posição de atividade sempre reflete a linha fixa do topo — nunca fica "presa" num pixel
+        // arrastado antigo, porque a linha de atividades não é arrastável.
+        posicaoFinal = { x: ativIndex * COL_WIDTH, y: 0 };
         ativIndex += 1;
       } else {
-        const indice = contadorPorColuna.get(n.faseCol) ?? 0;
-        contadorPorColuna.set(n.faseCol, indice + 1);
-        posicaoPadrao = { x: n.faseCol * COL_WIDTH, y: Y_SUBATIVIDADES + indice * ROW_HEIGHT };
+        const salva = posicoesSalvasRef[n.id];
+        const ocupados = ocupadosPorColuna.get(n.faseCol) ?? new Set<number>();
+        let slot = salva ? Math.max(0, Math.round((salva.y - Y_SUBATIVIDADES) / ROW_HEIGHT)) : (proximoSlotPorColuna.get(n.faseCol) ?? 0);
+        while (ocupados.has(slot)) slot += 1;
+        ocupados.add(slot);
+        ocupadosPorColuna.set(n.faseCol, ocupados);
+        proximoSlotPorColuna.set(n.faseCol, slot + 1);
+        posicaoFinal = { x: n.faseCol * COL_WIDTH, y: Y_SUBATIVIDADES + slot * ROW_HEIGHT };
       }
-
-      // Posição de atividade sempre reflete a linha fixa do topo (não fica "presa" numa posição
-      // arrastada antiga); subatividades podem ter ajuste fino salvo pelo usuário.
-      const posicaoSalva = n.kind === 'atividade' ? undefined : posicoesSalvasRef[n.id];
 
       // busca o item real pra recalcular data de fim ao editar dias, sem precisar guardar tudo no FlatNode
       const atividade = atividades.find((a) => a.id === n.path.atividadeId)!;
@@ -311,7 +316,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       nodes.push({
         id: n.id,
         type: 'item',
-        position: posicaoSalva ?? posicaoPadrao,
+        position: posicaoFinal,
         draggable: n.kind !== 'atividade',
         data: {
           numero: n.numero,
@@ -361,19 +366,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
         })),
     );
 
-    // liga visualmente a atividade/subatividade-mãe aos seus filhos diretos, pra dar a ideia de
-    // árvore (hierarquia) além das setas de dependência entre tarefas.
-    const edgesVinculo: Edge[] = visibleNodes
-      .filter((n) => n.paiId && visibleIds.has(n.paiId))
-      .map((n) => ({
-        id: `pai:${n.paiId}->${n.id}`,
-        source: n.paiId!,
-        target: n.id,
-        type: 'straight',
-        style: { stroke: 'var(--color-border)', strokeDasharray: '3 3' },
-      }));
-
-    return { rfNodes: nodes, rfEdges: [...edgesVinculo, ...edgesDependencia] };
+    return { rfNodes: nodes, rfEdges: edgesDependencia };
   }, [flatNodes, visiveis, atividades, busca, nivelFiltro]);
 
   // Estado controlado do React Flow: sem isso, arrastar um card não fica — o RF precisa que a gente
