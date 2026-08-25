@@ -512,6 +512,7 @@ export interface EntradaEstoque {
   marca?: string;
   quantidade: number;
   unidade: string;
+  custoUnitario?: number;
   medidas?: string;
   fornecedor: string;
   notaFiscal?: string;

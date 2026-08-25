@@ -9,6 +9,7 @@ export interface EntradaEstoquePrefill {
   material?: string;
   unidade?: string;
   quantidade?: number;
+  custoUnitario?: number;
   atividadeId?: string;
   subatividadeId?: string;
   requisicaoId?: string;
@@ -32,6 +33,7 @@ interface FormState {
   marca: string;
   quantidade: string;
   unidade: string;
+  custoUnitario: string;
   medidas: string;
   fornecedor: string;
   notaFiscal: string;
@@ -47,6 +49,7 @@ function vazio(prefill?: EntradaEstoquePrefill): FormState {
     marca: '',
     quantidade: prefill?.quantidade ? String(prefill.quantidade) : '',
     unidade: prefill?.unidade ?? 'un',
+    custoUnitario: prefill?.custoUnitario ? String(prefill.custoUnitario) : '',
     medidas: '',
     fornecedor: '',
     notaFiscal: '',
@@ -63,6 +66,7 @@ function deEntrada(entrada: EntradaEstoque): FormState {
     marca: entrada.marca ?? '',
     quantidade: String(entrada.quantidade),
     unidade: entrada.unidade,
+    custoUnitario: entrada.custoUnitario != null ? String(entrada.custoUnitario) : '',
     medidas: entrada.medidas ?? '',
     fornecedor: entrada.fornecedor,
     notaFiscal: entrada.notaFiscal ?? '',
@@ -99,7 +103,13 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
     update('material', material);
     const existente = materiaisConhecidos.find((e) => e.material.toLowerCase() === material.trim().toLowerCase());
     if (existente) {
-      setForm((f) => ({ ...f, marca: existente.marca ?? f.marca, unidade: existente.unidade, medidas: existente.medidas ?? f.medidas }));
+      setForm((f) => ({
+        ...f,
+        marca: existente.marca ?? f.marca,
+        unidade: existente.unidade,
+        medidas: existente.medidas ?? f.medidas,
+        custoUnitario: existente.custoUnitario != null && !f.custoUnitario ? String(existente.custoUnitario) : f.custoUnitario,
+      }));
     }
   }
 
@@ -110,6 +120,7 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
 
     const atividade = atividades.find((a) => a.id === form.atividadeId);
     const subatividade = atividade?.subatividades.find((s) => s.id === form.subatividadeId);
+    const custoUnitario = form.custoUnitario.trim() ? Number(form.custoUnitario) : undefined;
 
     if (editing && onUpdate) {
       onUpdate(editing.id, {
@@ -119,6 +130,7 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
         marca: form.marca.trim() || undefined,
         quantidade,
         unidade: form.unidade.trim() || 'un',
+        custoUnitario,
         medidas: form.medidas.trim() || undefined,
         fornecedor: form.fornecedor.trim(),
         notaFiscal: form.notaFiscal.trim() || undefined,
@@ -143,6 +155,7 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
       marca: form.marca.trim() || undefined,
       quantidade,
       unidade: form.unidade.trim() || 'un',
+      custoUnitario,
       medidas: form.medidas.trim() || undefined,
       fornecedor: form.fornecedor.trim(),
       notaFiscal: form.notaFiscal.trim() || undefined,
@@ -203,6 +216,10 @@ export function EntradaEstoqueFormModal({ open, obraId, entradas, atividades, pr
         <div className="form-field">
           <label>Unidade de medida</label>
           <input required value={form.unidade} onChange={(e) => update('unidade', e.target.value)} placeholder="UN, m², m³, kg, litro..." />
+        </div>
+        <div className="form-field">
+          <label>Custo unitário (R$)</label>
+          <input type="number" min={0} step="0.01" value={form.custoUnitario} onChange={(e) => update('custoUnitario', e.target.value)} placeholder="opcional" />
         </div>
         <div className="form-field">
           <label>Medidas / dimensões</label>

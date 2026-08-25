@@ -9,7 +9,7 @@ import { SaidaEstoqueFormModal, type SaidaEstoquePrefill } from '../../component
 import { EscolhaAcaoEstoqueModal } from '../../components/almoxarifado/EscolhaAcaoEstoqueModal';
 import { InventarioMaterialModal } from '../../components/almoxarifado/InventarioMaterialModal';
 import { calcularSaldos, corDaEtapa } from '../../utils/estoque';
-import { formatNumberBR } from '../../utils/currency';
+import { formatBRL, formatNumberBR } from '../../utils/currency';
 import { formatDate } from '../../utils/dateUtils';
 import { EmptyState } from '../../components/common/EmptyState';
 import type { EntradaEstoque } from '../../types/domain';
@@ -52,6 +52,7 @@ export function AlmoxarifadoTab() {
   }, [saidas, busca, filtroAtividadeId]);
 
   const materiaisAbaixoDoMinimo = saldos.filter((s) => s.saldo <= 0).length;
+  const valorTotalEstoque = saldos.reduce((sum, s) => sum + s.valorEstoque, 0);
 
   const consumoPorEtapa = useMemo(() => {
     const contagem = new Map<string, number>();
@@ -114,6 +115,11 @@ export function AlmoxarifadoTab() {
           <div className="almoxarifado-stat-card__label"><IconBox size={14} /> Materiais em estoque</div>
           <div className="almoxarifado-stat-card__value">{saldos.length}</div>
           <div className="almoxarifado-stat-card__sub">{materiaisAbaixoDoMinimo > 0 ? `${materiaisAbaixoDoMinimo} zerado(s)` : 'nenhum zerado'}</div>
+        </div>
+        <div className="almoxarifado-stat-card">
+          <div className="almoxarifado-stat-card__label"><IconBox size={14} /> Valor em estoque</div>
+          <div className="almoxarifado-stat-card__value">{formatBRL(valorTotalEstoque)}</div>
+          <div className="almoxarifado-stat-card__sub">pelo custo unitário mais recente informado</div>
         </div>
         <div className="almoxarifado-stat-card">
           <div className="almoxarifado-stat-card__label"><IconArrowUp size={14} /> Entradas</div>
@@ -187,6 +193,8 @@ export function AlmoxarifadoTab() {
                   <th>Marca</th>
                   <th>Qtd.</th>
                   <th>Un.</th>
+                  <th>Custo unit.</th>
+                  <th>Total</th>
                   <th>Medidas</th>
                   <th>Fornecedor</th>
                   <th>Nota fiscal</th>
@@ -208,6 +216,8 @@ export function AlmoxarifadoTab() {
                       <td className="text-muted">{e.marca ?? '—'}</td>
                       <td className="num">{formatNumberBR(e.quantidade)}</td>
                       <td><span className="almoxarifado-pill">{e.unidade}</span></td>
+                      <td className="num text-muted">{e.custoUnitario != null ? formatBRL(e.custoUnitario) : '—'}</td>
+                      <td className="num">{e.custoUnitario != null ? formatBRL(e.custoUnitario * e.quantidade) : '—'}</td>
                       <td className="text-muted">{e.medidas ?? '—'}</td>
                       <td className="text-muted">{e.fornecedor}</td>
                       <td className="mono text-muted">{e.notaFiscal ?? '—'}</td>

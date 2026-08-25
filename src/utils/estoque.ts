@@ -8,18 +8,23 @@ export interface SaldoMaterial {
   totalEntrado: number;
   totalSaido: number;
   saldo: number;
+  custoUnitario?: number; // preço da entrada mais recente com custo informado — usado só como referência
+  valorEstoque: number; // saldo × custoUnitario (0 se não houver custo conhecido)
 }
 
 /** Saldo por material = soma de todas as entradas menos soma de todas as saídas daquele código —
- * nunca guardado, sempre recalculado, pra nunca dessincronizar do histórico de lançamentos. */
+ * nunca guardado, sempre recalculado, pra nunca dessincronizar do histórico de lançamentos. O custo
+ * unitário usado pro valor em estoque é o da entrada mais recente que informou um custo. */
 export function calcularSaldos(entradas: EntradaEstoque[], saidas: SaidaEstoque[]): Map<string, SaldoMaterial> {
   const saldos = new Map<string, SaldoMaterial>();
+  const entradasOrdenadas = [...entradas].sort((a, b) => a.data.localeCompare(b.data));
 
-  for (const e of entradas) {
+  for (const e of entradasOrdenadas) {
     const atual = saldos.get(e.codigo);
     if (atual) {
       atual.totalEntrado += e.quantidade;
       atual.saldo += e.quantidade;
+      if (e.custoUnitario != null) atual.custoUnitario = e.custoUnitario;
     } else {
       saldos.set(e.codigo, {
         codigo: e.codigo,
@@ -29,6 +34,8 @@ export function calcularSaldos(entradas: EntradaEstoque[], saidas: SaidaEstoque[
         totalEntrado: e.quantidade,
         totalSaido: 0,
         saldo: e.quantidade,
+        custoUnitario: e.custoUnitario,
+        valorEstoque: 0,
       });
     }
   }
@@ -39,6 +46,10 @@ export function calcularSaldos(entradas: EntradaEstoque[], saidas: SaidaEstoque[
       atual.totalSaido += s.quantidade;
       atual.saldo -= s.quantidade;
     }
+  }
+
+  for (const saldo of saldos.values()) {
+    saldo.valorEstoque = saldo.saldo * (saldo.custoUnitario ?? 0);
   }
 
   return saldos;

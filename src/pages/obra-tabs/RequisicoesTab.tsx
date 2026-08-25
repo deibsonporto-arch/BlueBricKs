@@ -175,6 +175,7 @@ export function RequisicoesTab() {
                                       material: i.descricao,
                                       unidade: i.unidade,
                                       quantidade: Math.round(i.quantidade * 100) / 100,
+                                      custoUnitario: i.custoUnitario || undefined,
                                       atividadeId: grupo.atividadeId,
                                       subatividadeId: sub.subatividadeId,
                                       requisicaoId: i.id,
