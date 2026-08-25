@@ -122,6 +122,38 @@
   padding: 1px 4px;
 }
 
+.dep-fase-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.dep-node__datas {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+}
+
+.dep-graph-card__filtros {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dep-graph-card__filtros input,
+.dep-graph-card__filtros select {
+  font-size: 12.5px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+}
+
+.dep-graph-card__filtros input {
+  width: 200px;
+}
+
 .react-flow__attribution {
   display: none;
 }

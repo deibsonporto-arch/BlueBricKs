@@ -26,7 +26,7 @@ import {
   isAtrasado,
   temNetos,
 } from '../../utils/subatividades';
-import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis } from '../../utils/dateUtils';
+import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, formatDateShort } from '../../utils/dateUtils';
 import { computeNiveis, corDaEtapa } from '../../utils/dependencyGraph';
 import type { ItemPath } from './NoDetalhePanel';
 import './DependencyGraph.css';
@@ -71,7 +71,10 @@ interface FlatNode {
   numero: string;
   nome: string;
   faseNome: string;
+  paiId?: string;
   dependeDe: string[];
+  dataInicio: string;
+  dataFim: string;
   dias: number;
   editavel: boolean;
   temFilhos: boolean;
@@ -106,6 +109,8 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
       nome: a.nome,
       faseNome: a.nome,
       dependeDe: a.dependeDe,
+      dataInicio: a.dataInicio,
+      dataFim: a.dataFim,
       dias: duracaoDias(a),
       editavel: false,
       temFilhos: aTemFilhos,
@@ -124,7 +129,10 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
         numero: getTaskNumber(atividades, s.id),
         nome: s.nome,
         faseNome: a.nome,
+        paiId: a.id,
         dependeDe: s.dependeDe,
+        dataInicio: s.dataInicio,
+        dataFim: s.dataFim,
         dias: duracaoDias(s),
         editavel: !sTemFilhos,
         temFilhos: sTemFilhos,
@@ -142,7 +150,10 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
           numero: getTaskNumber(atividades, n.id),
           nome: n.nome,
           faseNome: a.nome,
+          paiId: s.id,
           dependeDe: n.dependeDe,
+          dataInicio: n.dataInicio,
+          dataFim: n.dataFim,
           dias: duracaoDias(n),
           editavel: true,
           temFilhos: false,
@@ -165,6 +176,8 @@ interface ItemNodeData extends Record<string, unknown> {
   nome: string;
   faseNome: string;
   mostrarFase: boolean;
+  dataInicio: string;
+  dataFim: string;
   dias: number;
   editavel: boolean;
   temFilhos: boolean;
@@ -202,6 +215,7 @@ function ItemNode({ data }: NodeProps) {
           )}
           {d.temFilhos && <span className="dep-node__filhos-count">({d.filhosCount})</span>}
         </div>
+        <div className="dep-node__datas">{formatDateShort(d.dataInicio)} — {formatDateShort(d.dataFim)}</div>
         <AtividadeStatusBadge status={d.status} />
       </div>
       <Handle type="source" position={Position.Right} />
@@ -209,7 +223,11 @@ function ItemNode({ data }: NodeProps) {
   );
 }
 
-const NODE_TYPES = { item: ItemNode };
+function FaseLabelNode({ data }: NodeProps) {
+  return <div className="dep-fase-label">{(data as { label: string }).label}</div>;
+}
+
+const NODE_TYPES = { item: ItemNode, faseLabel: FaseLabelNode };
 
 interface NiveisVisiveis {
   atividade: boolean;
@@ -219,6 +237,8 @@ interface NiveisVisiveis {
 
 export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdateSubatividade, onUpdateSubSubatividade, onOpenPanel, onNovaFase }: DependencyGraphProps) {
   const [visiveis, setVisiveis] = useState<NiveisVisiveis>({ atividade: true, subatividade: true, neto: true });
+  const [busca, setBusca] = useState('');
+  const [nivelFiltro, setNivelFiltro] = useState('');
   const posicoesSalvasRef = useMemo(() => carregarPosicoes(obraId), [obraId]);
 
   const flatNodes = useMemo(() => buildFlatNodes(atividades), [atividades]);
@@ -230,16 +250,39 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
     else onUpdateAtividade(n.path.atividadeId, patch as Partial<Atividade>);
   }
 
+  // níveis calculados sobre TODOS os nós (sem filtro de busca/kind) só pra popular as opções do
+  // seletor de fase — assim a lista de fases não some quando o usuário já filtrou algo.
+  const maxNivelGeral = useMemo(() => {
+    const niveis = computeNiveis(flatNodes.map((n) => ({ id: n.id, dependeDe: n.dependeDe })));
+    return Math.max(0, ...[...niveis.values()]);
+  }, [flatNodes]);
+
   const { rfNodes, rfEdges } = useMemo(() => {
-    const visibleNodes = flatNodes.filter((n) => visiveis[n.kind]);
+    const termo = busca.trim().toLowerCase();
+    let visibleNodes = flatNodes.filter((n) => visiveis[n.kind]);
+    if (termo) {
+      visibleNodes = visibleNodes.filter(
+        (n) => n.nome.toLowerCase().includes(termo) || n.faseNome.toLowerCase().includes(termo) || n.numero.toLowerCase().includes(termo),
+      );
+    }
     const visibleIds = new Set(visibleNodes.map((n) => n.id));
     const niveis = computeNiveis(visibleNodes.map((n) => ({ id: n.id, dependeDe: n.dependeDe })));
 
+    if (nivelFiltro !== '') {
+      const nivelAlvo = Number(nivelFiltro);
+      visibleNodes = visibleNodes.filter((n) => (niveis.get(n.id) ?? 0) === nivelAlvo);
+      for (const id of [...visibleIds]) {
+        if ((niveis.get(id) ?? 0) !== nivelAlvo) visibleIds.delete(id);
+      }
+    }
+
     const contadorPorNivel = new Map<number, number>();
     const nodes: Node[] = [];
+    let maxNivel = 0;
 
     for (const n of visibleNodes) {
       const nivel = niveis.get(n.id) ?? 0;
+      maxNivel = Math.max(maxNivel, nivel);
       const indice = contadorPorNivel.get(nivel) ?? 0;
       contadorPorNivel.set(nivel, indice + 1);
 
@@ -257,6 +300,8 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
           nome: n.nome,
           faseNome: n.faseNome,
           mostrarFase: n.kind !== 'atividade',
+          dataInicio: n.dataInicio,
+          dataFim: n.dataFim,
           dias: n.dias,
           editavel: n.editavel,
           temFilhos: n.temFilhos,
@@ -274,7 +319,19 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       });
     }
 
-    const edges: Edge[] = visibleNodes.flatMap((n) =>
+    for (let nivel = 0; nivel <= maxNivel; nivel++) {
+      if (nivelFiltro !== '' && Number(nivelFiltro) !== nivel) continue;
+      nodes.push({
+        id: `fase-label-${nivel}`,
+        type: 'faseLabel',
+        position: { x: nivel * COL_WIDTH, y: -70 },
+        data: { label: nivel === 0 ? 'Fase 0 (livre)' : `Fase ${nivel}` },
+        draggable: false,
+        selectable: false,
+      });
+    }
+
+    const edgesDependencia: Edge[] = visibleNodes.flatMap((n) =>
       n.dependeDe
         .filter((predId) => visibleIds.has(predId))
         .map((predId) => ({
@@ -286,8 +343,20 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
         })),
     );
 
-    return { rfNodes: nodes, rfEdges: edges };
-  }, [flatNodes, visiveis, atividades]);
+    // liga visualmente a atividade/subatividade-mãe aos seus filhos diretos, pra dar a ideia de
+    // árvore (hierarquia) além das setas de dependência entre tarefas.
+    const edgesVinculo: Edge[] = visibleNodes
+      .filter((n) => n.paiId && visibleIds.has(n.paiId))
+      .map((n) => ({
+        id: `pai:${n.paiId}->${n.id}`,
+        source: n.paiId!,
+        target: n.id,
+        type: 'straight',
+        style: { stroke: 'var(--color-border)', strokeDasharray: '3 3' },
+      }));
+
+    return { rfNodes: nodes, rfEdges: [...edgesVinculo, ...edgesDependencia] };
+  }, [flatNodes, visiveis, atividades, busca, nivelFiltro]);
 
   // Estado controlado do React Flow: sem isso, arrastar um card não fica — o RF precisa que a gente
   // aplique as mudanças de posição/seleção via onNodesChange/onEdgesChange. Ao recalcular o layout
@@ -340,6 +409,20 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       <div className="dep-graph-card__toolbar">
         <h3>Mapa de Dependências</h3>
         <div className="dep-graph-card__toolbar-right">
+        <div className="dep-graph-card__filtros">
+          <input
+            type="text"
+            placeholder="Buscar fase, atividade ou item..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+          <select value={nivelFiltro} onChange={(e) => setNivelFiltro(e.target.value)}>
+            <option value="">Todas as fases</option>
+            {Array.from({ length: maxNivelGeral + 1 }, (_, nivel) => (
+              <option key={nivel} value={nivel}>{nivel === 0 ? 'Fase 0 (livre)' : `Fase ${nivel}`}</option>
+            ))}
+          </select>
+        </div>
         {onNovaFase && (
           <button type="button" className="btn btn-secondary" onClick={onNovaFase}>
             + Nova fase
