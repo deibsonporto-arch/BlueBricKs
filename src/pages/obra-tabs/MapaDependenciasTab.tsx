@@ -38,6 +38,7 @@ export function MapaDependenciasTab() {
   return (
     <div style={{ paddingBottom: 40, marginTop: 16 }}>
       <DependencyGraph
+        obraId={obraId}
         atividades={atividades}
         onUpdateAtividade={updateAtividade}
         onUpdateSubatividade={updateSubatividade}

@@ -32,11 +32,33 @@ import type { ItemPath } from './NoDetalhePanel';
 import './DependencyGraph.css';
 
 interface DependencyGraphProps {
+  obraId: string;
   atividades: Atividade[];
   onUpdateAtividade: (id: string, patch: Partial<Atividade>) => void;
   onUpdateSubatividade: (atividadeId: string, subatividadeId: string, patch: Partial<Subatividade>) => void;
   onUpdateSubSubatividade: (atividadeId: string, subatividadeId: string, subSubatividadeId: string, patch: Partial<Subatividade>) => void;
   onOpenPanel: (path: ItemPath) => void;
+}
+
+type PosicoesSalvas = Record<string, { x: number; y: number }>;
+
+function chavePosicoes(obraId: string): string {
+  return `brics:mapaDependenciasPos:${obraId}`;
+}
+
+function carregarPosicoes(obraId: string): PosicoesSalvas {
+  try {
+    const raw = localStorage.getItem(chavePosicoes(obraId));
+    return raw ? (JSON.parse(raw) as PosicoesSalvas) : {};
+  } catch {
+    return {};
+  }
+}
+
+function salvarPosicao(obraId: string, nodeId: string, posicao: { x: number; y: number }) {
+  const atuais = carregarPosicoes(obraId);
+  atuais[nodeId] = posicao;
+  localStorage.setItem(chavePosicoes(obraId), JSON.stringify(atuais));
 }
 
 type NodeKind = 'atividade' | 'subatividade' | 'neto';
@@ -189,8 +211,9 @@ interface NiveisVisiveis {
   neto: boolean;
 }
 
-export function DependencyGraph({ atividades, onUpdateAtividade, onUpdateSubatividade, onUpdateSubSubatividade, onOpenPanel }: DependencyGraphProps) {
+export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdateSubatividade, onUpdateSubSubatividade, onOpenPanel }: DependencyGraphProps) {
   const [visiveis, setVisiveis] = useState<NiveisVisiveis>({ atividade: true, subatividade: true, neto: true });
+  const posicoesSalvasRef = useMemo(() => carregarPosicoes(obraId), [obraId]);
 
   const flatNodes = useMemo(() => buildFlatNodes(atividades), [atividades]);
   const flatById = useMemo(() => new Map(flatNodes.map((n) => [n.id, n])), [flatNodes]);
@@ -224,7 +247,7 @@ export function DependencyGraph({ atividades, onUpdateAtividade, onUpdateSubativ
       nodes.push({
         id: n.id,
         type: 'item',
-        position: { x: nivel * COL_WIDTH, y: indice * ROW_HEIGHT },
+        position: posicoesSalvasRef[n.id] ?? { x: nivel * COL_WIDTH, y: indice * ROW_HEIGHT },
         data: {
           numero: n.numero,
           nome: n.nome,
@@ -289,6 +312,13 @@ export function DependencyGraph({ atividades, onUpdateAtividade, onUpdateSubativ
   const onNodesChange = useCallback((changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
 
+  // Guarda a posição no localStorage assim que o usuário solta o arraste, pra sobreviver a sair e
+  // voltar da aba (o layout automático por nível só é usado como ponto de partida, na 1ª vez).
+  const onNodeDragStop = useCallback(
+    (_event: unknown, node: Node) => salvarPosicao(obraId, node.id, node.position),
+    [obraId],
+  );
+
   function onConnect(connection: Connection) {
     const { source, target } = connection;
     if (!source || !target || source === target) return;
@@ -337,6 +367,7 @@ export function DependencyGraph({ atividades, onUpdateAtividade, onUpdateSubativ
             nodeTypes={NODE_TYPES}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onNodeDragStop={onNodeDragStop}
             onConnect={onConnect}
             onEdgesDelete={onEdgesDelete}
             fitView
