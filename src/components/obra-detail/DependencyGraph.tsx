@@ -102,7 +102,6 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
   atividades.forEach((a, ai) => {
     const cor = corDaEtapa(ai);
     const aTemFilhos = a.subatividades.length > 0;
-    const faseCol = faseDe(a);
     out.push({
       id: a.id,
       path: { atividadeId: a.id },
@@ -110,7 +109,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
       numero: getTaskNumber(atividades, a.id),
       nome: a.nome,
       faseNome: a.nome,
-      faseCol,
+      faseCol: COLUNA_ATIVIDADES,
       dependeDe: a.dependeDe,
       dataInicio: a.dataInicio,
       dataFim: a.dataFim,
@@ -132,7 +131,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
         numero: getTaskNumber(atividades, s.id),
         nome: s.nome,
         faseNome: a.nome,
-        faseCol,
+        faseCol: faseDe(s),
         paiId: a.id,
         dependeDe: s.dependeDe,
         dataInicio: s.dataInicio,
@@ -154,7 +153,7 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
           numero: getTaskNumber(atividades, n.id),
           nome: n.nome,
           faseNome: a.nome,
-          faseCol,
+          faseCol: faseDe(n),
           paiId: s.id,
           dependeDe: n.dependeDe,
           dataInicio: n.dataInicio,
@@ -176,9 +175,12 @@ function buildFlatNodes(atividades: Atividade[]): FlatNode[] {
 const COL_WIDTH = 260;
 const ROW_HEIGHT = 96;
 const MAX_FASE = 10;
+// Coluna fixa à esquerda da "Fase 0 (livre)" que sempre lista todas as atividades (Alvenaria,
+// Reboco, Pintura...) pelo nome — não é uma fase, é o "menu" de onde as subatividades pertencem.
+const COLUNA_ATIVIDADES = -1;
 
-function faseDe(a: Atividade): number {
-  return Math.min(MAX_FASE, Math.max(0, a.faseMapa ?? 0));
+function faseDe(item: { faseMapa?: number }): number {
+  return Math.min(MAX_FASE, Math.max(0, item.faseMapa ?? 0));
 }
 
 interface ItemNodeData extends Record<string, unknown> {
@@ -269,14 +271,15 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       );
     }
     if (nivelFiltro !== '') {
+      // a coluna de atividades (menu) fica sempre visível, mesmo filtrando por uma fase específica
       const faseAlvo = Number(nivelFiltro);
-      visibleNodes = visibleNodes.filter((n) => n.faseCol === faseAlvo);
+      visibleNodes = visibleNodes.filter((n) => n.kind === 'atividade' || n.faseCol === faseAlvo);
     }
     const visibleIds = new Set(visibleNodes.map((n) => n.id));
 
-    // Cada coluna (0..MAX_FASE) é uma fase manual. Dentro da coluna, empilha os itens verticalmente
-    // na ordem em que aparecem (atividade, depois suas subatividades/netos, depois a próxima
-    // atividade da mesma fase...) — arrastar um card de atividade pra outra coluna muda sua fase.
+    // Coluna -1 (fixa, à esquerda) lista todas as atividades pelo nome — não é arrastável.
+    // Colunas 0..MAX_FASE são as fases: cada subatividade/neto pertence à fase pra onde foi
+    // arrastado (faseMapa), empilhados verticalmente dentro da coluna.
     const contadorPorColuna = new Map<number, number>();
     const nodes: Node[] = [];
 
@@ -285,7 +288,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
       contadorPorColuna.set(n.faseCol, indice + 1);
       const posicaoPadrao = { x: n.faseCol * COL_WIDTH, y: indice * ROW_HEIGHT };
 
-      // Posição de atividade sempre reflete a fase atual (não fica "presa" numa posição arrastada
+      // Posição de atividade sempre reflete a coluna fixa (não fica "presa" numa posição arrastada
       // antiga); subatividades/netos podem ter ajuste fino salvo pelo usuário.
       const posicaoSalva = n.kind === 'atividade' ? undefined : posicoesSalvasRef[n.id];
 
@@ -298,6 +301,7 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
         id: n.id,
         type: 'item',
         position: posicaoSalva ?? posicaoPadrao,
+        draggable: n.kind !== 'atividade',
         data: {
           numero: n.numero,
           nome: n.nome,
@@ -321,6 +325,15 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
         } satisfies ItemNodeData,
       });
     }
+
+    nodes.push({
+      id: 'fase-label-atividades',
+      type: 'faseLabel',
+      position: { x: COLUNA_ATIVIDADES * COL_WIDTH, y: -70 },
+      data: { label: 'Atividades' },
+      draggable: false,
+      selectable: false,
+    });
 
     for (let fase = 0; fase <= MAX_FASE; fase++) {
       if (nivelFiltro !== '' && Number(nivelFiltro) !== fase) continue;
@@ -386,20 +399,17 @@ export function DependencyGraph({ obraId, atividades, onUpdateAtividade, onUpdat
   const onNodesChange = useCallback((changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback((changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
 
-  // Ao soltar o arraste: se for um card de atividade (fase), a coluna onde ele caiu vira a nova
-  // fase do item — arrastar "joga" a atividade pra dentro daquela fase. Pra subatividade/neto,
-  // guarda o ajuste fino de posição no localStorage, como antes.
+  // Ao soltar o arraste de uma subatividade/neto: a coluna onde ele caiu vira a fase do item —
+  // arrastar "joga" o item pra dentro daquela fase. A coluna de atividades não é arrastável.
   const onNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
       const flat = flatById.get(node.id);
-      if (flat?.kind === 'atividade') {
-        const novaFase = Math.min(MAX_FASE, Math.max(0, Math.round(node.position.x / COL_WIDTH)));
-        onUpdateAtividade(node.id, { faseMapa: novaFase });
-      } else {
-        salvarPosicao(obraId, node.id, node.position);
-      }
+      if (!flat || flat.kind === 'atividade') return;
+      const novaFase = Math.min(MAX_FASE, Math.max(0, Math.round(node.position.x / COL_WIDTH)));
+      aplicarPatch(flat, { faseMapa: novaFase });
+      salvarPosicao(obraId, node.id, node.position);
     },
-    [obraId, flatById, onUpdateAtividade],
+    [obraId, flatById],
   );
 
   function onConnect(connection: Connection) {

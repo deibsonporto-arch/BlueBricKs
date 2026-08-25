@@ -119,6 +119,7 @@ export interface Subatividade {
   equipamentosAluguel: Equipamento[];
   insumos?: ItemInsumoAtividade[]; // decomposição SINAPI da subatividade (material/mão de obra/aluguel linha a linha) — quando presente, dirige os totais de custoMaterial/custoMaoDeObra/custoAluguel
   subatividades?: Subatividade[]; // 3º nível (subatividade dentro de subatividade) — quando presente, datas/custos/status desta subatividade são derivados dos filhos, igual a Atividade deriva de subatividades
+  faseMapa?: number; // coluna manual (0..10) no Mapa de Dependências — 0 = "Fase 0 (livre)"; usuário arrasta o card pra dentro da coluna
 }
 
 export interface Atividade {
@@ -143,7 +144,6 @@ export interface Atividade {
   maoDeObraNecessaria: MaoDeObra[];
   equipamentosAluguel: Equipamento[];
   insumos?: ItemInsumoAtividade[]; // decomposição SINAPI da atividade (material/mão de obra/aluguel linha a linha) — quando presente, dirige os totais de custoMaterial/custoMaoDeObra/custoAluguel
-  faseMapa?: number; // coluna manual (0..10) no Mapa de Dependências — 0 = "Fase 0 (livre)"; usuário arrasta o card de fase pra dentro da coluna
   subatividades: Subatividade[];
   createdAt: string;
   updatedAt: string;
