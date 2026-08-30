@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { IconFileInvoice } from '@tabler/icons-react';
 import { Modal } from '../common/Modal';
 import { ComposicaoInsumosField } from './ComposicaoInsumosField';
-import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, Obra, Subatividade, TipoInsumoAtividade, UnidadeMedida } from '../../types/domain';
+import { MedidasAmbienteField } from './MedidasAmbienteField';
+import type { Atividade, Cotacao, Equipamento, ItemInsumoAtividade, MaoDeObra, Material, MedidasAmbiente, Obra, Subatividade, TipoInsumoAtividade, UnidadeMedida } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useListasDeMateriais } from '../../hooks/useListasDeMateriais';
 import { useMateriaisCatalogo } from '../../hooks/useMateriaisCatalogo';
@@ -84,11 +85,24 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   const [form, setForm] = useState<FormState>(() => toFormState(subatividade));
   const [enviandoCotacao, setEnviandoCotacao] = useState(false);
   const [insumos, setInsumos] = useState<ItemInsumoAtividade[]>(() => subatividade?.insumos ?? []);
+  const [medidasAmbiente, setMedidasAmbiente] = useState<MedidasAmbiente | undefined>(() => subatividade?.medidasAmbiente);
   const [buscaModelo, setBuscaModelo] = useState('');
 
   useEffect(() => {
-    if (open) { setForm(toFormState(subatividade)); setInsumos(subatividade?.insumos ?? []); setBuscaModelo(''); }
+    if (open) { setForm(toFormState(subatividade)); setInsumos(subatividade?.insumos ?? []); setMedidasAmbiente(subatividade?.medidasAmbiente); setBuscaModelo(''); }
   }, [open, subatividade]);
+
+  /** "Aplicar" no resumo das Medidas do ambiente: atualiza a linha de insumo já criada por esse
+   * mesmo cálculo (achada pela tag em `origemCalculo`) ou cria uma nova — nunca mexe numa linha
+   * lançada à mão, então o usuário pode sempre ignorar o cálculo e digitar o valor que quiser. */
+  function aplicarCalculoAoInsumo(opts: { tag: string; descricao: string; unidade: string; quantidade: number; tipo: TipoInsumoAtividade }) {
+    const existente = insumos.find((i) => i.origemCalculo === opts.tag);
+    if (existente) {
+      setInsumos(insumos.map((i) => (i.id === existente.id ? { ...i, descricao: opts.descricao, unidade: opts.unidade, quantidade: opts.quantidade } : i)));
+    } else {
+      setInsumos([...insumos, { id: generateId(), descricao: opts.descricao, unidade: opts.unidade, quantidade: opts.quantidade, custoUnitario: 0, tipo: opts.tipo, origemCalculo: opts.tag }]);
+    }
+  }
 
   const atividadePai = todasAtividades.find((a) => a.id === atividadeId);
   const temInsumos = insumos.length > 0;
@@ -203,6 +217,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
       maoDeObraNecessaria: form.maoDeObraNecessaria,
       equipamentosAluguel: form.equipamentosAluguel,
       insumos,
+      medidasAmbiente,
     };
 
     if (mode === 'create') {
@@ -372,6 +387,14 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
             )}
           </div>
         )}
+
+        <div className="form-field form-field--full">
+          <MedidasAmbienteField
+            medidas={medidasAmbiente}
+            onChangeMedidas={setMedidasAmbiente}
+            onAplicarInsumo={aplicarCalculoAoInsumo}
+          />
+        </div>
 
         {obra && (
           <div className="form-field form-field--full">

@@ -56,6 +56,33 @@ export interface ItemInsumoAtividade {
   quantidade: number;
   custoUnitario: number;
   tipo: TipoInsumoAtividade;
+  origemCalculo?: string; // tag ("alvenaria", "reboco-parede", "eletrica:<id>"...) usada pra atualizar esta mesma linha ao clicar "Aplicar" de novo nas Medidas do ambiente — ausente = linha lançada à mão, nunca sobrescrita pelo cálculo
+}
+
+/** Uma abertura na parede (porta ou janela) — desconta da área líquida de alvenaria/reboco. */
+export interface AberturaAmbiente {
+  id: string;
+  largura: number; // m
+  altura: number; // m
+  quantidade: number;
+}
+
+export interface PontoEletricoAmbiente {
+  id: string;
+  descricao: string; // ex: "Interruptor simples com tomada", "Luminária"
+  quantidade: number;
+}
+
+/** Medidas de um ambiente (cômodo), preenchidas na subatividade pra calcular sozinho m² de
+ * alvenaria/reboco/porcelanato e quantidade de pontos elétricos — puramente auxiliar: o usuário
+ * decide se aplica o valor calculado aos insumos ou prefere digitar manualmente. */
+export interface MedidasAmbiente {
+  largura?: number; // m
+  comprimento?: number; // m
+  peDireito?: number; // altura da parede, m
+  portas: AberturaAmbiente[];
+  janelas: AberturaAmbiente[];
+  pontosEletricos: PontoEletricoAmbiente[];
 }
 
 /** Snapshot reaproveitável de uma subatividade (nome + custos + insumos decompostos), salva pelo
@@ -120,6 +147,7 @@ export interface Subatividade {
   insumos?: ItemInsumoAtividade[]; // decomposição SINAPI da subatividade (material/mão de obra/aluguel linha a linha) — quando presente, dirige os totais de custoMaterial/custoMaoDeObra/custoAluguel
   subatividades?: Subatividade[]; // 3º nível (subatividade dentro de subatividade) — quando presente, datas/custos/status desta subatividade são derivados dos filhos, igual a Atividade deriva de subatividades
   faseMapa?: number; // coluna manual (0..10) no Mapa de Dependências — 0 = "Fase 0 (livre)"; usuário arrasta o card pra dentro da coluna
+  medidasAmbiente?: MedidasAmbiente; // opcional — largura/comprimento/pé-direito, portas, janelas e pontos elétricos do cômodo, pra calcular m² de alvenaria/reboco/porcelanato e pontos
 }
 
 export interface Atividade {
