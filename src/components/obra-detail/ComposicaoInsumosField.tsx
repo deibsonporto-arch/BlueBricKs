@@ -21,6 +21,8 @@ interface ComposicaoInsumosFieldProps {
   insumos: ItemInsumoAtividade[];
   onChangeInsumos: (insumos: ItemInsumoAtividade[]) => void;
   onSugerirNome?: (nome: string) => void; // chamado ao decompor pela 1ª vez, se o nome do form ainda estiver vazio
+  composicaoOrigem?: { codigo: number; unidade: string }; // composição SINAPI salva que gerou os insumos atuais (pra reabrir e ainda poder "Restaurar valores do SINAPI")
+  onChangeComposicaoOrigem?: (origem: { codigo: number; unidade: string } | undefined) => void;
 }
 
 const TIPO_LABEL: Record<TipoInsumoAtividade, string> = {
@@ -38,7 +40,7 @@ type ResultadoBusca =
   | { origem: 'composicao'; item: SinapiComposicaoResumo }
   | { origem: 'insumo'; item: SinapiInsumoResumo };
 
-export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos, onSugerirNome }: ComposicaoInsumosFieldProps) {
+export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos, onSugerirNome, composicaoOrigem, onChangeComposicaoOrigem }: ComposicaoInsumosFieldProps) {
   const [busca, setBusca] = useState('');
   const [resultados, setResultados] = useState<ResultadoBusca[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -49,10 +51,11 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   const [desoneracao] = useState<SinapiDesoneracao>('SD');
   // unidade do SERVIÇO decomposto (ex: m² de reboco) — não confundir com a unidade de cada insumo
   // (ex: H de mão de obra, KG de cimento). Usada só pro rótulo do campo "Quantidade" abaixo.
-  const [unidadeComposicao, setUnidadeComposicao] = useState<string | undefined>(undefined);
-  // código da última composição SINAPI decomposta — guardado pra dar pra "Restaurar valores do SINAPI"
-  // buscar tudo de novo do zero (desfaz edições manuais e a mão de obra por empreitada).
-  const [codigoComposicao, setCodigoComposicao] = useState<number | undefined>(undefined);
+  const [unidadeComposicao, setUnidadeComposicao] = useState<string | undefined>(composicaoOrigem?.unidade);
+  // código da última composição SINAPI decomposta — guardado (e persistido via composicaoOrigem) pra
+  // dar pra "Restaurar valores do SINAPI" buscar tudo de novo do zero mesmo depois de reabrir a
+  // subatividade, desfazendo edições manuais e mão de obra por empreitada.
+  const codigoComposicao = composicaoOrigem?.codigo;
   const [restaurando, setRestaurando] = useState(false);
 
   useEffect(() => {
@@ -100,7 +103,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       onChangeInsumos(insumosDeComposicaoExplodida(explodidos));
       setEscalaInsumos(quantidade);
       setUnidadeComposicao(selecionada.item.unidade);
-      setCodigoComposicao(selecionada.item.codigo);
+      onChangeComposicaoOrigem?.({ codigo: selecionada.item.codigo, unidade: selecionada.item.unidade });
       onSugerirNome?.(selecionada.item.descricao);
       setSelecionada(null);
       setBusca('');

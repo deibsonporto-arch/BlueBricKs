@@ -86,6 +86,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   const [enviandoCotacao, setEnviandoCotacao] = useState(false);
   const [insumos, setInsumos] = useState<ItemInsumoAtividade[]>(() => subatividade?.insumos ?? []);
   const [medidasAmbiente, setMedidasAmbiente] = useState<MedidasAmbiente | undefined>(() => subatividade?.medidasAmbiente);
+  const [composicaoOrigem, setComposicaoOrigem] = useState<{ codigo: number; unidade: string } | undefined>(() => subatividade?.composicaoSinapiOrigem);
   const [buscaModelo, setBuscaModelo] = useState('');
 
   useEffect(() => {
@@ -95,6 +96,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
       // "parâmetro calculado" — tinham origemCalculo mas ficaram marcados como Material
       setInsumos((subatividade?.insumos ?? []).map((i) => (i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' } : i)));
       setMedidasAmbiente(subatividade?.medidasAmbiente);
+      setComposicaoOrigem(subatividade?.composicaoSinapiOrigem);
       setBuscaModelo('');
     }
   }, [open, subatividade]);
@@ -131,6 +133,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
     const modelo = modelos.find((m) => m.id === modeloId);
     if (!modelo) return;
     setInsumos(modelo.insumos);
+    setComposicaoOrigem(undefined);
     setForm((f) => ({ ...f, nome: f.nome || modelo.nome }));
     setBuscaModelo('');
   }
@@ -225,6 +228,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
       equipamentosAluguel: form.equipamentosAluguel,
       insumos,
       medidasAmbiente,
+      composicaoSinapiOrigem: composicaoOrigem,
     };
 
     if (mode === 'create') {
@@ -410,6 +414,8 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
               etapaNome={atividadePai?.nome}
               insumos={insumos}
               onChangeInsumos={setInsumos}
+              composicaoOrigem={composicaoOrigem}
+              onChangeComposicaoOrigem={setComposicaoOrigem}
               onSugerirNome={(nome) => setForm((f) => ({ ...f, nome: f.nome || nome }))}
             />
           </div>
