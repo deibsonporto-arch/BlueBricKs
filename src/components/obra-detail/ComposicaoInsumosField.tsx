@@ -230,26 +230,27 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [escalaPedida?.ts]);
 
-  // "Mão de obra por empreitada" — substitui as linhas de mão de obra (normalmente por hora) por
-  // uma única linha com valor fechado por unidade do serviço (ex: R$ 50/m²), que escala junto com
-  // "Quantidade do serviço" igual as demais.
+  // "Mão de obra por empreitada" — ADICIONA uma linha de mão de obra com valor fechado por unidade
+  // do serviço (ex: R$ 50/m²), que escala junto com "Quantidade do serviço" igual as demais. Não
+  // mexe nas linhas existentes: dá pra ter várias empreitadas lado a lado (ex: eletricista +
+  // pedreiro, cada um com seu valor) e apagar na mão só a linha antiga que não quiser mais manter.
   const [empreitaAberto, setEmpreitaAberto] = useState(false);
+  const [empreitaDescricaoInput, setEmpreitaDescricaoInput] = useState('Mão de obra (empreitada)');
   const [empreitaValorInput, setEmpreitaValorInput] = useState('');
-  const EMPREITA_DESCRICAO = 'Mão de obra (empreitada)';
   function aplicarEmpreitada() {
     const valorPorUnidade = parseNumberBR(empreitaValorInput);
-    if (!(valorPorUnidade > 0)) return;
-    const semMaoDeObra = insumos.filter((i) => i.tipo !== 'mao_de_obra');
+    if (!(valorPorUnidade > 0) || !empreitaDescricaoInput.trim()) return;
     const novoItem: ItemInsumoAtividade = {
       id: generateId(),
-      descricao: EMPREITA_DESCRICAO,
+      descricao: empreitaDescricaoInput.trim(),
       unidade: unidadeComposicao || 'un',
       quantidade: escalaInsumos,
       custoUnitario: valorPorUnidade,
       tipo: 'mao_de_obra',
     };
-    onChangeInsumos([...semMaoDeObra, novoItem]);
+    onChangeInsumos([...insumos, novoItem]);
     setEmpreitaAberto(false);
+    setEmpreitaDescricaoInput('Mão de obra (empreitada)');
     setEmpreitaValorInput('');
   }
 
@@ -349,11 +350,17 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
           <div className="atividade-insumos-empreita">
             {!empreitaAberto ? (
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEmpreitaAberto(true)}>
-                Mão de obra por empreitada...
+                + Mão de obra por empreitada...
               </button>
             ) : (
               <>
-                <span>Mão de obra por empreitada — R$ por {unidadeComposicao || 'unidade'}:</span>
+                <input
+                  className="atividade-insumos-empreita__descricao"
+                  value={empreitaDescricaoInput}
+                  onChange={(e) => setEmpreitaDescricaoInput(e.target.value)}
+                  placeholder="ex: Eletricista (empreitada)"
+                />
+                <span>R$ por {unidadeComposicao || 'unidade'}:</span>
                 <input
                   type="text" inputMode="decimal"
                   autoFocus
@@ -361,10 +368,10 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                   onChange={(e) => setEmpreitaValorInput(e.target.value)}
                   placeholder="ex: 50,00"
                 />
-                <button type="button" className="btn btn-secondary btn-sm" onClick={aplicarEmpreitada} disabled={!(parseNumberBR(empreitaValorInput) > 0)}>
-                  Aplicar
+                <button type="button" className="btn btn-secondary btn-sm" onClick={aplicarEmpreitada} disabled={!(parseNumberBR(empreitaValorInput) > 0) || !empreitaDescricaoInput.trim()}>
+                  Adicionar linha
                 </button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEmpreitaAberto(false); setEmpreitaValorInput(''); }}>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEmpreitaAberto(false); setEmpreitaValorInput(''); setEmpreitaDescricaoInput('Mão de obra (empreitada)'); }}>
                   Cancelar
                 </button>
               </>
