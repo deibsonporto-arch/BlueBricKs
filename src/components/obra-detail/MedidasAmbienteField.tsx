@@ -164,20 +164,26 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
 
           <div className="medidas-ambiente__resumo">
             <span className="medidas-ambiente__resumo-titulo">Resumo calculado</span>
-            <div className="medidas-ambiente__resumo-linha">
-              <span>Alvenaria (parede líquida)</span>
-              <strong>{formatNumberBR(resumo.areaLiquidaParede)} m²</strong>
-              <button type="button" className="btn btn-secondary" disabled={resumo.areaLiquidaParede <= 0} onClick={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaLiquidaParede, tipo: 'material' })}>
-                Aplicar
-              </button>
-            </div>
-            <div className="medidas-ambiente__resumo-linha">
-              <span>Reboco (parede líquida)</span>
-              <strong>{formatNumberBR(resumo.areaLiquidaParede)} m²</strong>
-              <button type="button" className="btn btn-secondary" disabled={resumo.areaLiquidaParede <= 0} onClick={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaLiquidaParede, tipo: 'material' })}>
-                Aplicar
-              </button>
-            </div>
+            <p className="medidas-ambiente__hint" style={{ margin: '0 0 4px' }}>
+              Cada item de parede usa o pé-direito inteiro por padrão — mas dá pra considerar só uma altura menor (ex: revestimento até 1,5m), editando o campo "altura" da linha.
+            </p>
+
+            <LinhaResumoParede
+              label="Alvenaria"
+              area={resumo.areaAlvenaria}
+              altura={m.alturaAlvenaria}
+              peDireito={m.peDireito}
+              onAlturaChange={(v) => atualizar({ alturaAlvenaria: v })}
+              onAplicar={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaAlvenaria, tipo: 'material' })}
+            />
+            <LinhaResumoParede
+              label="Reboco"
+              area={resumo.areaReboco}
+              altura={m.alturaReboco}
+              peDireito={m.peDireito}
+              onAlturaChange={(v) => atualizar({ alturaReboco: v })}
+              onAplicar={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaReboco, tipo: 'material' })}
+            />
             <div className="medidas-ambiente__resumo-linha">
               <span>Porcelanato — piso</span>
               <strong>{formatNumberBR(resumo.areaPiso)} m²</strong>
@@ -185,10 +191,26 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 Aplicar
               </button>
             </div>
+            <LinhaResumoParede
+              label="Porcelanato — parede"
+              area={resumo.areaPorcelanatoParede}
+              altura={m.alturaPorcelanatoParede}
+              peDireito={m.peDireito}
+              onAlturaChange={(v) => atualizar({ alturaPorcelanatoParede: v })}
+              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'material' })}
+            />
+            <LinhaResumoParede
+              label="Pintura"
+              area={resumo.areaPintura}
+              altura={m.alturaPintura}
+              peDireito={m.peDireito}
+              onAlturaChange={(v) => atualizar({ alturaPintura: v })}
+              onAplicar={() => onAplicarInsumo({ tag: 'pintura', descricao: 'Pintura de parede (calculado)', unidade: 'm²', quantidade: resumo.areaPintura, tipo: 'material' })}
+            />
             <div className="medidas-ambiente__resumo-linha">
-              <span>Porcelanato — parede</span>
-              <strong>{formatNumberBR(resumo.areaLiquidaParede)} m²</strong>
-              <button type="button" className="btn btn-secondary" disabled={resumo.areaLiquidaParede <= 0} onClick={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaLiquidaParede, tipo: 'material' })}>
+              <span>Forro (teto)</span>
+              <strong>{formatNumberBR(resumo.areaForro)} m²</strong>
+              <button type="button" className="btn btn-secondary" disabled={resumo.areaForro <= 0} onClick={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'material' })}>
                 Aplicar
               </button>
             </div>
@@ -203,6 +225,41 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+interface LinhaResumoParedeProps {
+  label: string;
+  area: number;
+  altura: number | undefined;
+  peDireito: number | undefined;
+  onAlturaChange: (v: number | undefined) => void;
+  onAplicar: () => void;
+}
+
+/** Linha do resumo pra um item calculado a partir da parede (alvenaria, reboco, porcelanato de
+ * parede, pintura) — cada um pode usar uma altura considerada diferente do pé-direito inteiro
+ * (ex: revestimento só até 1,5m numa área molhada). Deixar vazio volta a usar o pé-direito. */
+function LinhaResumoParede({ label, area, altura, peDireito, onAlturaChange, onAplicar }: LinhaResumoParedeProps) {
+  return (
+    <div className="medidas-ambiente__resumo-linha medidas-ambiente__resumo-linha--parede">
+      <span>{label}</span>
+      <label className="medidas-ambiente__altura-considerada">
+        altura
+        <input
+          type="text" inputMode="decimal"
+          key={`altura-${label}-${altura ?? ''}`}
+          defaultValue={altura ? formatNumberBR(altura) : ''}
+          placeholder={peDireito ? formatNumberBR(peDireito) : '—'}
+          onBlur={(e) => onAlturaChange(e.target.value.trim() ? parseNumberBR(e.target.value) : undefined)}
+        />
+        m
+      </label>
+      <strong>{formatNumberBR(area)} m²</strong>
+      <button type="button" className="btn btn-secondary" disabled={area <= 0} onClick={onAplicar}>
+        Aplicar
+      </button>
     </div>
   );
 }

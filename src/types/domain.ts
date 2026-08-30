@@ -79,10 +79,16 @@ export interface PontoEletricoAmbiente {
 export interface MedidasAmbiente {
   largura?: number; // m
   comprimento?: number; // m
-  peDireito?: number; // altura da parede, m
+  peDireito?: number; // altura da parede, m — usada como padrão pros itens abaixo quando não têm altura própria definida
   portas: AberturaAmbiente[];
   janelas: AberturaAmbiente[];
   pontosEletricos: PontoEletricoAmbiente[];
+  // altura considerada por item do resumo, quando diferente do pé-direito inteiro — ex: porcelanato
+  // de parede só até 1,5m (meia parede de banheiro), ou pintura só até 2,0m. Ausente = usa peDireito.
+  alturaAlvenaria?: number;
+  alturaReboco?: number;
+  alturaPorcelanatoParede?: number;
+  alturaPintura?: number;
 }
 
 /** Snapshot reaproveitável de uma subatividade (nome + custos + insumos decompostos), salva pelo
