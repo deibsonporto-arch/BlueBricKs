@@ -34,6 +34,7 @@ export function VisaoGeralTab() {
     updateAtividade,
     deleteAtividade,
     updateSubatividade,
+    duplicateSubatividade,
     deleteSubatividade,
     reorderAtividades,
     reorderSubatividades,
@@ -230,6 +231,7 @@ export function VisaoGeralTab() {
         onUpdateAtividade={updateAtividade}
         onToggleSubatividade={handleToggleSubatividade}
         onUpdateSubatividade={updateSubatividade}
+        onDuplicateSubatividade={duplicateSubatividade}
         onDeleteSubatividade={deleteSubatividade}
         onReorderAtividades={reorderAtividades}
         onReorderSubatividades={reorderSubatividades}

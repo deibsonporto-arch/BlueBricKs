@@ -3,6 +3,27 @@ import type { Atividade, Subatividade } from '../types/domain';
 import { atividadeRepository } from '../data/repositories/atividadeRepository';
 import { deriveParentStatus, recomputeParentAggregates, resolveSubatividadeDates } from '../utils/subatividades';
 import { resolveAtividadeDates } from '../utils/atividadeSchedule';
+import { generateId } from '../utils/id';
+
+/** Clona uma subatividade (e seus netos, recursivamente) com ids novos, zerando conclusão/andamento
+ * — a cópia nasce pendente, pronta pra virar uma nova tarefa a partir do que já foi preenchido
+ * (insumos, mão de obra, materiais, datas, custos) na original. */
+function clonarSubatividade(s: Subatividade): Subatividade {
+  return {
+    ...s,
+    id: generateId(),
+    nome: `${s.nome} (cópia)`,
+    concluida: false,
+    iniciada: false,
+    status: 'pendente',
+    dependeDe: [],
+    insumos: s.insumos?.map((i) => ({ ...i, id: generateId() })),
+    materiaisNecessarios: s.materiaisNecessarios.map((m) => ({ ...m })),
+    maoDeObraNecessaria: s.maoDeObraNecessaria.map((m) => ({ ...m })),
+    equipamentosAluguel: s.equipamentosAluguel.map((e) => ({ ...e })),
+    subatividades: s.subatividades?.map((n) => ({ ...clonarSubatividade(n), dependeDe: [] })),
+  };
+}
 
 export function isBlocked(atividade: Atividade, all: Atividade[]): boolean {
   return atividade.dependeDe.some((depId) => {
@@ -252,6 +273,31 @@ export function useAtividades(obraId: string) {
     [obraId, refresh],
   );
 
+  const duplicateSubatividade = useCallback(
+    async (atividadeId: string, subatividadeId: string) => {
+      const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
+      const atividade = all.find((a) => a.id === atividadeId);
+      const original = atividade?.subatividades.find((s) => s.id === subatividadeId);
+      if (!atividade || !original) return;
+
+      const indice = atividade.subatividades.findIndex((s) => s.id === subatividadeId);
+      const copia = clonarSubatividade(original);
+      const novasSubatividades = [...atividade.subatividades];
+      novasSubatividades.splice(indice + 1, 0, copia);
+
+      const aggregates = recomputeParentAggregates({ ...atividade, subatividades: novasSubatividades });
+      const derivedStatus = deriveParentStatus(novasSubatividades);
+      atividadeRepository.update(atividadeId, {
+        subatividades: novasSubatividades,
+        ...aggregates,
+        ...derivedStatus,
+        updatedAt: new Date().toISOString(),
+      });
+      refresh();
+    },
+    [obraId, refresh],
+  );
+
   const deleteSubatividade = useCallback(
     async (atividadeId: string, subatividadeId: string) => {
       const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
@@ -346,6 +392,7 @@ export function useAtividades(obraId: string) {
     toggleConclusao,
     createSubatividade,
     updateSubatividade,
+    duplicateSubatividade,
     deleteSubatividade,
     reorderAtividades,
     reorderSubatividades,

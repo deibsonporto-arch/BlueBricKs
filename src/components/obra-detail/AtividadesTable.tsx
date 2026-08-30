@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import {
   IconChevronDown,
   IconChevronRight,
+  IconCopy,
   IconEdit,
   IconGripVertical,
   IconLock,
@@ -33,6 +34,7 @@ interface AtividadesTableProps {
   onUpdateAtividade: (id: string, patch: Partial<Atividade>) => void;
   onToggleSubatividade: (atividadeId: string, subatividadeId: string) => void;
   onUpdateSubatividade: (atividadeId: string, subatividadeId: string, patch: Partial<Subatividade>) => void;
+  onDuplicateSubatividade: (atividadeId: string, subatividadeId: string) => void;
   onDeleteSubatividade: (atividadeId: string, subatividadeId: string) => void;
   onReorderAtividades: (idsNaNovaOrdem: string[]) => void;
   onReorderSubatividades: (atividadeId: string, idsNaNovaOrdem: string[]) => void;
@@ -59,6 +61,7 @@ export function AtividadesTable({
   onUpdateAtividade,
   onToggleSubatividade,
   onUpdateSubatividade,
+  onDuplicateSubatividade,
   onDeleteSubatividade,
   onReorderAtividades,
   onReorderSubatividades,
@@ -537,6 +540,15 @@ export function AtividadesTable({
                                   aria-label="Editar subatividade"
                                 >
                                   <IconEdit size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost"
+                                  onClick={() => onDuplicateSubatividade(a.id, s.id)}
+                                  aria-label="Duplicar subatividade"
+                                  title="Duplicar subatividade (com insumos, materiais, mão de obra e equipamentos)"
+                                >
+                                  <IconCopy size={14} />
                                 </button>
                                 <button
                                   type="button"
