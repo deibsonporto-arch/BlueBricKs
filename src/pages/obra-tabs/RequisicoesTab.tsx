@@ -180,6 +180,7 @@ export function RequisicoesTab() {
   function sincronizarComVisaoGeral() {
     for (const a of atividades) {
       for (const s of a.subatividades) {
+        if (s.concluida) continue; // já terminou — não precisa mais mandar/atualizar nada pra requisição
         const requisicoesDaSub = requisicoes.filter((r) => r.subatividadeId === s.id);
         if (requisicoesDaSub.length === 0) continue;
         const insumosMateriais = (s.insumos ?? []).filter((i) => i.tipo !== 'mao_de_obra');

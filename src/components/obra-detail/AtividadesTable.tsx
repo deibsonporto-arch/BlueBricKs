@@ -302,7 +302,7 @@ export function AtividadesTable({
                           disabledTitle={temSubatividades ? 'Calculado a partir das subatividades' : 'Data automática — clique no cadeado para editar manualmente'}
                           onSave={(novaData) => onUpdateAtividade(a.id, { ...buildReagendamentoPatch(a, novaData), updatedAt: new Date().toISOString() })}
                         />
-                        {a.dataInicioOriginal && (
+                        {a.dataInicioOriginal && !atividadeConcluida && (
                           <span className="atividades-table__data-original" title="Data de início planejada antes do atraso">
                             previsto: {formatDate(a.dataInicioOriginal)}
                           </span>
@@ -475,7 +475,7 @@ export function AtividadesTable({
                                 <span className="subativ-row__campo">
                                   <EditableDateCell value={s.dataFim} onSave={(v) => onUpdateSubatividade(a.id, s.id, { dataFim: v })} />
                                 </span>
-                                {s.dataInicioOriginal && (
+                                {s.dataInicioOriginal && !s.concluida && (
                                   <span className="atividades-table__data-original" title="Data de início planejada antes do atraso">
                                     previsto: {formatDate(s.dataInicioOriginal)}
                                   </span>
