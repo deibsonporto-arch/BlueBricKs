@@ -281,8 +281,8 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                   <th>Descrição</th>
                   <th>Tipo</th>
                   <th>Un.</th>
-                  <th title="Quantidade por 1 unidade do serviço (o coeficiente da composição SINAPI)">Coef. (p/1)</th>
-                  <th title={unidadeComposicao ? `Quantidade real pra ${formatNumberBR(escalaInsumos)} ${unidadeComposicao} do serviço` : 'Quantidade real pra sua metragem'}>Qtd. p/ {formatNumberBR(escalaInsumos)}{unidadeComposicao ? ` ${unidadeComposicao}` : ''}</th>
+                  <th title="Quantidade por 1 unidade do serviço (o coeficiente da composição SINAPI)">Coef.</th>
+                  <th title={unidadeComposicao ? `Quantidade real pra ${formatNumberBR(escalaInsumos)} ${unidadeComposicao} do serviço` : 'Quantidade real pra sua metragem'}>Qtd.</th>
                   <th>Custo unit.</th>
                   <th>Total</th>
                   <th></th>
@@ -304,6 +304,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                     <td>
                       <input
                         type="text" inputMode="decimal"
+                        key={`qtd-${i.id}-${i.quantidade}`}
                         defaultValue={formatNumberBR(i.quantidade)}
                         onBlur={(e) => updateInsumo(i.id, { quantidade: parseNumberBR(e.target.value) })}
                       />
@@ -311,6 +312,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                     <td>
                       <input
                         type="text" inputMode="decimal"
+                        key={`custo-${i.id}-${i.custoUnitario}`}
                         defaultValue={formatNumberBR(i.custoUnitario)}
                         onBlur={(e) => updateInsumo(i.id, { custoUnitario: parseNumberBR(e.target.value) })}
                       />

@@ -165,22 +165,24 @@
   overflow: hidden;
 }
 
-/* Descrição | Tipo | Un. | Qtd. | Custo unit. | Total | (remover) — a descrição ganha a maior fatia
-   pra dar pra ler o nome inteiro do insumo, o resto fica compacto. */
+/* Descrição | Tipo | Un. | Coef.(p/1) | Qtd. | Custo unit. | Total | (remover) — a descrição ganha
+   a maior fatia pra dar pra ler o nome inteiro do insumo, o resto fica bem compacto. */
 .atividade-insumos-table th:nth-child(1),
-.atividade-insumos-table td:nth-child(1) { width: 42%; }
+.atividade-insumos-table td:nth-child(1) { width: 34%; }
 .atividade-insumos-table th:nth-child(2),
-.atividade-insumos-table td:nth-child(2) { width: 13%; }
+.atividade-insumos-table td:nth-child(2) { width: 11%; }
 .atividade-insumos-table th:nth-child(3),
-.atividade-insumos-table td:nth-child(3) { width: 8%; }
+.atividade-insumos-table td:nth-child(3) { width: 6%; }
 .atividade-insumos-table th:nth-child(4),
-.atividade-insumos-table td:nth-child(4) { width: 10%; }
+.atividade-insumos-table td:nth-child(4) { width: 9%; }
 .atividade-insumos-table th:nth-child(5),
-.atividade-insumos-table td:nth-child(5) { width: 12%; }
+.atividade-insumos-table td:nth-child(5) { width: 10%; }
 .atividade-insumos-table th:nth-child(6),
-.atividade-insumos-table td:nth-child(6) { width: 12%; }
+.atividade-insumos-table td:nth-child(6) { width: 11%; }
 .atividade-insumos-table th:nth-child(7),
-.atividade-insumos-table td:nth-child(7) { width: 3%; }
+.atividade-insumos-table td:nth-child(7) { width: 12%; }
+.atividade-insumos-table th:nth-child(8),
+.atividade-insumos-table td:nth-child(8) { width: 3%; }
 
 .atividade-insumos-table input,
 .atividade-insumos-table select {
