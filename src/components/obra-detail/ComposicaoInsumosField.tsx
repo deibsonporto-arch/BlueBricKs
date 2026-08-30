@@ -91,6 +91,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     try {
       const explodidos = await buscarItensComposicaoSinapi(selecionada.item.codigo, { uf, desoneracao, mes }, quantidade);
       onChangeInsumos(insumosDeComposicaoExplodida(explodidos));
+      setEscalaInsumos(quantidade);
       onSugerirNome?.(selecionada.item.descricao);
       setSelecionada(null);
       setBusca('');
@@ -181,6 +182,17 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   const insumosCalculados = insumos.filter((i) => i.tipo === 'parametro_calculado');
   const totais = totaisPorTipo(insumos);
 
+  // "Quantidade" no topo da tabela = escala de tudo — a composição vem decomposta pra 1 unidade
+  // (1 m² de reboco, por ex.); mudar esse número aqui multiplica a quantidade de CADA insumo pela
+  // razão entre o novo valor e o anterior, sem precisar editar linha por linha.
+  const [escalaInsumos, setEscalaInsumos] = useState(1);
+  function aplicarEscala(novaEscala: number) {
+    if (!(novaEscala > 0) || novaEscala === escalaInsumos) return;
+    const fator = novaEscala / escalaInsumos;
+    onChangeInsumos(insumos.map((i) => ({ ...i, quantidade: i.quantidade * fator })));
+    setEscalaInsumos(novaEscala);
+  }
+
   const custoSelecionado = selecionada
     ? selecionada.origem === 'composicao' ? selecionada.item.custo : selecionada.item.preco
     : null;
@@ -246,7 +258,17 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       )}
 
       {insumosNormais.length > 0 && (
-        <div className="scroll-x">
+        <>
+          <label className="atividade-insumos-escala">
+            Quantidade (recalcula todos os insumos proporcionalmente — a composição veio pra {formatNumberBR(escalaInsumos)} {insumosNormais[0]?.unidade ?? 'un'})
+            <input
+              type="text" inputMode="decimal"
+              key={`escala-${escalaInsumos}`}
+              defaultValue={formatNumberBR(escalaInsumos)}
+              onBlur={(e) => aplicarEscala(parseNumberBR(e.target.value))}
+            />
+          </label>
+          <div className="scroll-x">
             <table className="atividade-insumos-table">
               <thead>
                 <tr>
@@ -301,7 +323,8 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                 </tr>
               </tfoot>
             </table>
-        </div>
+          </div>
+        </>
       )}
 
       {insumosCalculados.length > 0 && (
