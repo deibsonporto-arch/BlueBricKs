@@ -50,6 +50,10 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   // unidade do SERVIÇO decomposto (ex: m² de reboco) — não confundir com a unidade de cada insumo
   // (ex: H de mão de obra, KG de cimento). Usada só pro rótulo do campo "Quantidade" abaixo.
   const [unidadeComposicao, setUnidadeComposicao] = useState<string | undefined>(undefined);
+  // código da última composição SINAPI decomposta — guardado pra dar pra "Restaurar valores do SINAPI"
+  // buscar tudo de novo do zero (desfaz edições manuais e a mão de obra por empreitada).
+  const [codigoComposicao, setCodigoComposicao] = useState<number | undefined>(undefined);
+  const [restaurando, setRestaurando] = useState(false);
 
   useEffect(() => {
     fetchSinapiMeses().then((meses) => setMes((atual) => atual || meses[0] || '')).catch(() => undefined);
@@ -96,12 +100,24 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       onChangeInsumos(insumosDeComposicaoExplodida(explodidos));
       setEscalaInsumos(quantidade);
       setUnidadeComposicao(selecionada.item.unidade);
+      setCodigoComposicao(selecionada.item.codigo);
       onSugerirNome?.(selecionada.item.descricao);
       setSelecionada(null);
       setBusca('');
       setQuantidadeInput('1');
     } finally {
       setDecompondo(false);
+    }
+  }
+
+  async function restaurarValoresSinapi() {
+    if (!codigoComposicao || !mes) return;
+    setRestaurando(true);
+    try {
+      const explodidos = await buscarItensComposicaoSinapi(codigoComposicao, { uf, desoneracao, mes }, escalaInsumos);
+      onChangeInsumos(insumosDeComposicaoExplodida(explodidos));
+    } finally {
+      setRestaurando(false);
     }
   }
 
@@ -296,6 +312,17 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
               defaultValue={formatNumberBR(escalaInsumos)}
               onBlur={(e) => aplicarEscala(parseNumberBR(e.target.value))}
             />
+            {codigoComposicao != null && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={restaurarValoresSinapi}
+                disabled={restaurando}
+                title="Refaz o cálculo a partir da composição original do SINAPI, desfazendo edições manuais e mão de obra por empreitada"
+              >
+                {restaurando ? 'Restaurando...' : 'Restaurar valores do SINAPI'}
+              </button>
+            )}
           </label>
           <div className="atividade-insumos-empreita">
             {!empreitaAberto ? (
