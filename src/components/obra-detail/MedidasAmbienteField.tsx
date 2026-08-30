@@ -236,7 +236,15 @@ interface LinhaResumoItemProps {
 }
 
 function campoVazio(cfg: ConfigItemAmbiente | undefined): boolean {
-  return !cfg || (!cfg.areaDireta && !(cfg.segmentos && cfg.segmentos.length > 0) && !cfg.largura && !cfg.comprimento && !cfg.aberturas);
+  return (
+    !cfg ||
+    (!cfg.areaDireta &&
+      !(cfg.segmentos && cfg.segmentos.length > 0) &&
+      !(cfg.segmentosPlanos && cfg.segmentosPlanos.length > 0) &&
+      !cfg.largura &&
+      !cfg.comprimento &&
+      !cfg.aberturas)
+  );
 }
 
 function novoSegmento(metroLinearPadrao: number, alturaPadrao: number): SegmentoParede {
