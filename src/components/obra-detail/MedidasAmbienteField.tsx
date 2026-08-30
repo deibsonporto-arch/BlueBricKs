@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
-import type { AberturaAmbiente, MedidasAmbiente, PontoEletricoAmbiente, TipoInsumoAtividade } from '../../types/domain';
+import { IconAdjustments, IconPlus, IconTrash } from '@tabler/icons-react';
+import type { AberturaAmbiente, ConfigItemAmbiente, MedidasAmbiente, PontoEletricoAmbiente, TipoInsumoAtividade } from '../../types/domain';
 import { calcularResumoAmbiente } from '../../utils/medidasAmbiente';
 import { generateId } from '../../utils/id';
 import { formatNumberBR, parseNumberBR } from '../../utils/currency';
@@ -165,55 +165,51 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
           <div className="medidas-ambiente__resumo">
             <span className="medidas-ambiente__resumo-titulo">Resumo calculado</span>
             <p className="medidas-ambiente__hint" style={{ margin: '0 0 4px' }}>
-              Cada item de parede usa o pé-direito inteiro por padrão — mas dá pra considerar só uma altura menor (ex: revestimento até 1,5m), editando o campo "altura" da linha.
+              Cada item usa a largura/comprimento/pé-direito do ambiente por padrão. Clique no ícone de ajuste pra dar uma largura, comprimento, altura ou desconto de abertura diferente só pra aquele item.
             </p>
 
-            <LinhaResumoParede
-              label="Alvenaria"
-              area={resumo.areaAlvenaria}
-              altura={m.alturaAlvenaria}
-              peDireito={m.peDireito}
-              onAlturaChange={(v) => atualizar({ alturaAlvenaria: v })}
+            <LinhaResumoItem
+              label="Alvenaria" tipoItem="parede"
+              area={resumo.areaAlvenaria} m={m}
+              config={m.configAlvenaria}
+              onConfigChange={(cfg) => atualizar({ configAlvenaria: cfg })}
               onAplicar={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaAlvenaria, tipo: 'material' })}
             />
-            <LinhaResumoParede
-              label="Reboco"
-              area={resumo.areaReboco}
-              altura={m.alturaReboco}
-              peDireito={m.peDireito}
-              onAlturaChange={(v) => atualizar({ alturaReboco: v })}
+            <LinhaResumoItem
+              label="Reboco" tipoItem="parede"
+              area={resumo.areaReboco} m={m}
+              config={m.configReboco}
+              onConfigChange={(cfg) => atualizar({ configReboco: cfg })}
               onAplicar={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaReboco, tipo: 'material' })}
             />
-            <div className="medidas-ambiente__resumo-linha">
-              <span>Porcelanato — piso</span>
-              <strong>{formatNumberBR(resumo.areaPiso)} m²</strong>
-              <button type="button" className="btn btn-secondary" disabled={resumo.areaPiso <= 0} onClick={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPiso, tipo: 'material' })}>
-                Aplicar
-              </button>
-            </div>
-            <LinhaResumoParede
-              label="Porcelanato — parede"
-              area={resumo.areaPorcelanatoParede}
-              altura={m.alturaPorcelanatoParede}
-              peDireito={m.peDireito}
-              onAlturaChange={(v) => atualizar({ alturaPorcelanatoParede: v })}
+            <LinhaResumoItem
+              label="Porcelanato — piso" tipoItem="plano"
+              area={resumo.areaPorcelanatoPiso} m={m}
+              config={m.configPorcelanatoPiso}
+              onConfigChange={(cfg) => atualizar({ configPorcelanatoPiso: cfg })}
+              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'material' })}
+            />
+            <LinhaResumoItem
+              label="Porcelanato — parede" tipoItem="parede"
+              area={resumo.areaPorcelanatoParede} m={m}
+              config={m.configPorcelanatoParede}
+              onConfigChange={(cfg) => atualizar({ configPorcelanatoParede: cfg })}
               onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'material' })}
             />
-            <LinhaResumoParede
-              label="Pintura"
-              area={resumo.areaPintura}
-              altura={m.alturaPintura}
-              peDireito={m.peDireito}
-              onAlturaChange={(v) => atualizar({ alturaPintura: v })}
+            <LinhaResumoItem
+              label="Pintura" tipoItem="parede"
+              area={resumo.areaPintura} m={m}
+              config={m.configPintura}
+              onConfigChange={(cfg) => atualizar({ configPintura: cfg })}
               onAplicar={() => onAplicarInsumo({ tag: 'pintura', descricao: 'Pintura de parede (calculado)', unidade: 'm²', quantidade: resumo.areaPintura, tipo: 'material' })}
             />
-            <div className="medidas-ambiente__resumo-linha">
-              <span>Forro (teto)</span>
-              <strong>{formatNumberBR(resumo.areaForro)} m²</strong>
-              <button type="button" className="btn btn-secondary" disabled={resumo.areaForro <= 0} onClick={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'material' })}>
-                Aplicar
-              </button>
-            </div>
+            <LinhaResumoItem
+              label="Forro (teto)" tipoItem="plano"
+              area={resumo.areaForro} m={m}
+              config={m.configForro}
+              onConfigChange={(cfg) => atualizar({ configForro: cfg })}
+              onAplicar={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'material' })}
+            />
             <div className="medidas-ambiente__resumo-linha medidas-ambiente__resumo-linha--simples">
               <span>Total de pontos elétricos</span>
               <strong>{resumo.totalPontosEletricos}</strong>
@@ -229,37 +225,95 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
   );
 }
 
-interface LinhaResumoParedeProps {
+interface LinhaResumoItemProps {
   label: string;
+  tipoItem: 'parede' | 'plano'; // parede = alvenaria/reboco/porcelanato-parede/pintura (usa altura); plano = piso/teto
   area: number;
-  altura: number | undefined;
-  peDireito: number | undefined;
-  onAlturaChange: (v: number | undefined) => void;
+  m: MedidasAmbiente;
+  config: ConfigItemAmbiente | undefined;
+  onConfigChange: (cfg: ConfigItemAmbiente | undefined) => void;
   onAplicar: () => void;
 }
 
-/** Linha do resumo pra um item calculado a partir da parede (alvenaria, reboco, porcelanato de
- * parede, pintura) — cada um pode usar uma altura considerada diferente do pé-direito inteiro
- * (ex: revestimento só até 1,5m numa área molhada). Deixar vazio volta a usar o pé-direito. */
-function LinhaResumoParede({ label, area, altura, peDireito, onAlturaChange, onAplicar }: LinhaResumoParedeProps) {
+function campoVazio(cfg: ConfigItemAmbiente | undefined): boolean {
+  return !cfg || (!cfg.largura && !cfg.comprimento && !cfg.altura && !cfg.aberturas);
+}
+
+/** Linha do resumo pra 1 item calculado — mostra a área e um botão "Aplicar", e (atrás do ícone de
+ * ajuste) um mini formulário pra dar largura/comprimento/altura/desconto de abertura específicos
+ * desse item, quando forem diferentes do ambiente como um todo. Campo vazio = usa o valor geral. */
+function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onAplicar }: LinhaResumoItemProps) {
+  const [expandido, setExpandido] = useState(!campoVazio(config));
+
+  function set(patch: Partial<ConfigItemAmbiente>) {
+    const novo = { ...(config ?? {}), ...patch };
+    onConfigChange(campoVazio(novo) ? undefined : novo);
+  }
+
   return (
-    <div className="medidas-ambiente__resumo-linha medidas-ambiente__resumo-linha--parede">
-      <span>{label}</span>
-      <label className="medidas-ambiente__altura-considerada">
-        altura
-        <input
-          type="text" inputMode="decimal"
-          key={`altura-${label}-${altura ?? ''}`}
-          defaultValue={altura ? formatNumberBR(altura) : ''}
-          placeholder={peDireito ? formatNumberBR(peDireito) : '—'}
-          onBlur={(e) => onAlturaChange(e.target.value.trim() ? parseNumberBR(e.target.value) : undefined)}
-        />
-        m
-      </label>
-      <strong>{formatNumberBR(area)} m²</strong>
-      <button type="button" className="btn btn-secondary" disabled={area <= 0} onClick={onAplicar}>
-        Aplicar
-      </button>
+    <div className="medidas-ambiente__item-resumo">
+      <div className="medidas-ambiente__resumo-linha">
+        <span>{label}</span>
+        <button
+          type="button"
+          className={`btn btn-ghost medidas-ambiente__ajuste-btn${!campoVazio(config) ? ' is-ativo' : ''}`}
+          onClick={() => setExpandido((v) => !v)}
+          title="Personalizar largura/comprimento/altura/abertura só deste item"
+          aria-label="Personalizar este item"
+        >
+          <IconAdjustments size={14} />
+        </button>
+        <strong>{formatNumberBR(area)} m²</strong>
+        <button type="button" className="btn btn-secondary" disabled={area <= 0} onClick={onAplicar}>
+          Aplicar
+        </button>
+      </div>
+      {expandido && (
+        <div className="medidas-ambiente__ajuste-painel">
+          <label>
+            Larg.
+            <input
+              type="text" inputMode="decimal"
+              key={`largura-${label}-${config?.largura ?? ''}`}
+              defaultValue={config?.largura ? formatNumberBR(config.largura) : ''}
+              placeholder={m.largura ? formatNumberBR(m.largura) : '—'}
+              onBlur={(e) => set({ largura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+            />
+          </label>
+          <label>
+            Compr.
+            <input
+              type="text" inputMode="decimal"
+              key={`comprimento-${label}-${config?.comprimento ?? ''}`}
+              defaultValue={config?.comprimento ? formatNumberBR(config.comprimento) : ''}
+              placeholder={m.comprimento ? formatNumberBR(m.comprimento) : '—'}
+              onBlur={(e) => set({ comprimento: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+            />
+          </label>
+          {tipoItem === 'parede' && (
+            <label>
+              Altura
+              <input
+                type="text" inputMode="decimal"
+                key={`altura-${label}-${config?.altura ?? ''}`}
+                defaultValue={config?.altura ? formatNumberBR(config.altura) : ''}
+                placeholder={m.peDireito ? formatNumberBR(m.peDireito) : '—'}
+                onBlur={(e) => set({ altura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+              />
+            </label>
+          )}
+          <label>
+            Abertura (m²)
+            <input
+              type="text" inputMode="decimal"
+              key={`aberturas-${label}-${config?.aberturas ?? ''}`}
+              defaultValue={config?.aberturas ? formatNumberBR(config.aberturas) : ''}
+              placeholder="0"
+              onBlur={(e) => set({ aberturas: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }

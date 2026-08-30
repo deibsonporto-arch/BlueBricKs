@@ -76,19 +76,30 @@ export interface PontoEletricoAmbiente {
 /** Medidas de um ambiente (cômodo), preenchidas na subatividade pra calcular sozinho m² de
  * alvenaria/reboco/porcelanato e quantidade de pontos elétricos — puramente auxiliar: o usuário
  * decide se aplica o valor calculado aos insumos ou prefere digitar manualmente. */
+/** Ajuste específico de um item do resumo calculado — cada campo ausente cai pro valor do ambiente
+ * como um todo (largura/comprimento/pé-direito), então só precisa preencher o que for diferente
+ * pra aquele item (ex: o porcelanato de parede só vai até 1,5m de altura, ou tem uma abertura a mais
+ * que as outras partes não têm). */
+export interface ConfigItemAmbiente {
+  largura?: number; // m
+  comprimento?: number; // m
+  altura?: number; // m — só faz sentido pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura)
+  aberturas?: number; // m² a descontar — sobrescreve o total de portas/janelas do ambiente só pra este item
+}
+
 export interface MedidasAmbiente {
   largura?: number; // m
   comprimento?: number; // m
-  peDireito?: number; // altura da parede, m — usada como padrão pros itens abaixo quando não têm altura própria definida
+  peDireito?: number; // altura da parede, m — padrão pros itens abaixo quando não têm largura/comprimento/altura próprios
   portas: AberturaAmbiente[];
   janelas: AberturaAmbiente[];
   pontosEletricos: PontoEletricoAmbiente[];
-  // altura considerada por item do resumo, quando diferente do pé-direito inteiro — ex: porcelanato
-  // de parede só até 1,5m (meia parede de banheiro), ou pintura só até 2,0m. Ausente = usa peDireito.
-  alturaAlvenaria?: number;
-  alturaReboco?: number;
-  alturaPorcelanatoParede?: number;
-  alturaPintura?: number;
+  configAlvenaria?: ConfigItemAmbiente;
+  configReboco?: ConfigItemAmbiente;
+  configPorcelanatoPiso?: ConfigItemAmbiente;
+  configPorcelanatoParede?: ConfigItemAmbiente;
+  configPintura?: ConfigItemAmbiente;
+  configForro?: ConfigItemAmbiente;
 }
 
 /** Snapshot reaproveitável de uma subatividade (nome + custos + insumos decompostos), salva pelo
