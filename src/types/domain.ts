@@ -81,8 +81,9 @@ export interface PontoEletricoAmbiente {
  * pra aquele item (ex: o porcelanato de parede só vai até 1,5m de altura, ou tem uma abertura a mais
  * que as outras partes não têm). */
 export interface ConfigItemAmbiente {
-  largura?: number; // m
-  comprimento?: number; // m
+  metroLinear?: number; // m — só pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura): metro linear de parede x altura = m²
+  largura?: number; // m — só pros itens "planos" (porcelanato-piso, forro): largura x comprimento = m²
+  comprimento?: number; // m — idem
   altura?: number; // m — só faz sentido pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura)
   aberturas?: number; // m² a descontar — sobrescreve o total de portas/janelas do ambiente só pra este item
 }

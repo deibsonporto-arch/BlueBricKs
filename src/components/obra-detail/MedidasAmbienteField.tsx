@@ -236,12 +236,13 @@ interface LinhaResumoItemProps {
 }
 
 function campoVazio(cfg: ConfigItemAmbiente | undefined): boolean {
-  return !cfg || (!cfg.largura && !cfg.comprimento && !cfg.altura && !cfg.aberturas);
+  return !cfg || (!cfg.metroLinear && !cfg.largura && !cfg.comprimento && !cfg.altura && !cfg.aberturas);
 }
 
 /** Linha do resumo pra 1 item calculado — mostra a área e um botão "Aplicar", e (atrás do ícone de
- * ajuste) um mini formulário pra dar largura/comprimento/altura/desconto de abertura específicos
- * desse item, quando forem diferentes do ambiente como um todo. Campo vazio = usa o valor geral. */
+ * ajuste) um mini formulário com os campos certos pro tipo do item: parede (alvenaria, reboco,
+ * porcelanato-parede, pintura) usa metro linear x altura; plano (piso, forro) usa largura x
+ * comprimento. Campo vazio = usa o valor geral do ambiente. */
 function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onAplicar }: LinhaResumoItemProps) {
   const [expandido, setExpandido] = useState(!campoVazio(config));
 
@@ -249,6 +250,8 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
     const novo = { ...(config ?? {}), ...patch };
     onConfigChange(campoVazio(novo) ? undefined : novo);
   }
+
+  const metroLinearPadrao = (m.largura ?? 0) + (m.comprimento ?? 0);
 
   return (
     <div className="medidas-ambiente__item-resumo">
@@ -258,7 +261,7 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
           type="button"
           className={`btn btn-ghost medidas-ambiente__ajuste-btn${!campoVazio(config) ? ' is-ativo' : ''}`}
           onClick={() => setExpandido((v) => !v)}
-          title="Personalizar largura/comprimento/altura/abertura só deste item"
+          title={tipoItem === 'parede' ? 'Personalizar metro linear/altura/abertura só deste item' : 'Personalizar largura/comprimento/abertura só deste item'}
           aria-label="Personalizar este item"
         >
           <IconAdjustments size={14} />
@@ -270,37 +273,52 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
       </div>
       {expandido && (
         <div className="medidas-ambiente__ajuste-painel">
-          <label>
-            Larg.
-            <input
-              type="text" inputMode="decimal"
-              key={`largura-${label}-${config?.largura ?? ''}`}
-              defaultValue={config?.largura ? formatNumberBR(config.largura) : ''}
-              placeholder={m.largura ? formatNumberBR(m.largura) : '—'}
-              onBlur={(e) => set({ largura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
-            />
-          </label>
-          <label>
-            Compr.
-            <input
-              type="text" inputMode="decimal"
-              key={`comprimento-${label}-${config?.comprimento ?? ''}`}
-              defaultValue={config?.comprimento ? formatNumberBR(config.comprimento) : ''}
-              placeholder={m.comprimento ? formatNumberBR(m.comprimento) : '—'}
-              onBlur={(e) => set({ comprimento: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
-            />
-          </label>
-          {tipoItem === 'parede' && (
-            <label>
-              Altura
-              <input
-                type="text" inputMode="decimal"
-                key={`altura-${label}-${config?.altura ?? ''}`}
-                defaultValue={config?.altura ? formatNumberBR(config.altura) : ''}
-                placeholder={m.peDireito ? formatNumberBR(m.peDireito) : '—'}
-                onBlur={(e) => set({ altura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
-              />
-            </label>
+          {tipoItem === 'parede' ? (
+            <>
+              <label>
+                Metro linear
+                <input
+                  type="text" inputMode="decimal"
+                  key={`metroLinear-${label}-${config?.metroLinear ?? ''}`}
+                  defaultValue={config?.metroLinear ? formatNumberBR(config.metroLinear) : ''}
+                  placeholder={metroLinearPadrao ? formatNumberBR(metroLinearPadrao) : '—'}
+                  onBlur={(e) => set({ metroLinear: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+                />
+              </label>
+              <label>
+                Altura
+                <input
+                  type="text" inputMode="decimal"
+                  key={`altura-${label}-${config?.altura ?? ''}`}
+                  defaultValue={config?.altura ? formatNumberBR(config.altura) : ''}
+                  placeholder={m.peDireito ? formatNumberBR(m.peDireito) : '—'}
+                  onBlur={(e) => set({ altura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <label>
+                Larg.
+                <input
+                  type="text" inputMode="decimal"
+                  key={`largura-${label}-${config?.largura ?? ''}`}
+                  defaultValue={config?.largura ? formatNumberBR(config.largura) : ''}
+                  placeholder={m.largura ? formatNumberBR(m.largura) : '—'}
+                  onBlur={(e) => set({ largura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+                />
+              </label>
+              <label>
+                Compr.
+                <input
+                  type="text" inputMode="decimal"
+                  key={`comprimento-${label}-${config?.comprimento ?? ''}`}
+                  defaultValue={config?.comprimento ? formatNumberBR(config.comprimento) : ''}
+                  placeholder={m.comprimento ? formatNumberBR(m.comprimento) : '—'}
+                  onBlur={(e) => set({ comprimento: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+                />
+              </label>
+            </>
           )}
           <label>
             Abertura (m²)
