@@ -88,6 +88,10 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   const [medidasAmbiente, setMedidasAmbiente] = useState<MedidasAmbiente | undefined>(() => subatividade?.medidasAmbiente);
   const [composicaoOrigem, setComposicaoOrigem] = useState<{ codigo: number; unidade: string } | undefined>(() => subatividade?.composicaoSinapiOrigem);
   const [buscaModelo, setBuscaModelo] = useState('');
+  // quando clica "Aplicar" num item do resumo de Medidas do ambiente (ex: Reboco 37,04 m²), além de
+  // atualizar a linha de referência calculada, pede pro campo "Quantidade do serviço" da composição
+  // já pular direto pra esse valor, recalculando os insumos — sem precisar o usuário digitar de novo.
+  const [escalaPedida, setEscalaPedida] = useState<{ valor: number; ts: number } | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -111,6 +115,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
     } else {
       setInsumos([...insumos, { id: generateId(), descricao: opts.descricao, unidade: opts.unidade, quantidade: opts.quantidade, custoUnitario: 0, tipo: opts.tipo, origemCalculo: opts.tag }]);
     }
+    if (opts.quantidade > 0) setEscalaPedida({ valor: opts.quantidade, ts: Date.now() });
   }
 
   const atividadePai = todasAtividades.find((a) => a.id === atividadeId);
@@ -416,6 +421,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
               onChangeInsumos={setInsumos}
               composicaoOrigem={composicaoOrigem}
               onChangeComposicaoOrigem={setComposicaoOrigem}
+              escalaPedida={escalaPedida}
               onSugerirNome={(nome) => setForm((f) => ({ ...f, nome: f.nome || nome }))}
             />
           </div>

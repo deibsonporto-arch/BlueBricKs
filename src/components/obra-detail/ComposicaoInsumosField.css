@@ -42,6 +42,11 @@
   padding: 5px 8px;
 }
 
+.atividade-insumos-escala__aviso {
+  color: var(--color-success-dark, #1a7f37);
+  font-weight: 600;
+}
+
 .atividade-insumos-table__coef {
   color: var(--color-text-muted);
   font-size: 11.5px;

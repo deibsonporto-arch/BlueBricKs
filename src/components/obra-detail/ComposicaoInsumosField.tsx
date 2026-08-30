@@ -23,6 +23,7 @@ interface ComposicaoInsumosFieldProps {
   onSugerirNome?: (nome: string) => void; // chamado ao decompor pela 1ª vez, se o nome do form ainda estiver vazio
   composicaoOrigem?: { codigo: number; unidade: string }; // composição SINAPI salva que gerou os insumos atuais (pra reabrir e ainda poder "Restaurar valores do SINAPI")
   onChangeComposicaoOrigem?: (origem: { codigo: number; unidade: string } | undefined) => void;
+  escalaPedida?: { valor: number; ts: number } | null; // pedido externo (ex: "Aplicar" nas Medidas do ambiente) pra já jogar a "Quantidade do serviço" pra esse valor
 }
 
 const TIPO_LABEL: Record<TipoInsumoAtividade, string> = {
@@ -40,7 +41,7 @@ type ResultadoBusca =
   | { origem: 'composicao'; item: SinapiComposicaoResumo }
   | { origem: 'insumo'; item: SinapiInsumoResumo };
 
-export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos, onSugerirNome, composicaoOrigem, onChangeComposicaoOrigem }: ComposicaoInsumosFieldProps) {
+export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos, onSugerirNome, composicaoOrigem, onChangeComposicaoOrigem, escalaPedida }: ComposicaoInsumosFieldProps) {
   const [busca, setBusca] = useState('');
   const [resultados, setResultados] = useState<ResultadoBusca[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -216,6 +217,19 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     setEscalaInsumos(novaEscala);
   }
 
+  // pedido vindo de fora (botão "Aplicar" no resumo de Medidas do ambiente) — joga a quantidade
+  // direto pra cá e mostra um aviso rápido confirmando, já que antes ficava sem feedback nenhum se
+  // realmente tinha aplicado ou não.
+  const [avisoEscalaAplicada, setAvisoEscalaAplicada] = useState<number | null>(null);
+  useEffect(() => {
+    if (!escalaPedida || !(escalaPedida.valor > 0)) return;
+    aplicarEscala(escalaPedida.valor);
+    setAvisoEscalaAplicada(escalaPedida.valor);
+    const timer = setTimeout(() => setAvisoEscalaAplicada(null), 3000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [escalaPedida?.ts]);
+
   // "Mão de obra por empreitada" — substitui as linhas de mão de obra (normalmente por hora) por
   // uma única linha com valor fechado por unidade do serviço (ex: R$ 50/m²), que escala junto com
   // "Quantidade do serviço" igual as demais.
@@ -325,6 +339,11 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
               >
                 {restaurando ? 'Restaurando...' : 'Restaurar valores do SINAPI'}
               </button>
+            )}
+            {avisoEscalaAplicada != null && (
+              <span className="atividade-insumos-escala__aviso">
+                ✓ Aplicado {formatNumberBR(avisoEscalaAplicada)} {unidadeComposicao || ''} — insumos recalculados abaixo
+              </span>
             )}
           </label>
           <div className="atividade-insumos-empreita">
