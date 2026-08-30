@@ -72,6 +72,34 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
     atualizar({ itensResumoAtivos: itensAtivos.filter((c) => c !== chave) });
   }
 
+  // marcar 2+ itens (ex: porcelanato piso + parede, quando é o mesmo pedreiro/azulejista fazendo os
+  // dois) e aplicar a SOMA das áreas de uma vez só, em vez de aplicar um de cada vez e um sobrescrever
+  // a quantidade do serviço que o outro já tinha jogado.
+  const [selecionados, setSelecionados] = useState<ChaveItemResumoAmbiente[]>([]);
+  function toggleSelecionado(chave: ChaveItemResumoAmbiente) {
+    setSelecionados((prev) => (prev.includes(chave) ? prev.filter((c) => c !== chave) : [...prev, chave]));
+  }
+  const areaPorChave: Record<ChaveItemResumoAmbiente, number> = {
+    alvenaria: resumo.areaAlvenaria,
+    reboco: resumo.areaReboco,
+    porcelanatoPiso: resumo.areaPorcelanatoPiso,
+    porcelanatoParede: resumo.areaPorcelanatoParede,
+    pintura: resumo.areaPintura,
+    forro: resumo.areaForro,
+  };
+  const somaSelecionados = selecionados.reduce((acc, c) => acc + (areaPorChave[c] || 0), 0);
+  function aplicarSomaSelecionados() {
+    if (selecionados.length < 2 || somaSelecionados <= 0) return;
+    const nomes = selecionados.map((c) => ITENS_RESUMO_LABEL[c]).join(' + ');
+    onAplicarInsumo({
+      tag: `soma:${selecionados.slice().sort().join(',')}`,
+      descricao: `${nomes} (calculado)`,
+      unidade: 'm²',
+      quantidade: somaSelecionados,
+      tipo: 'parametro_calculado',
+    });
+  }
+
   return (
     <div className="medidas-ambiente">
       <button type="button" className="medidas-ambiente__toggle" onClick={() => setAberto((v) => !v)}>
@@ -204,8 +232,17 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
               </p>
             ) : (
               <p className="medidas-ambiente__hint" style={{ margin: '0 0 4px' }}>
-                Cada item usa as medidas do ambiente por padrão. Clique no ícone de ajuste pra detalhar parede por parede (alvenaria/reboco/porcelanato-parede/pintura) ou dar uma largura/comprimento/desconto de abertura diferente (piso/forro). O "x" tira o item da lista sem apagar o ajuste salvo.
+                Cada item usa as medidas do ambiente por padrão. Clique no ícone de ajuste pra detalhar parede por parede (alvenaria/reboco/porcelanato-parede/pintura) ou dar uma largura/comprimento/desconto de abertura diferente (piso/forro). O "x" tira o item da lista sem apagar o ajuste salvo. Marque a caixinha de 2+ itens (ex: porcelanato piso e parede) pra aplicar a soma dos dois juntos.
               </p>
+            )}
+
+            {selecionados.length >= 2 && (
+              <div className="medidas-ambiente__soma-selecionados">
+                <span>{selecionados.map((c) => ITENS_RESUMO_LABEL[c]).join(' + ')} = <strong>{formatNumberBR(somaSelecionados)} m²</strong></span>
+                <button type="button" className="btn btn-secondary" disabled={somaSelecionados <= 0} onClick={aplicarSomaSelecionados}>
+                  Aplicar soma
+                </button>
+              </div>
             )}
 
             {itensAtivos.includes('alvenaria') && (
@@ -216,6 +253,8 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 onConfigChange={(cfg) => atualizar({ configAlvenaria: cfg })}
                 onRemover={() => removerItemAtivo('alvenaria')}
                 onAplicar={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaAlvenaria, tipo: 'parametro_calculado' })}
+                selecionado={selecionados.includes('alvenaria')}
+                onToggleSelecionado={() => toggleSelecionado('alvenaria')}
               />
             )}
             {itensAtivos.includes('reboco') && (
@@ -226,6 +265,8 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 onConfigChange={(cfg) => atualizar({ configReboco: cfg })}
                 onRemover={() => removerItemAtivo('reboco')}
                 onAplicar={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaReboco, tipo: 'parametro_calculado' })}
+                selecionado={selecionados.includes('reboco')}
+                onToggleSelecionado={() => toggleSelecionado('reboco')}
               />
             )}
             {itensAtivos.includes('porcelanatoPiso') && (
@@ -236,6 +277,8 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 onConfigChange={(cfg) => atualizar({ configPorcelanatoPiso: cfg })}
                 onRemover={() => removerItemAtivo('porcelanatoPiso')}
                 onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'parametro_calculado' })}
+                selecionado={selecionados.includes('porcelanatoPiso')}
+                onToggleSelecionado={() => toggleSelecionado('porcelanatoPiso')}
               />
             )}
             {itensAtivos.includes('porcelanatoParede') && (
@@ -246,6 +289,8 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 onConfigChange={(cfg) => atualizar({ configPorcelanatoParede: cfg })}
                 onRemover={() => removerItemAtivo('porcelanatoParede')}
                 onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'parametro_calculado' })}
+                selecionado={selecionados.includes('porcelanatoParede')}
+                onToggleSelecionado={() => toggleSelecionado('porcelanatoParede')}
               />
             )}
             {itensAtivos.includes('pintura') && (
@@ -256,6 +301,8 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 onConfigChange={(cfg) => atualizar({ configPintura: cfg })}
                 onRemover={() => removerItemAtivo('pintura')}
                 onAplicar={() => onAplicarInsumo({ tag: 'pintura', descricao: 'Pintura de parede (calculado)', unidade: 'm²', quantidade: resumo.areaPintura, tipo: 'parametro_calculado' })}
+                selecionado={selecionados.includes('pintura')}
+                onToggleSelecionado={() => toggleSelecionado('pintura')}
               />
             )}
             {itensAtivos.includes('forro') && (
@@ -266,6 +313,8 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 onConfigChange={(cfg) => atualizar({ configForro: cfg })}
                 onRemover={() => removerItemAtivo('forro')}
                 onAplicar={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'parametro_calculado' })}
+                selecionado={selecionados.includes('forro')}
+                onToggleSelecionado={() => toggleSelecionado('forro')}
               />
             )}
 
@@ -295,6 +344,8 @@ interface LinhaResumoItemProps {
   onConfigChange: (cfg: ConfigItemAmbiente | undefined) => void;
   onRemover: () => void;
   onAplicar: () => void;
+  selecionado: boolean;
+  onToggleSelecionado: () => void;
 }
 
 function campoVazio(cfg: ConfigItemAmbiente | undefined): boolean {
@@ -321,7 +372,7 @@ function novoSegmentoPlano(larguraPadrao: number, comprimentoPadrao: number): Se
  * ajuste) um mini formulário com os campos certos pro tipo do item: parede (alvenaria, reboco,
  * porcelanato-parede, pintura) usa metro linear x altura; plano (piso, forro) usa largura x
  * comprimento. Campo vazio = usa o valor geral do ambiente. */
-function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onRemover, onAplicar }: LinhaResumoItemProps) {
+function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onRemover, onAplicar, selecionado, onToggleSelecionado }: LinhaResumoItemProps) {
   // sempre começa fechado, mesmo quando já tem um ajuste salvo — só expande se o usuário clicar
   // no ícone; o valor calculado (com o ajuste aplicado) já aparece na linha, então não precisa
   // abrir o painel só pra "avisar" que tem uma personalização.
@@ -360,6 +411,13 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onR
   return (
     <div className="medidas-ambiente__item-resumo">
       <div className="medidas-ambiente__resumo-linha">
+        <input
+          type="checkbox"
+          checked={selecionado}
+          onChange={onToggleSelecionado}
+          title="Marcar pra somar com outro item e aplicar os dois juntos"
+          aria-label={`Selecionar ${label} para somar`}
+        />
         <span>{label}</span>
         <button
           type="button"

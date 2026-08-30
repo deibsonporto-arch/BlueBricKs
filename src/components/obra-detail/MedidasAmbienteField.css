@@ -150,11 +150,25 @@
 
 .medidas-ambiente__resumo-linha {
   display: grid;
-  grid-template-columns: 1fr auto auto auto auto;
+  grid-template-columns: auto 1fr auto auto auto auto;
   align-items: center;
   gap: 12px;
   font-size: 13px;
   padding: 4px 0;
+}
+
+.medidas-ambiente__soma-selecionados {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--color-primary-light);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: var(--color-primary-dark);
+  margin: 4px 0;
 }
 
 .medidas-ambiente__resumo-linha--simples {
