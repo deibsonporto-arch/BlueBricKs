@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Atividade, Subatividade } from '../types/domain';
 import { atividadeRepository } from '../data/repositories/atividadeRepository';
 import { deriveParentStatus, recomputeParentAggregates, resolveSubatividadeDates } from '../utils/subatividades';
 import { resolveAtividadeDates } from '../utils/atividadeSchedule';
 import { generateId } from '../utils/id';
+import { readCollection, writeCollection } from '../data/storage';
+import { pushCollection } from '../data/apiSync';
+
+const LIMITE_HISTORICO = 30;
 
 /** Clona uma subatividade (e seus netos, recursivamente) com ids novos, zerando conclusão/andamento
  * — a cópia nasce pendente, pronta pra virar uma nova tarefa a partir do que já foi preenchido
@@ -160,6 +164,56 @@ function migrarParametrosCalculados(obraId: string) {
 export function useAtividades(obraId: string) {
   const [atividades, setAtividades] = useState<Atividade[]>([]);
 
+  // desfazer/refazer: pilha de fotos (snapshots) das atividades desta obra, tiradas ANTES de cada
+  // ação que muda algo — só existe em memória (não sobrevive a um reload), suficiente pra "desfaz a
+  // última ação" em uma sessão de edição.
+  const undoStackRef = useRef<Atividade[][]>([]);
+  const redoStackRef = useRef<Atividade[][]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  function snapshotAtual(): Atividade[] {
+    return JSON.parse(JSON.stringify(atividadeRepository.list().filter((a) => a.obraId === obraId))) as Atividade[];
+  }
+
+  function registrarHistorico() {
+    undoStackRef.current.push(snapshotAtual());
+    if (undoStackRef.current.length > LIMITE_HISTORICO) undoStackRef.current.shift();
+    redoStackRef.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }
+
+  function aplicarSnapshot(snap: Atividade[]) {
+    const todas = readCollection<Atividade>('atividades');
+    const deOutrasObras = todas.filter((a) => a.obraId !== obraId);
+    const novaColecao = [...deOutrasObras, ...snap];
+    writeCollection('atividades', novaColecao);
+    pushCollection('atividades', novaColecao);
+  }
+
+  const undo = useCallback(() => {
+    const anterior = undoStackRef.current.pop();
+    if (!anterior) return;
+    redoStackRef.current.push(snapshotAtual());
+    aplicarSnapshot(anterior);
+    refresh();
+    setCanUndo(undoStackRef.current.length > 0);
+    setCanRedo(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [obraId]);
+
+  const redo = useCallback(() => {
+    const seguinte = redoStackRef.current.pop();
+    if (!seguinte) return;
+    undoStackRef.current.push(snapshotAtual());
+    aplicarSnapshot(seguinte);
+    refresh();
+    setCanRedo(redoStackRef.current.length > 0);
+    setCanUndo(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [obraId]);
+
   const refresh = useCallback(() => {
     // Roda a cada refresh (inclusive na montagem) para autocorrigir cronogramas antigos que ficaram
     // com datas desatualizadas de antes desta cadeia unificada existir — não só em edições novas.
@@ -171,6 +225,7 @@ export function useAtividades(obraId: string) {
 
   const createAtividade = useCallback(
     async (atividade: Atividade) => {
+      registrarHistorico();
       atividadeRepository.create(atividade);
       refresh();
     },
@@ -179,6 +234,7 @@ export function useAtividades(obraId: string) {
 
   const updateAtividade = useCallback(
     async (id: string, patch: Partial<Atividade>) => {
+      registrarHistorico();
       atividadeRepository.update(id, patch);
       refresh();
     },
@@ -187,6 +243,7 @@ export function useAtividades(obraId: string) {
 
   const deleteAtividade = useCallback(
     async (id: string) => {
+      registrarHistorico();
       atividadeRepository.remove(id);
       refresh();
     },
@@ -206,6 +263,7 @@ export function useAtividades(obraId: string) {
       const target = all.find((a) => a.id === targetId);
       if (!source || !target) return;
 
+      registrarHistorico();
       const now = new Date().toISOString();
       const subatividadesMescladas = [...target.subatividades, ...source.subatividades];
       const aggregates = recomputeParentAggregates({ ...target, subatividades: subatividadesMescladas });
@@ -245,6 +303,7 @@ export function useAtividades(obraId: string) {
       if (!atividade) return;
       if (!atividade.concluida && isBlocked(atividade, all)) return;
 
+      registrarHistorico();
       const willBeConcluida = !atividade.concluida;
       atividadeRepository.update(id, {
         concluida: willBeConcluida,
@@ -262,6 +321,7 @@ export function useAtividades(obraId: string) {
       const atividade = all.find((a) => a.id === atividadeId);
       if (!atividade) return;
 
+      registrarHistorico();
       const resolved = resolveSubatividadeDates(novaSubatividade, all, atividade.dependeDe);
       const novasSubatividades = [...atividade.subatividades, resolved];
       const aggregates = recomputeParentAggregates({ ...atividade, subatividades: novasSubatividades });
@@ -291,6 +351,7 @@ export function useAtividades(obraId: string) {
       const destino = all.find((a) => a.id === atividadeDestinoId);
       if (!origem || !destino || origem.subatividades.length === 0) return;
 
+      registrarHistorico();
       const copias = origem.subatividades.map((s) => clonarSubatividade(s, false));
       const novasSubatividades = [...destino.subatividades, ...copias];
       const aggregates = recomputeParentAggregates({ ...destino, subatividades: novasSubatividades });
@@ -313,6 +374,7 @@ export function useAtividades(obraId: string) {
       const atividade = all.find((a) => a.id === atividadeId);
       if (!atividade) return;
 
+      registrarHistorico();
       const novasSubatividades = atividade.subatividades.map((s) => {
         if (s.id !== subatividadeId) return s;
         return resolveSubatividadeDates({ ...s, ...patch }, all, atividade.dependeDe);
@@ -339,6 +401,7 @@ export function useAtividades(obraId: string) {
       const original = atividade?.subatividades.find((s) => s.id === subatividadeId);
       if (!atividade || !original) return;
 
+      registrarHistorico();
       const indice = atividade.subatividades.findIndex((s) => s.id === subatividadeId);
       const copia = clonarSubatividade(original);
       const novasSubatividades = [...atividade.subatividades];
@@ -363,6 +426,7 @@ export function useAtividades(obraId: string) {
       const atividade = all.find((a) => a.id === atividadeId);
       if (!atividade) return;
 
+      registrarHistorico();
       const restantes = atividade.subatividades.filter((s) => s.id !== subatividadeId);
       const aggregates = recomputeParentAggregates({ ...atividade, subatividades: restantes });
       const derivedStatus = deriveParentStatus(restantes);
@@ -379,6 +443,7 @@ export function useAtividades(obraId: string) {
 
   const createSubSubatividade = useCallback(
     async (atividadeId: string, subatividadeId: string, novoNeto: Subatividade) => {
+      registrarHistorico();
       applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos, all, _atividade, sub) => [
         ...netos,
         resolveSubatividadeDates(novoNeto, all, sub.dependeDe),
@@ -390,6 +455,7 @@ export function useAtividades(obraId: string) {
 
   const updateSubSubatividade = useCallback(
     async (atividadeId: string, subatividadeId: string, subSubatividadeId: string, patch: Partial<Subatividade>) => {
+      registrarHistorico();
       applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos, all, _atividade, sub) =>
         netos.map((n) => (n.id === subSubatividadeId ? resolveSubatividadeDates({ ...n, ...patch }, all, sub.dependeDe) : n)),
       );
@@ -400,6 +466,7 @@ export function useAtividades(obraId: string) {
 
   const deleteSubSubatividade = useCallback(
     async (atividadeId: string, subatividadeId: string, subSubatividadeId: string) => {
+      registrarHistorico();
       applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos) => netos.filter((n) => n.id !== subSubatividadeId));
       refresh();
     },
@@ -408,6 +475,7 @@ export function useAtividades(obraId: string) {
 
   const reorderSubSubatividades = useCallback(
     async (atividadeId: string, subatividadeId: string, idsNaNovaOrdem: string[]) => {
+      registrarHistorico();
       applySubSubatividadeMutation(obraId, atividadeId, subatividadeId, (netos) => {
         const ordemMap = new Map(idsNaNovaOrdem.map((id, i) => [id, i]));
         return netos.map((n) => ({ ...n, ordem: ordemMap.get(n.id) ?? n.ordem }));
@@ -419,6 +487,7 @@ export function useAtividades(obraId: string) {
 
   const reorderAtividades = useCallback(
     async (idsNaNovaOrdem: string[]) => {
+      registrarHistorico();
       atividadeRepository.reorderByObra(obraId, idsNaNovaOrdem);
       refresh();
     },
@@ -430,6 +499,7 @@ export function useAtividades(obraId: string) {
       const atividade = atividadeRepository.get(atividadeId);
       if (!atividade) return;
 
+      registrarHistorico();
       const ordemMap = new Map(idsNaNovaOrdem.map((id, i) => [id, i]));
       const reordenadas = atividade.subatividades.map((s) => ({
         ...s,
@@ -461,5 +531,9 @@ export function useAtividades(obraId: string) {
     deleteSubSubatividade,
     reorderSubSubatividades,
     refresh,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   };
 }

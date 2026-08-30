@@ -25,6 +25,20 @@
   gap: 8px;
 }
 
+.atividades-table__undo-redo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 6px;
+  margin-right: 4px;
+  border-right: 1px solid var(--color-border);
+}
+
+.atividades-table__undo-redo .btn-ghost:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .atividades-table {
   width: 100%;
   table-layout: auto;

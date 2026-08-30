@@ -1,5 +1,7 @@
 import { Fragment, useState } from 'react';
 import {
+  IconArrowBackUp,
+  IconArrowForwardUp,
   IconChevronDown,
   IconChevronRight,
   IconCopy,
@@ -44,6 +46,10 @@ interface AtividadesTableProps {
   onNew: () => void;
   onUsarEtapasPadrao?: () => void;
   onReordenarPadrao?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
   onEnviarParaRequisicoes?: (atividade: Atividade, subatividade: Subatividade) => void;
   onRemoverDaRequisicoes?: (subatividadeId: string) => void;
   subatividadesComRequisicaoEnviada?: Set<string>;
@@ -73,6 +79,10 @@ export function AtividadesTable({
   onNew,
   onUsarEtapasPadrao,
   onReordenarPadrao,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
   onEnviarParaRequisicoes,
   onRemoverDaRequisicoes,
   subatividadesComRequisicaoEnviada,
@@ -177,6 +187,16 @@ export function AtividadesTable({
       <div className="atividades-table-card__header">
         <h3>Atividades</h3>
         <div className="atividades-table-card__header-actions">
+          {(onUndo || onRedo) && (
+            <span className="atividades-table__undo-redo">
+              <button type="button" className="btn btn-ghost" onClick={onUndo} disabled={!canUndo} title="Desfazer última ação">
+                <IconArrowBackUp size={16} />
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={onRedo} disabled={!canRedo} title="Refazer">
+                <IconArrowForwardUp size={16} />
+              </button>
+            </span>
+          )}
           {onUsarEtapasPadrao && (
             <button type="button" className="btn btn-secondary" onClick={onUsarEtapasPadrao}>
               Usar etapas pré-cadastradas

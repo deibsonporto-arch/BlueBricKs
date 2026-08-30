@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { IconBookmark } from '@tabler/icons-react';
 import { useObras } from '../../hooks/useObras';
@@ -42,7 +42,26 @@ export function VisaoGeralTab() {
     updateSubSubatividade,
     deleteSubSubatividade,
     refresh,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useAtividades(obraId);
+  // Ctrl+Z desfaz, Ctrl+Shift+Z (ou Ctrl+Y) refaz a última ação nas Atividades — ignora quando o
+  // foco está num campo de texto, pra não atrapalhar o desfazer nativo do navegador ali dentro.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z' && e.key.toLowerCase() !== 'y') return;
+      const alvo = e.target as HTMLElement | null;
+      if (alvo && (alvo.tagName === 'INPUT' || alvo.tagName === 'TEXTAREA' || alvo.isContentEditable)) return;
+      e.preventDefault();
+      if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) redo();
+      else undo();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undo, redo]);
+
   const { saveTemplateFromObra, updateTemplateFromObra } = useTemplates();
   const { lancamentos } = useLancamentos(obraId);
   const { fornecedores } = useFornecedores();
@@ -249,6 +268,10 @@ export function VisaoGeralTab() {
         onNew={openCreate}
         onUsarEtapasPadrao={() => setEtapasPadraoModalOpen(true)}
         onReordenarPadrao={handleReordenarPadrao}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
         onEnviarParaRequisicoes={handleEnviarParaRequisicoes}
         onRemoverDaRequisicoes={handleRemoverDaRequisicoes}
         subatividadesComRequisicaoEnviada={subatividadesComRequisicaoEnviada}
