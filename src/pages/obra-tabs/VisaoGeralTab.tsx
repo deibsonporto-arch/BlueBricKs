@@ -110,6 +110,11 @@ export function VisaoGeralTab() {
     await createRequisicoes(novos);
   }
 
+  async function handleRemoverDaRequisicoes(subatividadeId: string) {
+    const jaEnviados = requisicoes.filter((r) => r.subatividadeId === subatividadeId);
+    for (const r of jaEnviados) await deleteRequisicao(r.id);
+  }
+
   function handleReordenarPadrao() {
     const ordenadas = ordenarPorSequenciaPadrao(atividades);
     reorderAtividades(ordenadas.map((a) => a.id));
@@ -241,6 +246,7 @@ export function VisaoGeralTab() {
         onUsarEtapasPadrao={() => setEtapasPadraoModalOpen(true)}
         onReordenarPadrao={handleReordenarPadrao}
         onEnviarParaRequisicoes={handleEnviarParaRequisicoes}
+        onRemoverDaRequisicoes={handleRemoverDaRequisicoes}
         subatividadesComRequisicaoEnviada={subatividadesComRequisicaoEnviada}
         entradasPorSubatividade={entradasPorSubatividade}
         onNewSubatividade={openNewSubatividade}

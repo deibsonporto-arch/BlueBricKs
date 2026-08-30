@@ -44,6 +44,7 @@ interface AtividadesTableProps {
   onUsarEtapasPadrao?: () => void;
   onReordenarPadrao?: () => void;
   onEnviarParaRequisicoes?: (atividade: Atividade, subatividade: Subatividade) => void;
+  onRemoverDaRequisicoes?: (subatividadeId: string) => void;
   subatividadesComRequisicaoEnviada?: Set<string>;
   entradasPorSubatividade?: Map<string, EntradaEstoque[]>;
   onNewSubatividade: (atividadeId: string) => void;
@@ -71,6 +72,7 @@ export function AtividadesTable({
   onUsarEtapasPadrao,
   onReordenarPadrao,
   onEnviarParaRequisicoes,
+  onRemoverDaRequisicoes,
   subatividadesComRequisicaoEnviada,
   entradasPorSubatividade,
   onNewSubatividade,
@@ -592,7 +594,14 @@ export function AtividadesTable({
                                         {subatividadesComRequisicaoEnviada?.has(s.id) ? 'Reenviar para Requisições' : 'Enviar tudo para Requisições'}
                                       </button>
                                       {subatividadesComRequisicaoEnviada?.has(s.id) && (
-                                        <span className="subativ-insumos__enviado-badge">✓ Enviado para Requisições</span>
+                                        <button
+                                          type="button"
+                                          className="subativ-insumos__enviado-badge subativ-insumos__enviado-badge--btn"
+                                          onClick={() => onRemoverDaRequisicoes?.(s.id)}
+                                          title="Remover da Requisições"
+                                        >
+                                          ✓ Enviado para Requisições — clique pra remover
+                                        </button>
                                       )}
                                     </div>
                                   )}

@@ -292,6 +292,16 @@
   white-space: nowrap;
 }
 
+.subativ-insumos__enviado-badge--btn {
+  border: none;
+  cursor: pointer;
+}
+
+.subativ-insumos__enviado-badge--btn:hover {
+  color: var(--status-atrasada, #e03131);
+  background: rgba(224, 49, 49, 0.1);
+}
+
 .subativ-insumos__table {
   width: 100%;
   border-collapse: collapse;
