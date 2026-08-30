@@ -69,8 +69,9 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
               Largura (m)
               <input
                 type="text" inputMode="decimal"
-                value={m.largura ? formatNumberBR(m.largura) : ''}
-                onChange={(e) => atualizar({ largura: parseNumberBR(e.target.value) })}
+                key={`largura-${m.largura ?? ''}`}
+                defaultValue={m.largura ? formatNumberBR(m.largura) : ''}
+                onBlur={(e) => atualizar({ largura: parseNumberBR(e.target.value) })}
                 placeholder="1,30"
               />
             </label>
@@ -78,8 +79,9 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
               Comprimento (m)
               <input
                 type="text" inputMode="decimal"
-                value={m.comprimento ? formatNumberBR(m.comprimento) : ''}
-                onChange={(e) => atualizar({ comprimento: parseNumberBR(e.target.value) })}
+                key={`comprimento-${m.comprimento ?? ''}`}
+                defaultValue={m.comprimento ? formatNumberBR(m.comprimento) : ''}
+                onBlur={(e) => atualizar({ comprimento: parseNumberBR(e.target.value) })}
                 placeholder="2,30"
               />
             </label>
@@ -87,8 +89,9 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
               Pé-direito / altura (m)
               <input
                 type="text" inputMode="decimal"
-                value={m.peDireito ? formatNumberBR(m.peDireito) : ''}
-                onChange={(e) => atualizar({ peDireito: parseNumberBR(e.target.value) })}
+                key={`peDireito-${m.peDireito ?? ''}`}
+                defaultValue={m.peDireito ? formatNumberBR(m.peDireito) : ''}
+                onBlur={(e) => atualizar({ peDireito: parseNumberBR(e.target.value) })}
                 placeholder="2,50"
               />
             </label>
@@ -105,9 +108,9 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
               {m.portas.length === 0 && <p className="medidas-ambiente__vazio">Nenhuma porta.</p>}
               {m.portas.map((p) => (
                 <div className="medidas-ambiente__abertura-linha" key={p.id}>
-                  <input type="text" inputMode="decimal" placeholder="Larg." value={p.largura ? formatNumberBR(p.largura) : ''} onChange={(e) => atualizarAbertura('portas', p.id, { largura: parseNumberBR(e.target.value) })} />
+                  <input type="text" inputMode="decimal" placeholder="Larg." key={`pl-${p.id}-${p.largura}`} defaultValue={p.largura ? formatNumberBR(p.largura) : ''} onBlur={(e) => atualizarAbertura('portas', p.id, { largura: parseNumberBR(e.target.value) })} />
                   <span>x</span>
-                  <input type="text" inputMode="decimal" placeholder="Alt." value={p.altura ? formatNumberBR(p.altura) : ''} onChange={(e) => atualizarAbertura('portas', p.id, { altura: parseNumberBR(e.target.value) })} />
+                  <input type="text" inputMode="decimal" placeholder="Alt." key={`pa-${p.id}-${p.altura}`} defaultValue={p.altura ? formatNumberBR(p.altura) : ''} onBlur={(e) => atualizarAbertura('portas', p.id, { altura: parseNumberBR(e.target.value) })} />
                   <input type="number" min={1} placeholder="Qtd" value={p.quantidade} onChange={(e) => atualizarAbertura('portas', p.id, { quantidade: Math.max(1, Number(e.target.value) || 1) })} />
                   <button type="button" className="btn btn-ghost" onClick={() => removerAbertura('portas', p.id)} aria-label="Remover porta"><IconTrash size={13} /></button>
                 </div>
@@ -124,9 +127,9 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
               {m.janelas.length === 0 && <p className="medidas-ambiente__vazio">Não tem.</p>}
               {m.janelas.map((j) => (
                 <div className="medidas-ambiente__abertura-linha" key={j.id}>
-                  <input type="text" inputMode="decimal" placeholder="Larg." value={j.largura ? formatNumberBR(j.largura) : ''} onChange={(e) => atualizarAbertura('janelas', j.id, { largura: parseNumberBR(e.target.value) })} />
+                  <input type="text" inputMode="decimal" placeholder="Larg." key={`jl-${j.id}-${j.largura}`} defaultValue={j.largura ? formatNumberBR(j.largura) : ''} onBlur={(e) => atualizarAbertura('janelas', j.id, { largura: parseNumberBR(e.target.value) })} />
                   <span>x</span>
-                  <input type="text" inputMode="decimal" placeholder="Alt." value={j.altura ? formatNumberBR(j.altura) : ''} onChange={(e) => atualizarAbertura('janelas', j.id, { altura: parseNumberBR(e.target.value) })} />
+                  <input type="text" inputMode="decimal" placeholder="Alt." key={`ja-${j.id}-${j.altura}`} defaultValue={j.altura ? formatNumberBR(j.altura) : ''} onBlur={(e) => atualizarAbertura('janelas', j.id, { altura: parseNumberBR(e.target.value) })} />
                   <input type="number" min={1} placeholder="Qtd" value={j.quantidade} onChange={(e) => atualizarAbertura('janelas', j.id, { quantidade: Math.max(1, Number(e.target.value) || 1) })} />
                   <button type="button" className="btn btn-ghost" onClick={() => removerAbertura('janelas', j.id)} aria-label="Remover janela"><IconTrash size={13} /></button>
                 </div>
