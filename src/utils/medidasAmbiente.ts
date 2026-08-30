@@ -15,16 +15,16 @@ export interface ResumoAmbiente {
   totalPontosEletricos: number;
 }
 
-/** Área de um item de parede (perímetro x altura, descontando aberturas) — largura, comprimento,
- * altura e desconto de aberturas usam o valor do ambiente como um todo quando o item não tem um
- * ajuste próprio em `cfg`. */
+/** Área de um item de parede ((largura + comprimento) x altura, descontando aberturas) — largura,
+ * comprimento, altura e desconto de aberturas usam o valor do ambiente como um todo quando o item
+ * não tem um ajuste próprio em `cfg`. Largura e comprimento aqui são o comprimento de cada parede
+ * considerada (não perímetro de retângulo fechado — dá pra somar só as paredes que interessam). */
 function areaParedeItem(m: MedidasAmbiente, cfg: ConfigItemAmbiente | undefined, areaAberturasAmbiente: number): number {
   const largura = cfg?.largura ?? m.largura ?? 0;
   const comprimento = cfg?.comprimento ?? m.comprimento ?? 0;
   const altura = cfg?.altura ?? m.peDireito ?? 0;
   const aberturas = cfg?.aberturas ?? areaAberturasAmbiente;
-  const perimetro = 2 * (largura + comprimento);
-  return Math.max(0, perimetro * altura - aberturas);
+  return Math.max(0, (largura + comprimento) * altura - aberturas);
 }
 
 /** Área de um item "plano" (piso ou teto) — largura x comprimento, descontando aberturas só se o
