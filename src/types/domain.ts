@@ -183,6 +183,7 @@ export interface Obra {
   progressoFisicoPrevisto?: number;
   templateOrigemId?: string;
   isModelo?: boolean;
+  antecedenciaRequisicaoDias?: number; // dias antes do início da tarefa em que os insumos dela vão sozinhos pra Requisições — default 7
   createdAt: string;
   updatedAt: string;
 }
