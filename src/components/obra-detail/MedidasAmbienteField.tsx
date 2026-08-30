@@ -252,7 +252,10 @@ function novoSegmentoPlano(larguraPadrao: number, comprimentoPadrao: number): Se
  * porcelanato-parede, pintura) usa metro linear x altura; plano (piso, forro) usa largura x
  * comprimento. Campo vazio = usa o valor geral do ambiente. */
 function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onAplicar }: LinhaResumoItemProps) {
-  const [expandido, setExpandido] = useState(!campoVazio(config));
+  // sempre começa fechado, mesmo quando já tem um ajuste salvo — só expande se o usuário clicar
+  // no ícone; o valor calculado (com o ajuste aplicado) já aparece na linha, então não precisa
+  // abrir o painel só pra "avisar" que tem uma personalização.
+  const [expandido, setExpandido] = useState(false);
 
   function set(patch: Partial<ConfigItemAmbiente>) {
     const novo = { ...(config ?? {}), ...patch };
