@@ -631,7 +631,7 @@ export function AtividadesTable({
                                       <tbody>
                                         {(s.insumos ?? []).map((i) => (
                                           <tr key={i.id}>
-                                            <td>{i.tipo === 'mao_de_obra' ? 'Mão de obra' : i.tipo === 'aluguel' ? 'Aluguel' : 'Material'}</td>
+                                            <td>{i.tipo === 'mao_de_obra' ? 'Mão de obra' : i.tipo === 'aluguel' ? 'Aluguel' : i.tipo === 'parametro_calculado' ? '—' : 'Material'}</td>
                                             <td>{i.sinapiCodigo ?? '—'}</td>
                                             <td>{i.descricao}</td>
                                             <td>{i.unidade}</td>

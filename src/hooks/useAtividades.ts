@@ -127,6 +127,36 @@ function applySubSubatividadeMutation(
   });
 }
 
+/** Corrige recursivamente insumos que vieram das Medidas do ambiente antes de existir o tipo
+ * "parâmetro calculado" — ficaram marcados como Material (têm `origemCalculo` mas tipo errado).
+ * Devolve a subatividade sem alterações se não achar nada pra corrigir (evita escritas à toa). */
+function corrigirInsumosCalculados(s: Subatividade): Subatividade {
+  const filhosCorrigidos = s.subatividades?.map(corrigirInsumosCalculados);
+  const filhosMudaram = filhosCorrigidos?.some((f, i) => f !== s.subatividades![i]) ?? false;
+
+  const precisaCorrigirInsumos = (s.insumos ?? []).some((i) => i.origemCalculo && i.tipo !== 'parametro_calculado');
+  if (!precisaCorrigirInsumos && !filhosMudaram) return s;
+
+  return {
+    ...s,
+    insumos: precisaCorrigirInsumos
+      ? s.insumos!.map((i) => (i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' as const } : i))
+      : s.insumos,
+    subatividades: filhosMudaram ? filhosCorrigidos : s.subatividades,
+  };
+}
+
+function migrarParametrosCalculados(obraId: string) {
+  const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
+  for (const atividade of all) {
+    const novasSubatividades = atividade.subatividades.map(corrigirInsumosCalculados);
+    const mudou = novasSubatividades.some((s, i) => s !== atividade.subatividades[i]);
+    if (mudou) {
+      atividadeRepository.update(atividade.id, { subatividades: novasSubatividades, updatedAt: new Date().toISOString() });
+    }
+  }
+}
+
 export function useAtividades(obraId: string) {
   const [atividades, setAtividades] = useState<Atividade[]>([]);
 
@@ -134,6 +164,7 @@ export function useAtividades(obraId: string) {
     // Roda a cada refresh (inclusive na montagem) para autocorrigir cronogramas antigos que ficaram
     // com datas desatualizadas de antes desta cadeia unificada existir — não só em edições novas.
     cascadeScheduleUpdates(obraId);
+    migrarParametrosCalculados(obraId);
     setAtividades(atividadeRepository.list().filter((a) => a.obraId === obraId));
   }, [obraId]);
   useEffect(() => refresh(), [refresh]);

@@ -82,7 +82,9 @@ export function VisaoGeralTab() {
   }
 
   async function handleEnviarParaRequisicoes(atividade: Atividade, subatividade: Subatividade) {
-    const insumos = subatividade.insumos ?? [];
+    // parâmetro calculado (m² de alvenaria/reboco/etc das Medidas do ambiente) nunca vai pra
+    // Requisições — é só a base do cálculo, não algo que se compra
+    const insumos = (subatividade.insumos ?? []).filter((i) => i.tipo !== 'parametro_calculado');
     if (insumos.length === 0) return;
 
     // reenviar substitui o que já tinha sido mandado dessa subatividade — evita duplicar se os
