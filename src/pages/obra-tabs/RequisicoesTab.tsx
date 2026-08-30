@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconChevronDown, IconChevronRight, IconPackageImport, IconTrash } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconPackageImport, IconRefresh, IconTrash } from '@tabler/icons-react';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useRequisicoes } from '../../hooks/useRequisicoes';
 import { useEstoque } from '../../hooks/useEstoque';
@@ -56,6 +56,36 @@ function classeUrgencia(diasParaInicio: number | undefined, antecedenciaDias: nu
   if (diasParaInicio <= 2) return 'requisicoes-urgencia--critica';
   if (diasParaInicio <= antecedenciaDias) return 'requisicoes-urgencia--proxima';
   return 'requisicoes-urgencia--tranquila';
+}
+
+/** Compara os insumos atuais da subatividade com as linhas de requisição já pendentes dela (por
+ * descrição — ainda não requisitadas nem com entrada dada) e devolve o que precisa mudar: linhas
+ * pra atualizar (quantidade/custo/unidade/tipo mudou) e insumos novos que ainda não têm linha. Linhas
+ * já marcadas "requisitado" nunca são tocadas — uma vez comprado, editar o insumo depois não desfaz. */
+function sincronizarSubatividade(
+  requisicoesDaSub: ItemRequisicao[],
+  insumosMateriais: { descricao: string; unidade: string; quantidade: number; custoUnitario: number; tipo: ItemRequisicao['tipo'] }[],
+) {
+  const pendentes = requisicoesDaSub.filter((r) => r.status === 'pendente' && r.tipo !== 'mao_de_obra');
+  const usadas = new Set<string>();
+  const atualizacoes: { id: string; patch: Partial<ItemRequisicao> }[] = [];
+  const novos: typeof insumosMateriais = [];
+
+  for (const insumo of insumosMateriais) {
+    const match = pendentes.find((r) => !usadas.has(r.id) && r.descricao.trim().toLowerCase() === insumo.descricao.trim().toLowerCase());
+    if (!match) {
+      novos.push(insumo);
+      continue;
+    }
+    usadas.add(match.id);
+    if (match.quantidade !== insumo.quantidade || match.custoUnitario !== insumo.custoUnitario || match.unidade !== insumo.unidade || match.tipo !== insumo.tipo) {
+      atualizacoes.push({
+        id: match.id,
+        patch: { quantidade: insumo.quantidade, custoUnitario: insumo.custoUnitario, unidade: insumo.unidade, tipo: insumo.tipo, updatedAt: new Date().toISOString() },
+      });
+    }
+  }
+  return { atualizacoes, novos };
 }
 
 function chaveAutoEnviadas(obraId: string): string {
@@ -143,6 +173,47 @@ export function RequisicoesTab() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [atividades, obraId, antecedenciaDias]);
+
+  // mantém as linhas já enviadas em dia com os insumos atuais da subatividade — editou a
+  // quantidade/custo na Visão Geral, atualiza aqui também sozinho (linhas já "requisitado" não
+  // são tocadas, pra não desfazer uma compra já feita).
+  function sincronizarComVisaoGeral() {
+    for (const a of atividades) {
+      for (const s of a.subatividades) {
+        const requisicoesDaSub = requisicoes.filter((r) => r.subatividadeId === s.id);
+        if (requisicoesDaSub.length === 0) continue;
+        const insumosMateriais = (s.insumos ?? []).filter((i) => i.tipo !== 'mao_de_obra');
+        const { atualizacoes, novos } = sincronizarSubatividade(requisicoesDaSub, insumosMateriais);
+        for (const u of atualizacoes) updateRequisicao(u.id, u.patch);
+        if (novos.length > 0) {
+          const now = new Date().toISOString();
+          createRequisicoes(
+            novos.map((i) => ({
+              id: generateId(),
+              obraId,
+              atividadeId: a.id,
+              atividadeNome: a.nome,
+              subatividadeId: s.id,
+              subatividadeNome: s.nome,
+              descricao: i.descricao,
+              unidade: i.unidade,
+              quantidade: i.quantidade,
+              custoUnitario: i.custoUnitario,
+              tipo: i.tipo,
+              status: 'pendente' as const,
+              createdAt: now,
+              updatedAt: now,
+            })),
+          );
+        }
+      }
+    }
+  }
+
+  useEffect(() => {
+    sincronizarComVisaoGeral();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atividades]);
 
   const grupos = useMemo(() => agruparPorEtapa(requisicoes), [requisicoes]);
   const requisicoesComEntrada = useMemo(() => new Set(entradas.map((e) => e.requisicaoId).filter(Boolean) as string[]), [entradas]);
@@ -302,6 +373,15 @@ export function RequisicoesTab() {
                   </button>
                   <h4>{sub.subatividadeNome}</h4>
                   <span className="requisicoes-subetapa__total">{formatBRL(totalRequisitar)} a requisitar</span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={sincronizarComVisaoGeral}
+                    aria-label="Atualizar com a Visão Geral"
+                    title="Puxar de novo quantidade/custo/insumos atuais da subatividade (não mexe no que já foi marcado requisitado)"
+                  >
+                    <IconRefresh size={14} />
+                  </button>
                   <button
                     type="button"
                     className="btn btn-ghost requisicoes-subetapa__excluir"
