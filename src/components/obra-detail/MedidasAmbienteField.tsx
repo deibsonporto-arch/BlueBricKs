@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { IconAdjustments, IconPlus, IconTrash } from '@tabler/icons-react';
-import type { AberturaAmbiente, ConfigItemAmbiente, MedidasAmbiente, PontoEletricoAmbiente, SegmentoParede, SegmentoPlano, TipoInsumoAtividade } from '../../types/domain';
+import { IconAdjustments, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
+import type { AberturaAmbiente, ChaveItemResumoAmbiente, ConfigItemAmbiente, MedidasAmbiente, PontoEletricoAmbiente, SegmentoParede, SegmentoPlano, TipoInsumoAtividade } from '../../types/domain';
 import { calcularResumoAmbiente } from '../../utils/medidasAmbiente';
 import { generateId } from '../../utils/id';
 import { formatNumberBR, parseNumberBR } from '../../utils/currency';
@@ -32,6 +32,16 @@ function linhaPonto(): PontoEletricoAmbiente {
   return { id: generateId(), descricao: '', quantidade: 1 };
 }
 
+const ITENS_RESUMO_LABEL: Record<ChaveItemResumoAmbiente, string> = {
+  alvenaria: 'Alvenaria',
+  reboco: 'Reboco',
+  porcelanatoPiso: 'Porcelanato — piso',
+  porcelanatoParede: 'Porcelanato — parede',
+  pintura: 'Pintura',
+  forro: 'Forro (teto)',
+};
+const ORDEM_ITENS_RESUMO: ChaveItemResumoAmbiente[] = ['alvenaria', 'reboco', 'porcelanatoPiso', 'porcelanatoParede', 'pintura', 'forro'];
+
 export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo }: MedidasAmbienteFieldProps) {
   const m = medidas ?? vazias();
   const temAlgumaMedida = !!(m.largura || m.comprimento || m.peDireito || m.portas.length || m.janelas.length || m.pontosEletricos.length);
@@ -54,6 +64,12 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
   }
   function removerPonto(id: string) {
     atualizar({ pontosEletricos: m.pontosEletricos.filter((p) => p.id !== id) });
+  }
+
+  const itensAtivos = m.itensResumoAtivos ?? [];
+  const itensDisponiveis = ORDEM_ITENS_RESUMO.filter((chave) => !itensAtivos.includes(chave));
+  function removerItemAtivo(chave: ChaveItemResumoAmbiente) {
+    atualizar({ itensResumoAtivos: itensAtivos.filter((c) => c !== chave) });
   }
 
   return (
@@ -163,61 +179,106 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
           </div>
 
           <div className="medidas-ambiente__resumo">
-            <span className="medidas-ambiente__resumo-titulo">Resumo calculado</span>
-            <p className="medidas-ambiente__hint" style={{ margin: '0 0 4px' }}>
-              Cada item usa as medidas do ambiente por padrão. Clique no ícone de ajuste pra detalhar parede por parede (nos itens de alvenaria/reboco/porcelanato-parede/pintura) ou dar uma largura/comprimento/desconto de abertura diferente (piso/forro).
-            </p>
+            <div className="medidas-ambiente__resumo-header">
+              <span className="medidas-ambiente__resumo-titulo">Resumo calculado</span>
+              {itensDisponiveis.length > 0 && (
+                <select
+                  className="medidas-ambiente__add-item-select"
+                  value=""
+                  onChange={(e) => {
+                    const chave = e.target.value as ChaveItemResumoAmbiente;
+                    if (chave) atualizar({ itensResumoAtivos: [...itensAtivos, chave] });
+                  }}
+                >
+                  <option value="">+ Adicionar item...</option>
+                  {itensDisponiveis.map((chave) => (
+                    <option key={chave} value={chave}>{ITENS_RESUMO_LABEL[chave]}</option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-            <LinhaResumoItem
-              label="Alvenaria" tipoItem="parede"
-              area={resumo.areaAlvenaria} m={m}
-              config={m.configAlvenaria}
-              onConfigChange={(cfg) => atualizar({ configAlvenaria: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaAlvenaria, tipo: 'parametro_calculado' })}
-            />
-            <LinhaResumoItem
-              label="Reboco" tipoItem="parede"
-              area={resumo.areaReboco} m={m}
-              config={m.configReboco}
-              onConfigChange={(cfg) => atualizar({ configReboco: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaReboco, tipo: 'parametro_calculado' })}
-            />
-            <LinhaResumoItem
-              label="Porcelanato — piso" tipoItem="plano"
-              area={resumo.areaPorcelanatoPiso} m={m}
-              config={m.configPorcelanatoPiso}
-              onConfigChange={(cfg) => atualizar({ configPorcelanatoPiso: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'parametro_calculado' })}
-            />
-            <LinhaResumoItem
-              label="Porcelanato — parede" tipoItem="parede"
-              area={resumo.areaPorcelanatoParede} m={m}
-              config={m.configPorcelanatoParede}
-              onConfigChange={(cfg) => atualizar({ configPorcelanatoParede: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'parametro_calculado' })}
-            />
-            <LinhaResumoItem
-              label="Pintura" tipoItem="parede"
-              area={resumo.areaPintura} m={m}
-              config={m.configPintura}
-              onConfigChange={(cfg) => atualizar({ configPintura: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'pintura', descricao: 'Pintura de parede (calculado)', unidade: 'm²', quantidade: resumo.areaPintura, tipo: 'parametro_calculado' })}
-            />
-            <LinhaResumoItem
-              label="Forro (teto)" tipoItem="plano"
-              area={resumo.areaForro} m={m}
-              config={m.configForro}
-              onConfigChange={(cfg) => atualizar({ configForro: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'parametro_calculado' })}
-            />
+            {itensAtivos.length === 0 ? (
+              <p className="medidas-ambiente__vazio">
+                Nenhum item calculado ainda — escolha "+ Adicionar item..." acima (ex: Alvenaria) pra ver o m² calculado dele.
+              </p>
+            ) : (
+              <p className="medidas-ambiente__hint" style={{ margin: '0 0 4px' }}>
+                Cada item usa as medidas do ambiente por padrão. Clique no ícone de ajuste pra detalhar parede por parede (alvenaria/reboco/porcelanato-parede/pintura) ou dar uma largura/comprimento/desconto de abertura diferente (piso/forro). O "x" tira o item da lista sem apagar o ajuste salvo.
+              </p>
+            )}
+
+            {itensAtivos.includes('alvenaria') && (
+              <LinhaResumoItem
+                label="Alvenaria" tipoItem="parede"
+                area={resumo.areaAlvenaria} m={m}
+                config={m.configAlvenaria}
+                onConfigChange={(cfg) => atualizar({ configAlvenaria: cfg })}
+                onRemover={() => removerItemAtivo('alvenaria')}
+                onAplicar={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaAlvenaria, tipo: 'parametro_calculado' })}
+              />
+            )}
+            {itensAtivos.includes('reboco') && (
+              <LinhaResumoItem
+                label="Reboco" tipoItem="parede"
+                area={resumo.areaReboco} m={m}
+                config={m.configReboco}
+                onConfigChange={(cfg) => atualizar({ configReboco: cfg })}
+                onRemover={() => removerItemAtivo('reboco')}
+                onAplicar={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaReboco, tipo: 'parametro_calculado' })}
+              />
+            )}
+            {itensAtivos.includes('porcelanatoPiso') && (
+              <LinhaResumoItem
+                label="Porcelanato — piso" tipoItem="plano"
+                area={resumo.areaPorcelanatoPiso} m={m}
+                config={m.configPorcelanatoPiso}
+                onConfigChange={(cfg) => atualizar({ configPorcelanatoPiso: cfg })}
+                onRemover={() => removerItemAtivo('porcelanatoPiso')}
+                onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'parametro_calculado' })}
+              />
+            )}
+            {itensAtivos.includes('porcelanatoParede') && (
+              <LinhaResumoItem
+                label="Porcelanato — parede" tipoItem="parede"
+                area={resumo.areaPorcelanatoParede} m={m}
+                config={m.configPorcelanatoParede}
+                onConfigChange={(cfg) => atualizar({ configPorcelanatoParede: cfg })}
+                onRemover={() => removerItemAtivo('porcelanatoParede')}
+                onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'parametro_calculado' })}
+              />
+            )}
+            {itensAtivos.includes('pintura') && (
+              <LinhaResumoItem
+                label="Pintura" tipoItem="parede"
+                area={resumo.areaPintura} m={m}
+                config={m.configPintura}
+                onConfigChange={(cfg) => atualizar({ configPintura: cfg })}
+                onRemover={() => removerItemAtivo('pintura')}
+                onAplicar={() => onAplicarInsumo({ tag: 'pintura', descricao: 'Pintura de parede (calculado)', unidade: 'm²', quantidade: resumo.areaPintura, tipo: 'parametro_calculado' })}
+              />
+            )}
+            {itensAtivos.includes('forro') && (
+              <LinhaResumoItem
+                label="Forro (teto)" tipoItem="plano"
+                area={resumo.areaForro} m={m}
+                config={m.configForro}
+                onConfigChange={(cfg) => atualizar({ configForro: cfg })}
+                onRemover={() => removerItemAtivo('forro')}
+                onAplicar={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'parametro_calculado' })}
+              />
+            )}
+
             <div className="medidas-ambiente__resumo-linha medidas-ambiente__resumo-linha--simples">
               <span>Total de pontos elétricos</span>
               <strong>{resumo.totalPontosEletricos}</strong>
             </div>
-            <p className="medidas-ambiente__hint">
-              "Aplicar" cria ou atualiza a linha correspondente lá embaixo, nos insumos — clicar de novo depois de mudar as medidas atualiza a mesma linha.
-              Se preferir, ignore o cálculo e digite/ajuste a quantidade direto na tabela de insumos, como sempre.
-            </p>
+            {itensAtivos.length > 0 && (
+              <p className="medidas-ambiente__hint">
+                "Aplicar" cria ou atualiza a linha correspondente lá embaixo, nos insumos — clicar de novo depois de mudar as medidas atualiza a mesma linha.
+                Se preferir, ignore o cálculo e digite/ajuste a quantidade direto na tabela de insumos, como sempre.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -232,6 +293,7 @@ interface LinhaResumoItemProps {
   m: MedidasAmbiente;
   config: ConfigItemAmbiente | undefined;
   onConfigChange: (cfg: ConfigItemAmbiente | undefined) => void;
+  onRemover: () => void;
   onAplicar: () => void;
 }
 
@@ -259,7 +321,7 @@ function novoSegmentoPlano(larguraPadrao: number, comprimentoPadrao: number): Se
  * ajuste) um mini formulário com os campos certos pro tipo do item: parede (alvenaria, reboco,
  * porcelanato-parede, pintura) usa metro linear x altura; plano (piso, forro) usa largura x
  * comprimento. Campo vazio = usa o valor geral do ambiente. */
-function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onAplicar }: LinhaResumoItemProps) {
+function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onRemover, onAplicar }: LinhaResumoItemProps) {
   // sempre começa fechado, mesmo quando já tem um ajuste salvo — só expande se o usuário clicar
   // no ícone; o valor calculado (com o ajuste aplicado) já aparece na linha, então não precisa
   // abrir o painel só pra "avisar" que tem uma personalização.
@@ -311,6 +373,9 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
         <strong>{formatNumberBR(area)} m²</strong>
         <button type="button" className="btn btn-secondary" disabled={area <= 0} onClick={onAplicar}>
           Aplicar
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onRemover} aria-label={`Tirar ${label} do resumo`} title="Tirar do resumo (não apaga o ajuste, só deixa de mostrar)">
+          <IconX size={14} />
         </button>
       </div>
       {expandido && (

@@ -114,13 +114,29 @@
   gap: 6px;
 }
 
+.medidas-ambiente__resumo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
 .medidas-ambiente__resumo-titulo {
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   color: var(--color-text-muted);
-  margin-bottom: 2px;
+}
+
+.medidas-ambiente__add-item-select {
+  font-size: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .medidas-ambiente__item-resumo {
@@ -134,7 +150,7 @@
 
 .medidas-ambiente__resumo-linha {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
+  grid-template-columns: 1fr auto auto auto auto;
   align-items: center;
   gap: 12px;
   font-size: 13px;

@@ -106,6 +106,8 @@ export interface ConfigItemAmbiente {
   aberturas?: number; // m² a descontar — sobrescreve o total de portas/janelas do ambiente só pra este item
 }
 
+export type ChaveItemResumoAmbiente = 'alvenaria' | 'reboco' | 'porcelanatoPiso' | 'porcelanatoParede' | 'pintura' | 'forro';
+
 export interface MedidasAmbiente {
   largura?: number; // m
   comprimento?: number; // m
@@ -113,6 +115,7 @@ export interface MedidasAmbiente {
   portas: AberturaAmbiente[];
   janelas: AberturaAmbiente[];
   pontosEletricos: PontoEletricoAmbiente[];
+  itensResumoAtivos?: ChaveItemResumoAmbiente[]; // quais itens do resumo calculado o usuário escolheu mostrar — ausente/vazio = nenhum (usuário adiciona um a um)
   configAlvenaria?: ConfigItemAmbiente;
   configReboco?: ConfigItemAmbiente;
   configPorcelanatoPiso?: ConfigItemAmbiente;
