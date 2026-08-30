@@ -130,6 +130,14 @@
   color: var(--color-text-muted);
 }
 
+.lista-card--clickable {
+  cursor: pointer;
+}
+
+.lista-card--clickable:hover {
+  border-color: var(--color-primary);
+}
+
 .lista-card__actions {
   display: flex;
   gap: 8px;

@@ -2,13 +2,16 @@ import { useMemo, useState } from 'react';
 import { IconCheck, IconChevronDown, IconChevronRight, IconEdit, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { AppHeader } from '../components/layout/AppHeader';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { Modal } from '../components/common/Modal';
 import { MaterialCatalogFormModal } from '../components/materiais/MaterialCatalogFormModal';
 import { ListaDeMateriaisFormModal } from '../components/materiais/ListaDeMateriaisFormModal';
+import { ComposicaoInsumosField } from '../components/obra-detail/ComposicaoInsumosField';
 import { useMateriaisCatalogo } from '../hooks/useMateriaisCatalogo';
 import { useListasDeMateriais } from '../hooks/useListasDeMateriais';
 import { useModelosSubatividade } from '../hooks/useModelosSubatividade';
 import { formatBRL } from '../utils/currency';
-import type { ListaDeMateriais, MaterialCatalogItem, ModeloSubatividade } from '../types/domain';
+import { totaisPorTipo } from '../utils/insumosAtividade';
+import type { ItemInsumoAtividade, ListaDeMateriais, MaterialCatalogItem, ModeloSubatividade } from '../types/domain';
 import './MateriaisPage.css';
 
 export function MateriaisPage() {
@@ -19,6 +22,8 @@ export function MateriaisPage() {
   const [editandoModeloId, setEditandoModeloId] = useState<string | undefined>(undefined);
   const [nomeModeloEditado, setNomeModeloEditado] = useState('');
   const [deletingModelo, setDeletingModelo] = useState<ModeloSubatividade | undefined>(undefined);
+  const [modeloAbertoId, setModeloAbertoId] = useState<string | undefined>(undefined);
+  const modeloAberto = modelos.find((m) => m.id === modeloAbertoId);
 
   function iniciarRenomeioModelo(m: ModeloSubatividade) {
     setEditandoModeloId(m.id);
@@ -29,6 +34,17 @@ export function MateriaisPage() {
       await atualizarModelo(editandoModeloId, { nome: nomeModeloEditado.trim() });
     }
     setEditandoModeloId(undefined);
+  }
+
+  async function salvarInsumosModelo(novosInsumos: ItemInsumoAtividade[]) {
+    if (!modeloAbertoId) return;
+    const totais = totaisPorTipo(novosInsumos);
+    await atualizarModelo(modeloAbertoId, {
+      insumos: novosInsumos,
+      custoMaterial: totais.material,
+      custoMaoDeObra: totais.mao_de_obra,
+      custoAluguel: totais.aluguel,
+    });
   }
 
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
@@ -189,9 +205,13 @@ export function MateriaisPage() {
           ) : (
             <div className="listas-grid">
               {modelos.map((m) => (
-                <div className="lista-card" key={m.id}>
+                <div
+                  className="lista-card lista-card--clickable"
+                  key={m.id}
+                  onClick={() => editandoModeloId !== m.id && setModeloAbertoId(m.id)}
+                >
                   {editandoModeloId === m.id ? (
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
                       <input
                         autoFocus
                         value={nomeModeloEditado}
@@ -216,7 +236,7 @@ export function MateriaisPage() {
                     {m.insumos.length} {m.insumos.length === 1 ? 'insumo' : 'insumos'} · {formatBRL(m.custoMaoDeObra + m.custoMaterial + m.custoAluguel)}
                     {m.etapaSugerida ? ` · ${m.etapaSugerida}` : ''}
                   </span>
-                  <div className="lista-card__actions">
+                  <div className="lista-card__actions" onClick={(e) => e.stopPropagation()}>
                     <button type="button" className="btn btn-secondary" onClick={() => iniciarRenomeioModelo(m)}>
                       <IconEdit size={14} /> Renomear
                     </button>
@@ -284,6 +304,17 @@ export function MateriaisPage() {
           setDeletingModelo(undefined);
         }}
       />
+
+      {modeloAberto && (
+        <Modal open title={`Insumos de "${modeloAberto.nome}"`} onClose={() => setModeloAbertoId(undefined)} width={760}>
+          <ComposicaoInsumosField
+            uf="GO"
+            etapaNome={modeloAberto.etapaSugerida}
+            insumos={modeloAberto.insumos}
+            onChangeInsumos={salvarInsumosModelo}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
