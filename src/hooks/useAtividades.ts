@@ -8,11 +8,11 @@ import { generateId } from '../utils/id';
 /** Clona uma subatividade (e seus netos, recursivamente) com ids novos, zerando conclusão/andamento
  * — a cópia nasce pendente, pronta pra virar uma nova tarefa a partir do que já foi preenchido
  * (insumos, mão de obra, materiais, datas, custos) na original. */
-function clonarSubatividade(s: Subatividade): Subatividade {
+function clonarSubatividade(s: Subatividade, renomear = true): Subatividade {
   return {
     ...s,
     id: generateId(),
-    nome: `${s.nome} (cópia)`,
+    nome: renomear ? `${s.nome} (cópia)` : s.nome,
     concluida: false,
     iniciada: false,
     status: 'pendente',
@@ -21,7 +21,7 @@ function clonarSubatividade(s: Subatividade): Subatividade {
     materiaisNecessarios: s.materiaisNecessarios.map((m) => ({ ...m })),
     maoDeObraNecessaria: s.maoDeObraNecessaria.map((m) => ({ ...m })),
     equipamentosAluguel: s.equipamentosAluguel.map((e) => ({ ...e })),
-    subatividades: s.subatividades?.map((n) => ({ ...clonarSubatividade(n), dependeDe: [] })),
+    subatividades: s.subatividades?.map((n) => ({ ...clonarSubatividade(n, renomear), dependeDe: [] })),
   };
 }
 
@@ -279,6 +279,34 @@ export function useAtividades(obraId: string) {
     [obraId, refresh],
   );
 
+  /** Copia todas as subatividades de `atividadeOrigemId` (com insumos, mão de obra, materiais e
+   * equipamentos) pro final da lista de `atividadeDestinoId` — ex: já criou WC-Térreo, WC-Mezanino
+   * etc. na Alvenaria e quer a mesma lista de cômodos no Reboco, sem recriar um por um. As cópias
+   * nascem pendentes, sem predecessora (não herdam a dependência da etapa de origem). */
+  const copiarSubatividades = useCallback(
+    async (atividadeOrigemId: string, atividadeDestinoId: string) => {
+      if (atividadeOrigemId === atividadeDestinoId) return;
+      const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
+      const origem = all.find((a) => a.id === atividadeOrigemId);
+      const destino = all.find((a) => a.id === atividadeDestinoId);
+      if (!origem || !destino || origem.subatividades.length === 0) return;
+
+      const copias = origem.subatividades.map((s) => clonarSubatividade(s, false));
+      const novasSubatividades = [...destino.subatividades, ...copias];
+      const aggregates = recomputeParentAggregates({ ...destino, subatividades: novasSubatividades });
+      const derivedStatus = deriveParentStatus(novasSubatividades);
+
+      atividadeRepository.update(atividadeDestinoId, {
+        subatividades: novasSubatividades,
+        ...aggregates,
+        ...derivedStatus,
+        updatedAt: new Date().toISOString(),
+      });
+      refresh();
+    },
+    [obraId, refresh],
+  );
+
   const updateSubatividade = useCallback(
     async (atividadeId: string, subatividadeId: string, patch: Partial<Subatividade>) => {
       const all = atividadeRepository.list().filter((a) => a.obraId === obraId);
@@ -424,6 +452,7 @@ export function useAtividades(obraId: string) {
     createSubatividade,
     updateSubatividade,
     duplicateSubatividade,
+    copiarSubatividades,
     deleteSubatividade,
     reorderAtividades,
     reorderSubatividades,

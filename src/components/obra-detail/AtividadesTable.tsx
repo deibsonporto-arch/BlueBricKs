@@ -35,6 +35,7 @@ interface AtividadesTableProps {
   onToggleSubatividade: (atividadeId: string, subatividadeId: string) => void;
   onUpdateSubatividade: (atividadeId: string, subatividadeId: string, patch: Partial<Subatividade>) => void;
   onDuplicateSubatividade: (atividadeId: string, subatividadeId: string) => void;
+  onCopiarSubatividades: (atividadeOrigemId: string, atividadeDestinoId: string) => void;
   onDeleteSubatividade: (atividadeId: string, subatividadeId: string) => void;
   onReorderAtividades: (idsNaNovaOrdem: string[]) => void;
   onReorderSubatividades: (atividadeId: string, idsNaNovaOrdem: string[]) => void;
@@ -63,6 +64,7 @@ export function AtividadesTable({
   onToggleSubatividade,
   onUpdateSubatividade,
   onDuplicateSubatividade,
+  onCopiarSubatividades,
   onDeleteSubatividade,
   onReorderAtividades,
   onReorderSubatividades,
@@ -697,9 +699,30 @@ export function AtividadesTable({
                         {!temSubatividades && (
                           <p className="subativ-list__empty">Nenhuma subatividade ainda — as datas, custos e materiais desta atividade vêm das subatividades.</p>
                         )}
-                        <button type="button" className="btn btn-secondary subativ-list__add" onClick={() => onNewSubatividade(a.id)}>
-                          <IconPlus size={14} /> Subatividade
-                        </button>
+                        <div className="subativ-list__add-row">
+                          <button type="button" className="btn btn-secondary subativ-list__add" onClick={() => onNewSubatividade(a.id)}>
+                            <IconPlus size={14} /> Subatividade
+                          </button>
+                          {atividades.some((outra) => outra.id !== a.id && outra.subatividades.length > 0) && (
+                            <select
+                              className="subativ-list__copiar-select"
+                              value=""
+                              title="Copia todas as subatividades da etapa escolhida pra dentro desta (com insumos, mão de obra, materiais e equipamentos) — depois é só editar aqui"
+                              onChange={(e) => {
+                                const origemId = e.target.value;
+                                if (origemId) onCopiarSubatividades(origemId, a.id);
+                                e.target.value = '';
+                              }}
+                            >
+                              <option value="">Copiar subatividades de...</option>
+                              {atividades
+                                .filter((outra) => outra.id !== a.id && outra.subatividades.length > 0)
+                                .map((outra) => (
+                                  <option key={outra.id} value={outra.id}>{outra.nome} ({outra.subatividades.length})</option>
+                                ))}
+                            </select>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )}
