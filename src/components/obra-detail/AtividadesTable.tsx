@@ -440,10 +440,8 @@ export function AtividadesTable({
                                   </button>
                                 )}
                                 <span className={`subativ-row__nome${s.concluida ? ' is-concluida' : ''}`}>{s.nome}</span>
-                                {temInsumos && (
+                                {(s.insumos ?? []).some((i) => i.tipo === 'parametro_calculado') && (
                                   <span className="subativ-row__insumos-badges">
-                                    <span className="subativ-row__badge">Mão de obra {formatBRL(s.custoMaoDeObra)}</span>
-                                    <span className="subativ-row__badge">Materiais {formatBRL(s.custoMaterial)}</span>
                                     {(s.insumos ?? [])
                                       .filter((i) => i.tipo === 'parametro_calculado')
                                       .map((i) => (
@@ -451,6 +449,12 @@ export function AtividadesTable({
                                           {i.descricao.replace(' (calculado)', '')} {formatNumberBR(i.quantidade)} {i.unidade}
                                         </span>
                                       ))}
+                                  </span>
+                                )}
+                                {temInsumos && (
+                                  <span className="subativ-row__insumos-badges">
+                                    <span className="subativ-row__badge">Mão de obra {formatBRL(s.custoMaoDeObra)}</span>
+                                    <span className="subativ-row__badge">Materiais {formatBRL(s.custoMaterial)}</span>
                                   </span>
                                 )}
                                 {temEntradas && (
