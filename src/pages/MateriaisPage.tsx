@@ -1,18 +1,35 @@
 import { useMemo, useState } from 'react';
-import { IconChevronDown, IconChevronRight, IconEdit, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconCheck, IconChevronDown, IconChevronRight, IconEdit, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { AppHeader } from '../components/layout/AppHeader';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { MaterialCatalogFormModal } from '../components/materiais/MaterialCatalogFormModal';
 import { ListaDeMateriaisFormModal } from '../components/materiais/ListaDeMateriaisFormModal';
 import { useMateriaisCatalogo } from '../hooks/useMateriaisCatalogo';
 import { useListasDeMateriais } from '../hooks/useListasDeMateriais';
+import { useModelosSubatividade } from '../hooks/useModelosSubatividade';
 import { formatBRL } from '../utils/currency';
-import type { ListaDeMateriais, MaterialCatalogItem } from '../types/domain';
+import type { ListaDeMateriais, MaterialCatalogItem, ModeloSubatividade } from '../types/domain';
 import './MateriaisPage.css';
 
 export function MateriaisPage() {
   const { materiais, deleteMaterial, refresh: refreshMateriais } = useMateriaisCatalogo();
   const { listas, deleteLista, refresh: refreshListas } = useListasDeMateriais();
+  const { modelos, atualizarModelo, removerModelo } = useModelosSubatividade();
+
+  const [editandoModeloId, setEditandoModeloId] = useState<string | undefined>(undefined);
+  const [nomeModeloEditado, setNomeModeloEditado] = useState('');
+  const [deletingModelo, setDeletingModelo] = useState<ModeloSubatividade | undefined>(undefined);
+
+  function iniciarRenomeioModelo(m: ModeloSubatividade) {
+    setEditandoModeloId(m.id);
+    setNomeModeloEditado(m.nome);
+  }
+  async function salvarRenomeioModelo() {
+    if (editandoModeloId && nomeModeloEditado.trim()) {
+      await atualizarModelo(editandoModeloId, { nome: nomeModeloEditado.trim() });
+    }
+    setEditandoModeloId(undefined);
+  }
 
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [materialModalMode, setMaterialModalMode] = useState<'create' | 'edit'>('create');
@@ -159,6 +176,59 @@ export function MateriaisPage() {
             </div>
           )}
         </div>
+        <div className="materiais-section">
+          <div className="materiais-section__header">
+            <h2>Modelos de subatividade</h2>
+          </div>
+          <p className="materiais-subtitle" style={{ margin: '0 0 14px' }}>
+            Salvos a partir do botão "Salvar como modelo" ao editar uma subatividade (com os insumos SINAPI/manuais já ajustados) — reaproveite em qualquer obra.
+          </p>
+
+          {modelos.length === 0 ? (
+            <p className="materiais-empty">Nenhum modelo salvo ainda.</p>
+          ) : (
+            <div className="listas-grid">
+              {modelos.map((m) => (
+                <div className="lista-card" key={m.id}>
+                  {editandoModeloId === m.id ? (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        autoFocus
+                        value={nomeModeloEditado}
+                        onChange={(e) => setNomeModeloEditado(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') salvarRenomeioModelo();
+                          if (e.key === 'Escape') setEditandoModeloId(undefined);
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <button type="button" className="btn btn-ghost" onClick={salvarRenomeioModelo} aria-label="Salvar nome">
+                        <IconCheck size={16} />
+                      </button>
+                      <button type="button" className="btn btn-ghost" onClick={() => setEditandoModeloId(undefined)} aria-label="Cancelar">
+                        <IconX size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <h3>{m.nome}</h3>
+                  )}
+                  <span className="lista-card__stat">
+                    {m.insumos.length} {m.insumos.length === 1 ? 'insumo' : 'insumos'} · {formatBRL(m.custoMaoDeObra + m.custoMaterial + m.custoAluguel)}
+                    {m.etapaSugerida ? ` · ${m.etapaSugerida}` : ''}
+                  </span>
+                  <div className="lista-card__actions">
+                    <button type="button" className="btn btn-secondary" onClick={() => iniciarRenomeioModelo(m)}>
+                      <IconEdit size={14} /> Renomear
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setDeletingModelo(m)} aria-label="Excluir modelo">
+                      <IconTrash size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <MaterialCatalogFormModal
@@ -200,6 +270,18 @@ export function MateriaisPage() {
         onConfirm={async () => {
           if (deletingLista) await deleteLista(deletingLista.id);
           setDeletingLista(undefined);
+        }}
+      />
+      <ConfirmDialog
+        open={!!deletingModelo}
+        title="Excluir modelo"
+        message={`Tem certeza que deseja excluir o modelo "${deletingModelo?.nome}"? Isso não afeta subatividades já criadas a partir dele.`}
+        confirmLabel="Excluir"
+        danger
+        onCancel={() => setDeletingModelo(undefined)}
+        onConfirm={async () => {
+          if (deletingModelo) await removerModelo(deletingModelo.id);
+          setDeletingModelo(undefined);
         }}
       />
     </div>

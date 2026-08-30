@@ -18,6 +18,14 @@ export function useModelosSubatividade() {
     [refresh],
   );
 
+  const atualizarModelo = useCallback(
+    async (id: string, patch: Partial<ModeloSubatividade>) => {
+      modeloSubatividadeRepository.update(id, patch);
+      refresh();
+    },
+    [refresh],
+  );
+
   const removerModelo = useCallback(
     async (id: string) => {
       modeloSubatividadeRepository.remove(id);
@@ -26,5 +34,5 @@ export function useModelosSubatividade() {
     [refresh],
   );
 
-  return { modelos, salvarModelo, removerModelo, refresh };
+  return { modelos, salvarModelo, atualizarModelo, removerModelo, refresh };
 }
