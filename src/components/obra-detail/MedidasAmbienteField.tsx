@@ -173,42 +173,42 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
               area={resumo.areaAlvenaria} m={m}
               config={m.configAlvenaria}
               onConfigChange={(cfg) => atualizar({ configAlvenaria: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaAlvenaria, tipo: 'material' })}
+              onAplicar={() => onAplicarInsumo({ tag: 'alvenaria', descricao: 'Alvenaria (calculado)', unidade: 'm²', quantidade: resumo.areaAlvenaria, tipo: 'parametro_calculado' })}
             />
             <LinhaResumoItem
               label="Reboco" tipoItem="parede"
               area={resumo.areaReboco} m={m}
               config={m.configReboco}
               onConfigChange={(cfg) => atualizar({ configReboco: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaReboco, tipo: 'material' })}
+              onAplicar={() => onAplicarInsumo({ tag: 'reboco-parede', descricao: 'Reboco de parede (calculado)', unidade: 'm²', quantidade: resumo.areaReboco, tipo: 'parametro_calculado' })}
             />
             <LinhaResumoItem
               label="Porcelanato — piso" tipoItem="plano"
               area={resumo.areaPorcelanatoPiso} m={m}
               config={m.configPorcelanatoPiso}
               onConfigChange={(cfg) => atualizar({ configPorcelanatoPiso: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'material' })}
+              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'parametro_calculado' })}
             />
             <LinhaResumoItem
               label="Porcelanato — parede" tipoItem="parede"
               area={resumo.areaPorcelanatoParede} m={m}
               config={m.configPorcelanatoParede}
               onConfigChange={(cfg) => atualizar({ configPorcelanatoParede: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'material' })}
+              onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'parametro_calculado' })}
             />
             <LinhaResumoItem
               label="Pintura" tipoItem="parede"
               area={resumo.areaPintura} m={m}
               config={m.configPintura}
               onConfigChange={(cfg) => atualizar({ configPintura: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'pintura', descricao: 'Pintura de parede (calculado)', unidade: 'm²', quantidade: resumo.areaPintura, tipo: 'material' })}
+              onAplicar={() => onAplicarInsumo({ tag: 'pintura', descricao: 'Pintura de parede (calculado)', unidade: 'm²', quantidade: resumo.areaPintura, tipo: 'parametro_calculado' })}
             />
             <LinhaResumoItem
               label="Forro (teto)" tipoItem="plano"
               area={resumo.areaForro} m={m}
               config={m.configForro}
               onConfigChange={(cfg) => atualizar({ configForro: cfg })}
-              onAplicar={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'material' })}
+              onAplicar={() => onAplicarInsumo({ tag: 'forro', descricao: 'Forro (calculado)', unidade: 'm²', quantidade: resumo.areaForro, tipo: 'parametro_calculado' })}
             />
             <div className="medidas-ambiente__resumo-linha medidas-ambiente__resumo-linha--simples">
               <span>Total de pontos elétricos</span>

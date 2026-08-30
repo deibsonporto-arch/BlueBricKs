@@ -27,7 +27,12 @@ const TIPO_LABEL: Record<TipoInsumoAtividade, string> = {
   material: 'Material',
   mao_de_obra: 'Mão de obra',
   aluguel: 'Aluguel',
+  parametro_calculado: 'Parâmetro calculado',
 };
+
+// tipos que aparecem na tabela normal, editável via "Trocar composição ou adicionar insumo" — os
+// "parâmetro calculado" (m² de Medidas do ambiente) ficam numa tabela própria, só de referência
+const TIPOS_INSUMO_EDITAVEL: TipoInsumoAtividade[] = ['material', 'mao_de_obra', 'aluguel'];
 
 type ResultadoBusca =
   | { origem: 'composicao'; item: SinapiComposicaoResumo }
@@ -172,6 +177,8 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   }
 
   const temInsumos = insumos.length > 0;
+  const insumosNormais = insumos.filter((i) => i.tipo !== 'parametro_calculado');
+  const insumosCalculados = insumos.filter((i) => i.tipo === 'parametro_calculado');
   const totais = totaisPorTipo(insumos);
 
   const custoSelecionado = selecionada
@@ -238,7 +245,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
         <p className="atividade-orcamento-hint">Trocar a composição substitui a lista de insumos abaixo inteira.</p>
       )}
 
-      {temInsumos && (
+      {insumosNormais.length > 0 && (
         <div className="scroll-x">
             <table className="atividade-insumos-table">
               <thead>
@@ -253,12 +260,12 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                 </tr>
               </thead>
               <tbody>
-                {insumos.map((i) => (
+                {insumosNormais.map((i) => (
                   <tr key={i.id}>
                     <td><input defaultValue={i.descricao} onBlur={(e) => updateInsumo(i.id, { descricao: e.target.value })} /></td>
                     <td>
                       <select value={i.tipo} onChange={(e) => updateInsumo(i.id, { tipo: e.target.value as TipoInsumoAtividade })}>
-                        {(Object.keys(TIPO_LABEL) as TipoInsumoAtividade[]).map((t) => (
+                        {TIPOS_INSUMO_EDITAVEL.map((t) => (
                           <option key={t} value={t}>{TIPO_LABEL[t]}</option>
                         ))}
                       </select>
@@ -297,6 +304,40 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
         </div>
       )}
 
+      {insumosCalculados.length > 0 && (
+        <div className="atividade-insumos-calculados">
+          <span className="atividade-insumos-calculados__label">
+            Parâmetros calculados — base pro cálculo dos materiais acima, não é material em si (não conta no total nem vai pra Requisições)
+          </span>
+          <div className="scroll-x">
+            <table className="atividade-insumos-table atividade-insumos-table--calculados">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Un.</th>
+                  <th>Qtd.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {insumosCalculados.map((i) => (
+                  <tr key={i.id}>
+                    <td>{i.descricao}</td>
+                    <td>{i.unidade}</td>
+                    <td>{formatNumberBR(i.quantidade)}</td>
+                    <td>
+                      <button type="button" className="btn btn-ghost" onClick={() => removerInsumo(i.id)} aria-label="Remover parâmetro calculado">
+                        <IconTrash size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="atividade-sinapi-novo-manual-wrap">
         <div className="atividade-sinapi-novo-manual">
           <div className="atividade-sinapi-novo-manual__descricao">
@@ -311,7 +352,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
           <input type="text" inputMode="decimal" placeholder="Qtd." value={novoInsumo.quantidade} onChange={(e) => setNovoInsumo((n) => ({ ...n, quantidade: e.target.value }))} />
           <input type="text" inputMode="decimal" placeholder="Custo unit." value={novoInsumo.custoUnitario} onChange={(e) => setNovoInsumo((n) => ({ ...n, custoUnitario: e.target.value }))} />
           <select value={novoInsumo.tipo} onChange={(e) => setNovoInsumo((n) => ({ ...n, tipo: e.target.value as TipoInsumoAtividade }))}>
-            {(Object.keys(TIPO_LABEL) as TipoInsumoAtividade[]).map((t) => (
+            {TIPOS_INSUMO_EDITAVEL.map((t) => (
               <option key={t} value={t}>{TIPO_LABEL[t]}</option>
             ))}
           </select>

@@ -31,6 +31,6 @@ export function totaisPorTipo(insumos: ItemInsumoAtividade[]): Record<TipoInsumo
       acc[i.tipo] += i.quantidade * i.custoUnitario;
       return acc;
     },
-    { material: 0, mao_de_obra: 0, aluguel: 0 } as Record<TipoInsumoAtividade, number>,
+    { material: 0, mao_de_obra: 0, aluguel: 0, parametro_calculado: 0 } as Record<TipoInsumoAtividade, number>,
   );
 }

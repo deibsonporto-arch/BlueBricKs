@@ -42,7 +42,7 @@ export interface Equipamento {
   valorDia: number;
 }
 
-export type TipoInsumoAtividade = 'material' | 'mao_de_obra' | 'aluguel';
+export type TipoInsumoAtividade = 'material' | 'mao_de_obra' | 'aluguel' | 'parametro_calculado';
 
 /** Um insumo (material, mão de obra ou aluguel/equipamento) decomposto de uma composição SINAPI
  * e vinculado a uma Atividade — ou lançado manualmente. Editável linha a linha, independente da

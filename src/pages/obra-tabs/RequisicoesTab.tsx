@@ -15,6 +15,13 @@ import './RequisicoesTab.css';
 
 const ANTECEDENCIA_PADRAO = 7;
 
+/** Só material e aluguel viram requisição de compra — mão de obra é referência, e "parâmetro
+ * calculado" (m² de alvenaria/reboco/porcelanato vindo das Medidas do ambiente) é só uma base pro
+ * cálculo dos materiais reais, não algo que se compra em si. */
+function ehRequisitavel(tipo: ItemRequisicao['tipo']): boolean {
+  return tipo === 'material' || tipo === 'aluguel';
+}
+
 interface GrupoEtapa {
   atividadeId: string;
   atividadeNome: string;
@@ -66,7 +73,7 @@ function sincronizarSubatividade(
   requisicoesDaSub: ItemRequisicao[],
   insumosMateriais: { descricao: string; unidade: string; quantidade: number; custoUnitario: number; tipo: ItemRequisicao['tipo'] }[],
 ) {
-  const pendentes = requisicoesDaSub.filter((r) => r.status === 'pendente' && r.tipo !== 'mao_de_obra');
+  const pendentes = requisicoesDaSub.filter((r) => r.status === 'pendente' && ehRequisitavel(r.tipo));
   const usadas = new Set<string>();
   const atualizacoes: { id: string; patch: Partial<ItemRequisicao> }[] = [];
   const novos: typeof insumosMateriais = [];
@@ -125,7 +132,7 @@ export function RequisicoesTab() {
     const mapa = new Map<string, { dataInicio: string; concluida: boolean; temInsumosMateriais: boolean }>();
     for (const a of atividades) {
       for (const s of a.subatividades) {
-        const temInsumosMateriais = (s.insumos ?? []).some((i) => i.tipo !== 'mao_de_obra');
+        const temInsumosMateriais = (s.insumos ?? []).some((i) => ehRequisitavel(i.tipo));
         mapa.set(s.id, { dataInicio: s.dataInicio, concluida: s.concluida, temInsumosMateriais });
       }
     }
@@ -142,7 +149,7 @@ export function RequisicoesTab() {
     for (const a of atividades) {
       for (const s of a.subatividades) {
         if (s.concluida) continue;
-        const insumosMateriais = (s.insumos ?? []).filter((i) => i.tipo !== 'mao_de_obra');
+        const insumosMateriais = (s.insumos ?? []).filter((i) => ehRequisitavel(i.tipo));
         if (insumosMateriais.length === 0) continue;
         if (autoEnviadas.has(s.id) || jaTemRequisicao.has(s.id)) continue;
 
@@ -183,7 +190,7 @@ export function RequisicoesTab() {
         if (s.concluida) continue; // já terminou — não precisa mais mandar/atualizar nada pra requisição
         const requisicoesDaSub = requisicoes.filter((r) => r.subatividadeId === s.id);
         if (requisicoesDaSub.length === 0) continue;
-        const insumosMateriais = (s.insumos ?? []).filter((i) => i.tipo !== 'mao_de_obra');
+        const insumosMateriais = (s.insumos ?? []).filter((i) => ehRequisitavel(i.tipo));
         const { atualizacoes, novos } = sincronizarSubatividade(requisicoesDaSub, insumosMateriais);
         for (const u of atualizacoes) updateRequisicao(u.id, u.patch);
         if (novos.length > 0) {
@@ -227,7 +234,7 @@ export function RequisicoesTab() {
   // consolidado: mesmo material pedido em várias subatividades vira 1 grupo só, com o total pra
   // comprar de uma vez e a lista de quem precisa de quanto — ordenado pelo mais urgente primeiro.
   const consolidadoPorMaterial = useMemo(() => {
-    const pendentes = requisicoes.filter((r) => r.tipo !== 'mao_de_obra' && r.status === 'pendente');
+    const pendentes = requisicoes.filter((r) => ehRequisitavel(r.tipo) && r.status === 'pendente');
     const porDescricao = new Map<string, ItemRequisicao[]>();
     for (const r of pendentes) {
       const chave = `${r.descricao.trim().toLowerCase()}__${r.unidade.trim().toLowerCase()}`;
@@ -358,7 +365,7 @@ export function RequisicoesTab() {
           <h3>{grupo.atividadeNome}</h3>
           {grupo.subgrupos.map((sub) => {
             const maoDeObra = sub.itens.filter((i) => i.tipo === 'mao_de_obra');
-            const materiaisEAlugueis = sub.itens.filter((i) => i.tipo !== 'mao_de_obra');
+            const materiaisEAlugueis = sub.itens.filter((i) => ehRequisitavel(i.tipo));
             const totalRequisitar = materiaisEAlugueis.reduce((s, i) => s + i.quantidade * i.custoUnitario, 0);
             const recolhida = recolhidas.has(sub.subatividadeId);
             return (
