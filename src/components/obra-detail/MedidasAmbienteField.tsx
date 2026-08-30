@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { IconAdjustments, IconPlus, IconTrash } from '@tabler/icons-react';
-import type { AberturaAmbiente, ConfigItemAmbiente, MedidasAmbiente, PontoEletricoAmbiente, SegmentoParede, TipoInsumoAtividade } from '../../types/domain';
+import type { AberturaAmbiente, ConfigItemAmbiente, MedidasAmbiente, PontoEletricoAmbiente, SegmentoParede, SegmentoPlano, TipoInsumoAtividade } from '../../types/domain';
 import { calcularResumoAmbiente } from '../../utils/medidasAmbiente';
 import { generateId } from '../../utils/id';
 import { formatNumberBR, parseNumberBR } from '../../utils/currency';
@@ -243,6 +243,10 @@ function novoSegmento(metroLinearPadrao: number, alturaPadrao: number): Segmento
   return { id: generateId(), metroLinear: metroLinearPadrao, altura: alturaPadrao };
 }
 
+function novoSegmentoPlano(larguraPadrao: number, comprimentoPadrao: number): SegmentoPlano {
+  return { id: generateId(), largura: larguraPadrao, comprimento: comprimentoPadrao };
+}
+
 /** Linha do resumo pra 1 item calculado — mostra a área e um botão "Aplicar", e (atrás do ícone de
  * ajuste) um mini formulário com os campos certos pro tipo do item: parede (alvenaria, reboco,
  * porcelanato-parede, pintura) usa metro linear x altura; plano (piso, forro) usa largura x
@@ -267,6 +271,17 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
   }
   function removerSegmento(id: string) {
     setSegmentos(segmentos.filter((s) => s.id !== id));
+  }
+
+  const segmentosPlanos = config?.segmentosPlanos ?? [];
+  function setSegmentosPlanos(novos: SegmentoPlano[]) {
+    set({ segmentosPlanos: novos.length > 0 ? novos : undefined });
+  }
+  function atualizarSegmentoPlano(id: string, patch: Partial<SegmentoPlano>) {
+    setSegmentosPlanos(segmentosPlanos.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  }
+  function removerSegmentoPlano(id: string) {
+    setSegmentosPlanos(segmentosPlanos.filter((s) => s.id !== id));
   }
 
   return (
@@ -338,27 +353,38 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
               ))}
             </div>
           ) : (
-            <div className="medidas-ambiente__ajuste-painel-planos">
-              <label>
-                Larg.
-                <input
-                  type="text" inputMode="decimal"
-                  key={`largura-${label}-${config?.largura ?? ''}`}
-                  defaultValue={config?.largura ? formatNumberBR(config.largura) : ''}
-                  placeholder={m.largura ? formatNumberBR(m.largura) : '—'}
-                  onBlur={(e) => set({ largura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
-                />
-              </label>
-              <label>
-                Compr.
-                <input
-                  type="text" inputMode="decimal"
-                  key={`comprimento-${label}-${config?.comprimento ?? ''}`}
-                  defaultValue={config?.comprimento ? formatNumberBR(config.comprimento) : ''}
-                  placeholder={m.comprimento ? formatNumberBR(m.comprimento) : '—'}
-                  onBlur={(e) => set({ comprimento: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
-                />
-              </label>
+            <div className="medidas-ambiente__segmentos">
+              <div className="medidas-ambiente__aberturas-header">
+                <span>Áreas (largura x comprimento)</span>
+                <button type="button" className="btn btn-ghost" onClick={() => setSegmentosPlanos([...segmentosPlanos, novoSegmentoPlano(m.largura ?? 0, m.comprimento ?? 0)])}>
+                  <IconPlus size={13} /> Área
+                </button>
+              </div>
+              {segmentosPlanos.length === 0 && (
+                <p className="medidas-ambiente__vazio">
+                  Nenhuma área detalhada — usando {formatNumberBR(m.largura ?? 0)}m x {formatNumberBR(m.comprimento ?? 0)}m (largura x comprimento do ambiente).
+                </p>
+              )}
+              {segmentosPlanos.map((s, i) => (
+                <div className="medidas-ambiente__segmento-linha" key={s.id}>
+                  <span className="medidas-ambiente__segmento-numero">{i + 1}</span>
+                  <input
+                    type="text" inputMode="decimal" placeholder="Largura"
+                    key={`spl-${s.id}-${s.largura}`}
+                    defaultValue={s.largura ? formatNumberBR(s.largura) : ''}
+                    onBlur={(e) => atualizarSegmentoPlano(s.id, { largura: parseNumberBR(e.target.value) })}
+                  />
+                  <span>x</span>
+                  <input
+                    type="text" inputMode="decimal" placeholder="Comprimento"
+                    key={`spc-${s.id}-${s.comprimento}`}
+                    defaultValue={s.comprimento ? formatNumberBR(s.comprimento) : ''}
+                    onBlur={(e) => atualizarSegmentoPlano(s.id, { comprimento: parseNumberBR(e.target.value) })}
+                  />
+                  <span className="medidas-ambiente__segmento-area">{formatNumberBR(s.largura * s.comprimento)} m²</span>
+                  <button type="button" className="btn btn-ghost" onClick={() => removerSegmentoPlano(s.id)} aria-label="Remover área"><IconTrash size={13} /></button>
+                </div>
+              ))}
             </div>
           )}
           <label className="medidas-ambiente__abertura-item">

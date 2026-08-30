@@ -32,13 +32,20 @@ function areaParedeItem(m: MedidasAmbiente, cfg: ConfigItemAmbiente | undefined,
   return Math.max(0, metroLinearPadrao * alturaPadrao - aberturas);
 }
 
-/** Área de um item "plano" (piso ou teto) — largura x comprimento, descontando aberturas só se o
- * item tiver um ajuste próprio de desconto (piso/teto normalmente não descontam porta/janela). */
+/** Área de um item "plano" (piso ou teto) — soma de largura x comprimento de cada pedaço detalhado
+ * em `cfg.segmentosPlanos`, descontando aberturas só se o item tiver um ajuste próprio de desconto
+ * (piso/teto normalmente não descontam porta/janela). Sem nenhum pedaço detalhado, usa 1 área única
+ * com a largura x comprimento do ambiente (ou do próprio item, se sobrescrito). */
 function areaPlanaItem(m: MedidasAmbiente, cfg: ConfigItemAmbiente | undefined): number {
   if (cfg?.areaDireta) return Math.max(0, cfg.areaDireta);
+  const aberturas = cfg?.aberturas ?? 0;
+  const segmentos = cfg?.segmentosPlanos;
+  if (segmentos && segmentos.length > 0) {
+    const areaBruta = segmentos.reduce((s, seg) => s + seg.largura * seg.comprimento, 0);
+    return Math.max(0, areaBruta - aberturas);
+  }
   const largura = cfg?.largura ?? m.largura ?? 0;
   const comprimento = cfg?.comprimento ?? m.comprimento ?? 0;
-  const aberturas = cfg?.aberturas ?? 0;
   return Math.max(0, largura * comprimento - aberturas);
 }
 

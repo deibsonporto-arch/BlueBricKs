@@ -85,6 +85,14 @@ export interface SegmentoParede {
   altura: number; // m
 }
 
+/** Um trecho individual (largura x comprimento) dentro de um item "plano" (piso, forro) — dá pra
+ * somar vários pedaços de área separados em vez de só uma largura x comprimento única. */
+export interface SegmentoPlano {
+  id: string;
+  largura: number; // m
+  comprimento: number; // m
+}
+
 /** Ajuste específico de um item do resumo calculado — cada campo ausente cai pro valor do ambiente
  * como um todo (largura/comprimento/pé-direito), então só precisa preencher o que for diferente
  * pra aquele item (ex: o porcelanato de parede só vai até 1,5m de altura, ou tem uma abertura a mais
@@ -92,8 +100,9 @@ export interface SegmentoParede {
 export interface ConfigItemAmbiente {
   areaDireta?: number; // m² — quando já sabe a metragem pronta, digita direto aqui e ignora todo o resto do cálculo (metro linear/altura, largura/comprimento, aberturas)
   segmentos?: SegmentoParede[]; // só pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura) — 1 linha por parede, cada uma com seu metro linear x altura
-  largura?: number; // m — só pros itens "planos" (porcelanato-piso, forro): largura x comprimento = m²
+  largura?: number; // m — só pros itens "planos" (porcelanato-piso, forro): largura x comprimento = m², usado quando `segmentosPlanos` está vazio
   comprimento?: number; // m — idem
+  segmentosPlanos?: SegmentoPlano[]; // só pros itens "planos" — vários pedaços de área (largura x comprimento cada) somados
   aberturas?: number; // m² a descontar — sobrescreve o total de portas/janelas do ambiente só pra este item
 }
 
