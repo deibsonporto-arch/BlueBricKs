@@ -47,6 +47,9 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   const [decompondo, setDecompondo] = useState(false);
   const [mes, setMes] = useState('');
   const [desoneracao] = useState<SinapiDesoneracao>('SD');
+  // unidade do SERVIÇO decomposto (ex: m² de reboco) — não confundir com a unidade de cada insumo
+  // (ex: H de mão de obra, KG de cimento). Usada só pro rótulo do campo "Quantidade" abaixo.
+  const [unidadeComposicao, setUnidadeComposicao] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     fetchSinapiMeses().then((meses) => setMes((atual) => atual || meses[0] || '')).catch(() => undefined);
@@ -92,6 +95,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       const explodidos = await buscarItensComposicaoSinapi(selecionada.item.codigo, { uf, desoneracao, mes }, quantidade);
       onChangeInsumos(insumosDeComposicaoExplodida(explodidos));
       setEscalaInsumos(quantidade);
+      setUnidadeComposicao(selecionada.item.unidade);
       onSugerirNome?.(selecionada.item.descricao);
       setSelecionada(null);
       setBusca('');
@@ -260,7 +264,9 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       {insumosNormais.length > 0 && (
         <>
           <label className="atividade-insumos-escala">
-            Quantidade (recalcula todos os insumos proporcionalmente — a composição veio pra {formatNumberBR(escalaInsumos)} {insumosNormais[0]?.unidade ?? 'un'})
+            {unidadeComposicao
+              ? `Quantidade do serviço (${unidadeComposicao}) — recalcula todos os insumos proporcionalmente. Veio pra ${formatNumberBR(escalaInsumos)} ${unidadeComposicao}`
+              : 'Quantidade do serviço — recalcula todos os insumos proporcionalmente (decomponha uma composição do SINAPI pra saber a unidade certa; senão, é só um fator de escala)'}
             <input
               type="text" inputMode="decimal"
               key={`escala-${escalaInsumos}`}
