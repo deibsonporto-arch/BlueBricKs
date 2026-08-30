@@ -444,6 +444,13 @@ export function AtividadesTable({
                                   <span className="subativ-row__insumos-badges">
                                     <span className="subativ-row__badge">Mão de obra {formatBRL(s.custoMaoDeObra)}</span>
                                     <span className="subativ-row__badge">Materiais {formatBRL(s.custoMaterial)}</span>
+                                    {(s.insumos ?? [])
+                                      .filter((i) => i.tipo === 'parametro_calculado')
+                                      .map((i) => (
+                                        <span key={i.id} className="subativ-row__badge subativ-row__badge--calculado" title="Parâmetro calculado — base pro cálculo dos materiais, não é material em si">
+                                          {i.descricao.replace(' (calculado)', '')} {formatNumberBR(i.quantidade)} {i.unidade}
+                                        </span>
+                                      ))}
                                   </span>
                                 )}
                                 {temEntradas && (

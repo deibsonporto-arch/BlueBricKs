@@ -89,7 +89,14 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   const [buscaModelo, setBuscaModelo] = useState('');
 
   useEffect(() => {
-    if (open) { setForm(toFormState(subatividade)); setInsumos(subatividade?.insumos ?? []); setMedidasAmbiente(subatividade?.medidasAmbiente); setBuscaModelo(''); }
+    if (open) {
+      setForm(toFormState(subatividade));
+      // corrige insumos antigos que vieram das Medidas do ambiente antes de existir o tipo
+      // "parâmetro calculado" — tinham origemCalculo mas ficaram marcados como Material
+      setInsumos((subatividade?.insumos ?? []).map((i) => (i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' } : i)));
+      setMedidasAmbiente(subatividade?.medidasAmbiente);
+      setBuscaModelo('');
+    }
   }, [open, subatividade]);
 
   /** "Aplicar" no resumo das Medidas do ambiente: atualiza a linha de insumo já criada por esse

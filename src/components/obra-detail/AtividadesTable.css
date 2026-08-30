@@ -251,6 +251,12 @@
   white-space: nowrap;
 }
 
+.subativ-row__badge--calculado {
+  font-style: italic;
+  color: var(--color-primary-dark, var(--color-primary));
+  border-style: dashed;
+}
+
 .subativ-row__badge--estoque {
   color: var(--color-primary-dark);
   background: var(--color-primary-light);
