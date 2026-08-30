@@ -178,6 +178,17 @@
   cursor: grab;
 }
 
+.subativ-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.subativ-row__actions .btn-ghost {
+  padding: 4px;
+}
+
 .subativ-row.is-dragging {
   opacity: 0.4;
 }

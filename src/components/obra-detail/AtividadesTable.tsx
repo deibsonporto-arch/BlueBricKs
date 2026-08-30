@@ -533,40 +533,42 @@ export function AtividadesTable({
                                   </span>
                                 )}
                                 <AtividadeStatusBadge status={displayStatus} />
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost"
-                                  onClick={() => onNewSubSubatividade(a.id, s.id)}
-                                  aria-label="Adicionar item dentro desta subatividade"
-                                  title="Adicionar item dentro desta subatividade"
-                                >
-                                  <IconPlus size={14} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost subativ-row__edit"
-                                  onClick={() => onEditSubatividade(a.id, s)}
-                                  aria-label="Editar subatividade"
-                                >
-                                  <IconEdit size={14} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost"
-                                  onClick={() => onDuplicateSubatividade(a.id, s.id)}
-                                  aria-label="Duplicar subatividade"
-                                  title="Duplicar subatividade (com insumos, materiais, mão de obra e equipamentos)"
-                                >
-                                  <IconCopy size={14} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost subativ-row__remove"
-                                  onClick={() => onDeleteSubatividade(a.id, s.id)}
-                                  aria-label="Remover subatividade"
-                                >
-                                  <IconTrash size={14} />
-                                </button>
+                                <span className="subativ-row__actions">
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    onClick={() => onNewSubSubatividade(a.id, s.id)}
+                                    aria-label="Adicionar item dentro desta subatividade"
+                                    title="Adicionar item dentro desta subatividade"
+                                  >
+                                    <IconPlus size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost subativ-row__edit"
+                                    onClick={() => onEditSubatividade(a.id, s)}
+                                    aria-label="Editar subatividade"
+                                  >
+                                    <IconEdit size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    onClick={() => onDuplicateSubatividade(a.id, s.id)}
+                                    aria-label="Duplicar subatividade"
+                                    title="Duplicar subatividade (com insumos, materiais, mão de obra e equipamentos)"
+                                  >
+                                    <IconCopy size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-ghost subativ-row__remove"
+                                    onClick={() => onDeleteSubatividade(a.id, s.id)}
+                                    aria-label="Remover subatividade"
+                                  >
+                                    <IconTrash size={14} />
+                                  </button>
+                                </span>
                               </div>
                               {temNetos(s) && expandedNetos.has(s.id) && (
                                 <div className="subativ-list subativ-list--nested" style={{ marginLeft: depth * 20 + 26 }}>
