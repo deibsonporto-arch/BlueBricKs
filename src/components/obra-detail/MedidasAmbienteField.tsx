@@ -236,7 +236,7 @@ interface LinhaResumoItemProps {
 }
 
 function campoVazio(cfg: ConfigItemAmbiente | undefined): boolean {
-  return !cfg || (!(cfg.segmentos && cfg.segmentos.length > 0) && !cfg.largura && !cfg.comprimento && !cfg.aberturas);
+  return !cfg || (!cfg.areaDireta && !(cfg.segmentos && cfg.segmentos.length > 0) && !cfg.largura && !cfg.comprimento && !cfg.aberturas);
 }
 
 function novoSegmento(metroLinearPadrao: number, alturaPadrao: number): SegmentoParede {
@@ -289,6 +289,20 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
       </div>
       {expandido && (
         <div className="medidas-ambiente__ajuste-painel">
+          <label className="medidas-ambiente__area-direta">
+            Já sei o m² — digitar direto (ignora o resto do cálculo abaixo)
+            <input
+              type="text" inputMode="decimal"
+              key={`areaDireta-${label}-${config?.areaDireta ?? ''}`}
+              defaultValue={config?.areaDireta ? formatNumberBR(config.areaDireta) : ''}
+              placeholder="ex: 18,50"
+              onBlur={(e) => set({ areaDireta: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
+            />
+          </label>
+          {!!config?.areaDireta && (
+            <p className="medidas-ambiente__vazio">Usando {formatNumberBR(config.areaDireta)} m² direto — o cálculo abaixo fica desativado. Apague o campo acima pra voltar a calcular.</p>
+          )}
+          <div className={config?.areaDireta ? 'medidas-ambiente__calculo-desativado' : undefined}>
           {tipoItem === 'parede' ? (
             <div className="medidas-ambiente__segmentos">
               <div className="medidas-ambiente__aberturas-header">
@@ -357,6 +371,7 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
               onBlur={(e) => set({ aberturas: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
             />
           </label>
+          </div>
         </div>
       )}
     </div>

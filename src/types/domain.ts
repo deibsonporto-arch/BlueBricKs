@@ -90,6 +90,7 @@ export interface SegmentoParede {
  * pra aquele item (ex: o porcelanato de parede só vai até 1,5m de altura, ou tem uma abertura a mais
  * que as outras partes não têm). */
 export interface ConfigItemAmbiente {
+  areaDireta?: number; // m² — quando já sabe a metragem pronta, digita direto aqui e ignora todo o resto do cálculo (metro linear/altura, largura/comprimento, aberturas)
   segmentos?: SegmentoParede[]; // só pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura) — 1 linha por parede, cada uma com seu metro linear x altura
   largura?: number; // m — só pros itens "planos" (porcelanato-piso, forro): largura x comprimento = m²
   comprimento?: number; // m — idem

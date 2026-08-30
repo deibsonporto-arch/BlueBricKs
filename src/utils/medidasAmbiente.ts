@@ -20,6 +20,7 @@ export interface ResumoAmbiente {
  * detalhada em `cfg.segmentos`, usa 1 parede única com a soma da largura + comprimento do ambiente
  * como metro linear e o pé-direito como altura (aproximação de um ambiente retangular simples). */
 function areaParedeItem(m: MedidasAmbiente, cfg: ConfigItemAmbiente | undefined, areaAberturasAmbiente: number): number {
+  if (cfg?.areaDireta) return Math.max(0, cfg.areaDireta);
   const aberturas = cfg?.aberturas ?? areaAberturasAmbiente;
   const segmentos = cfg?.segmentos;
   if (segmentos && segmentos.length > 0) {
@@ -34,6 +35,7 @@ function areaParedeItem(m: MedidasAmbiente, cfg: ConfigItemAmbiente | undefined,
 /** Área de um item "plano" (piso ou teto) — largura x comprimento, descontando aberturas só se o
  * item tiver um ajuste próprio de desconto (piso/teto normalmente não descontam porta/janela). */
 function areaPlanaItem(m: MedidasAmbiente, cfg: ConfigItemAmbiente | undefined): number {
+  if (cfg?.areaDireta) return Math.max(0, cfg.areaDireta);
   const largura = cfg?.largura ?? m.largura ?? 0;
   const comprimento = cfg?.comprimento ?? m.comprimento ?? 0;
   const aberturas = cfg?.aberturas ?? 0;
