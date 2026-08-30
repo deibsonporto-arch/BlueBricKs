@@ -213,7 +213,9 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   function aplicarEscala(novaEscala: number) {
     if (!(novaEscala > 0) || novaEscala === escalaInsumos) return;
     const fator = novaEscala / escalaInsumos;
-    onChangeInsumos(insumos.map((i) => ({ ...i, quantidade: i.quantidade * fator })));
+    // os "parâmetro calculado" (Medidas do ambiente) já vêm com a quantidade final calculada, não
+    // um coeficiente "por 1 unidade" — não escala de novo, senão dobra o valor a cada reaplicação.
+    onChangeInsumos(insumos.map((i) => (i.tipo === 'parametro_calculado' ? i : { ...i, quantidade: i.quantidade * fator })));
     setEscalaInsumos(novaEscala);
   }
 
