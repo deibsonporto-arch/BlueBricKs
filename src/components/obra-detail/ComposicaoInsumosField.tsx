@@ -281,7 +281,8 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                   <th>Descrição</th>
                   <th>Tipo</th>
                   <th>Un.</th>
-                  <th>Qtd.</th>
+                  <th title="Quantidade por 1 unidade do serviço (o coeficiente da composição SINAPI)">Coef. (p/1)</th>
+                  <th title={unidadeComposicao ? `Quantidade real pra ${formatNumberBR(escalaInsumos)} ${unidadeComposicao} do serviço` : 'Quantidade real pra sua metragem'}>Qtd. p/ {formatNumberBR(escalaInsumos)}{unidadeComposicao ? ` ${unidadeComposicao}` : ''}</th>
                   <th>Custo unit.</th>
                   <th>Total</th>
                   <th></th>
@@ -299,6 +300,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                       </select>
                     </td>
                     <td><input defaultValue={i.unidade} onBlur={(e) => updateInsumo(i.id, { unidade: e.target.value })} /></td>
+                    <td className="atividade-insumos-table__coef">{escalaInsumos > 0 ? formatNumberBR(i.quantidade / escalaInsumos) : '—'}</td>
                     <td>
                       <input
                         type="text" inputMode="decimal"
@@ -324,7 +326,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={5}>Total material / mão de obra / aluguel</td>
+                  <td colSpan={6}>Total material / mão de obra / aluguel</td>
                   <td colSpan={2}>{formatBRL(totais.material)} · {formatBRL(totais.mao_de_obra)} · {formatBRL(totais.aluguel)}</td>
                 </tr>
               </tfoot>
