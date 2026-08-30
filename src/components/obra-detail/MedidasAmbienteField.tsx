@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { IconAdjustments, IconPlus, IconTrash } from '@tabler/icons-react';
-import type { AberturaAmbiente, ConfigItemAmbiente, MedidasAmbiente, PontoEletricoAmbiente, TipoInsumoAtividade } from '../../types/domain';
+import type { AberturaAmbiente, ConfigItemAmbiente, MedidasAmbiente, PontoEletricoAmbiente, SegmentoParede, TipoInsumoAtividade } from '../../types/domain';
 import { calcularResumoAmbiente } from '../../utils/medidasAmbiente';
 import { generateId } from '../../utils/id';
 import { formatNumberBR, parseNumberBR } from '../../utils/currency';
@@ -165,7 +165,7 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
           <div className="medidas-ambiente__resumo">
             <span className="medidas-ambiente__resumo-titulo">Resumo calculado</span>
             <p className="medidas-ambiente__hint" style={{ margin: '0 0 4px' }}>
-              Cada item usa a largura/comprimento/pé-direito do ambiente por padrão. Clique no ícone de ajuste pra dar uma largura, comprimento, altura ou desconto de abertura diferente só pra aquele item.
+              Cada item usa as medidas do ambiente por padrão. Clique no ícone de ajuste pra detalhar parede por parede (nos itens de alvenaria/reboco/porcelanato-parede/pintura) ou dar uma largura/comprimento/desconto de abertura diferente (piso/forro).
             </p>
 
             <LinhaResumoItem
@@ -236,7 +236,11 @@ interface LinhaResumoItemProps {
 }
 
 function campoVazio(cfg: ConfigItemAmbiente | undefined): boolean {
-  return !cfg || (!cfg.metroLinear && !cfg.largura && !cfg.comprimento && !cfg.altura && !cfg.aberturas);
+  return !cfg || (!(cfg.segmentos && cfg.segmentos.length > 0) && !cfg.largura && !cfg.comprimento && !cfg.aberturas);
+}
+
+function novoSegmento(metroLinearPadrao: number, alturaPadrao: number): SegmentoParede {
+  return { id: generateId(), metroLinear: metroLinearPadrao, altura: alturaPadrao };
 }
 
 /** Linha do resumo pra 1 item calculado — mostra a área e um botão "Aplicar", e (atrás do ícone de
@@ -252,6 +256,18 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
   }
 
   const metroLinearPadrao = (m.largura ?? 0) + (m.comprimento ?? 0);
+  const alturaPadrao = m.peDireito ?? 0;
+  const segmentos = config?.segmentos ?? [];
+
+  function setSegmentos(novos: SegmentoParede[]) {
+    set({ segmentos: novos.length > 0 ? novos : undefined });
+  }
+  function atualizarSegmento(id: string, patch: Partial<SegmentoParede>) {
+    setSegmentos(segmentos.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  }
+  function removerSegmento(id: string) {
+    setSegmentos(segmentos.filter((s) => s.id !== id));
+  }
 
   return (
     <div className="medidas-ambiente__item-resumo">
@@ -261,7 +277,7 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
           type="button"
           className={`btn btn-ghost medidas-ambiente__ajuste-btn${!campoVazio(config) ? ' is-ativo' : ''}`}
           onClick={() => setExpandido((v) => !v)}
-          title={tipoItem === 'parede' ? 'Personalizar metro linear/altura/abertura só deste item' : 'Personalizar largura/comprimento/abertura só deste item'}
+          title={tipoItem === 'parede' ? 'Detalhar parede por parede (metro linear x altura) ou dar um desconto de abertura só deste item' : 'Personalizar largura/comprimento/abertura só deste item'}
           aria-label="Personalizar este item"
         >
           <IconAdjustments size={14} />
@@ -274,30 +290,41 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
       {expandido && (
         <div className="medidas-ambiente__ajuste-painel">
           {tipoItem === 'parede' ? (
-            <>
-              <label>
-                Metro linear
-                <input
-                  type="text" inputMode="decimal"
-                  key={`metroLinear-${label}-${config?.metroLinear ?? ''}`}
-                  defaultValue={config?.metroLinear ? formatNumberBR(config.metroLinear) : ''}
-                  placeholder={metroLinearPadrao ? formatNumberBR(metroLinearPadrao) : '—'}
-                  onBlur={(e) => set({ metroLinear: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
-                />
-              </label>
-              <label>
-                Altura
-                <input
-                  type="text" inputMode="decimal"
-                  key={`altura-${label}-${config?.altura ?? ''}`}
-                  defaultValue={config?.altura ? formatNumberBR(config.altura) : ''}
-                  placeholder={m.peDireito ? formatNumberBR(m.peDireito) : '—'}
-                  onBlur={(e) => set({ altura: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
-                />
-              </label>
-            </>
+            <div className="medidas-ambiente__segmentos">
+              <div className="medidas-ambiente__aberturas-header">
+                <span>Paredes (metro linear x altura)</span>
+                <button type="button" className="btn btn-ghost" onClick={() => setSegmentos([...segmentos, novoSegmento(metroLinearPadrao, alturaPadrao)])}>
+                  <IconPlus size={13} /> Parede
+                </button>
+              </div>
+              {segmentos.length === 0 && (
+                <p className="medidas-ambiente__vazio">
+                  Nenhuma parede detalhada — usando {formatNumberBR(metroLinearPadrao)}m x {formatNumberBR(alturaPadrao)}m (largura+comprimento x pé-direito do ambiente).
+                </p>
+              )}
+              {segmentos.map((s, i) => (
+                <div className="medidas-ambiente__segmento-linha" key={s.id}>
+                  <span className="medidas-ambiente__segmento-numero">{i + 1}</span>
+                  <input
+                    type="text" inputMode="decimal" placeholder="Metro linear"
+                    key={`ml-${s.id}-${s.metroLinear}`}
+                    defaultValue={s.metroLinear ? formatNumberBR(s.metroLinear) : ''}
+                    onBlur={(e) => atualizarSegmento(s.id, { metroLinear: parseNumberBR(e.target.value) })}
+                  />
+                  <span>x</span>
+                  <input
+                    type="text" inputMode="decimal" placeholder="Altura"
+                    key={`alt-${s.id}-${s.altura}`}
+                    defaultValue={s.altura ? formatNumberBR(s.altura) : ''}
+                    onBlur={(e) => atualizarSegmento(s.id, { altura: parseNumberBR(e.target.value) })}
+                  />
+                  <span className="medidas-ambiente__segmento-area">{formatNumberBR(s.metroLinear * s.altura)} m²</span>
+                  <button type="button" className="btn btn-ghost" onClick={() => removerSegmento(s.id)} aria-label="Remover parede"><IconTrash size={13} /></button>
+                </div>
+              ))}
+            </div>
           ) : (
-            <>
+            <div className="medidas-ambiente__ajuste-painel-planos">
               <label>
                 Larg.
                 <input
@@ -318,10 +345,10 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onA
                   onBlur={(e) => set({ comprimento: e.target.value.trim() ? parseNumberBR(e.target.value) : undefined })}
                 />
               </label>
-            </>
+            </div>
           )}
-          <label>
-            Abertura (m²)
+          <label className="medidas-ambiente__abertura-item">
+            Abertura a descontar (m²)
             <input
               type="text" inputMode="decimal"
               key={`aberturas-${label}-${config?.aberturas ?? ''}`}

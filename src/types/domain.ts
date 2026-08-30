@@ -76,15 +76,23 @@ export interface PontoEletricoAmbiente {
 /** Medidas de um ambiente (cômodo), preenchidas na subatividade pra calcular sozinho m² de
  * alvenaria/reboco/porcelanato e quantidade de pontos elétricos — puramente auxiliar: o usuário
  * decide se aplica o valor calculado aos insumos ou prefere digitar manualmente. */
+/** Uma parede individual (trecho de metro linear x altura) dentro de um item de parede — dá pra
+ * detalhar parede por parede quando elas têm comprimentos e/ou alturas diferentes, em vez de somar
+ * tudo num único metro linear. As áreas de todas as paredes do item são somadas no resumo. */
+export interface SegmentoParede {
+  id: string;
+  metroLinear: number; // m
+  altura: number; // m
+}
+
 /** Ajuste específico de um item do resumo calculado — cada campo ausente cai pro valor do ambiente
  * como um todo (largura/comprimento/pé-direito), então só precisa preencher o que for diferente
  * pra aquele item (ex: o porcelanato de parede só vai até 1,5m de altura, ou tem uma abertura a mais
  * que as outras partes não têm). */
 export interface ConfigItemAmbiente {
-  metroLinear?: number; // m — só pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura): metro linear de parede x altura = m²
+  segmentos?: SegmentoParede[]; // só pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura) — 1 linha por parede, cada uma com seu metro linear x altura
   largura?: number; // m — só pros itens "planos" (porcelanato-piso, forro): largura x comprimento = m²
   comprimento?: number; // m — idem
-  altura?: number; // m — só faz sentido pros itens de parede (alvenaria, reboco, porcelanato-parede, pintura)
   aberturas?: number; // m² a descontar — sobrescreve o total de portas/janelas do ambiente só pra este item
 }
 
