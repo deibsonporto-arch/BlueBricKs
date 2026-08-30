@@ -197,6 +197,29 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     setEscalaInsumos(novaEscala);
   }
 
+  // "Mão de obra por empreitada" — substitui as linhas de mão de obra (normalmente por hora) por
+  // uma única linha com valor fechado por unidade do serviço (ex: R$ 50/m²), que escala junto com
+  // "Quantidade do serviço" igual as demais.
+  const [empreitaAberto, setEmpreitaAberto] = useState(false);
+  const [empreitaValorInput, setEmpreitaValorInput] = useState('');
+  const EMPREITA_DESCRICAO = 'Mão de obra (empreitada)';
+  function aplicarEmpreitada() {
+    const valorPorUnidade = parseNumberBR(empreitaValorInput);
+    if (!(valorPorUnidade > 0)) return;
+    const semMaoDeObra = insumos.filter((i) => i.tipo !== 'mao_de_obra');
+    const novoItem: ItemInsumoAtividade = {
+      id: generateId(),
+      descricao: EMPREITA_DESCRICAO,
+      unidade: unidadeComposicao || 'un',
+      quantidade: escalaInsumos,
+      custoUnitario: valorPorUnidade,
+      tipo: 'mao_de_obra',
+    };
+    onChangeInsumos([...semMaoDeObra, novoItem]);
+    setEmpreitaAberto(false);
+    setEmpreitaValorInput('');
+  }
+
   const custoSelecionado = selecionada
     ? selecionada.origem === 'composicao' ? selecionada.item.custo : selecionada.item.preco
     : null;
@@ -274,6 +297,30 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
               onBlur={(e) => aplicarEscala(parseNumberBR(e.target.value))}
             />
           </label>
+          <div className="atividade-insumos-empreita">
+            {!empreitaAberto ? (
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEmpreitaAberto(true)}>
+                Mão de obra por empreitada...
+              </button>
+            ) : (
+              <>
+                <span>Mão de obra por empreitada — R$ por {unidadeComposicao || 'unidade'}:</span>
+                <input
+                  type="text" inputMode="decimal"
+                  autoFocus
+                  value={empreitaValorInput}
+                  onChange={(e) => setEmpreitaValorInput(e.target.value)}
+                  placeholder="ex: 50,00"
+                />
+                <button type="button" className="btn btn-secondary btn-sm" onClick={aplicarEmpreitada} disabled={!(parseNumberBR(empreitaValorInput) > 0)}>
+                  Aplicar
+                </button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setEmpreitaAberto(false); setEmpreitaValorInput(''); }}>
+                  Cancelar
+                </button>
+              </>
+            )}
+          </div>
           <div className="scroll-x">
             <table className="atividade-insumos-table">
               <thead>
