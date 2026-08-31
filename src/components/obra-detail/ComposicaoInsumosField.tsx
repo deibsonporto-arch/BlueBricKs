@@ -37,6 +37,16 @@ const TIPO_LABEL: Record<TipoInsumoAtividade, string> = {
 // "parâmetro calculado" (m² de Medidas do ambiente) ficam numa tabela própria, só de referência
 const TIPOS_INSUMO_EDITAVEL: TipoInsumoAtividade[] = ['material', 'mao_de_obra', 'aluguel'];
 
+/** Grava em cada insumo o `coeficiente` (quantidade fixa "por 1 unidade" do serviço), calculado a
+ * partir da quantidade que veio decomposta pra uma escala `Q` conhecida. A partir daí, reaplicar a
+ * "Quantidade do serviço" nunca mais multiplica em cima de um valor que já foi multiplicado antes —
+ * sempre recalcula do zero como coeficiente × nova escala, então não acumula erro por mais vezes
+ * que o usuário aplicar/reaplicar. */
+function fixarCoeficientes(itens: ItemInsumoAtividade[], escalaBase: number): ItemInsumoAtividade[] {
+  if (!(escalaBase > 0)) return itens;
+  return itens.map((i) => ({ ...i, coeficiente: i.quantidade / escalaBase }));
+}
+
 type ResultadoBusca =
   | { origem: 'composicao'; item: SinapiComposicaoResumo }
   | { origem: 'insumo'; item: SinapiInsumoResumo };
@@ -101,7 +111,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     setDecompondo(true);
     try {
       const explodidos = await buscarItensComposicaoSinapi(selecionada.item.codigo, { uf, desoneracao, mes }, quantidade);
-      onChangeInsumos(insumosDeComposicaoExplodida(explodidos));
+      onChangeInsumos(fixarCoeficientes(insumosDeComposicaoExplodida(explodidos), quantidade));
       setEscalaInsumos(quantidade);
       setUnidadeComposicao(selecionada.item.unidade);
       onChangeComposicaoOrigem?.({ codigo: selecionada.item.codigo, unidade: selecionada.item.unidade });
@@ -119,7 +129,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     setRestaurando(true);
     try {
       const explodidos = await buscarItensComposicaoSinapi(codigoComposicao, { uf, desoneracao, mes }, escalaInsumos);
-      onChangeInsumos(insumosDeComposicaoExplodida(explodidos));
+      onChangeInsumos(fixarCoeficientes(insumosDeComposicaoExplodida(explodidos), escalaInsumos));
     } finally {
       setRestaurando(false);
     }
@@ -138,6 +148,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       quantidade,
       custoUnitario: insumo.preco ?? 0,
       tipo: classificarTipoInsumo(insumo.classificacao),
+      coeficiente: escalaInsumos > 0 ? quantidade / escalaInsumos : quantidade,
     }]);
     setSelecionada(null);
     setBusca('');
@@ -145,7 +156,16 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   }
 
   function updateInsumo(id: string, patch: Partial<ItemInsumoAtividade>) {
-    onChangeInsumos(insumos.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    onChangeInsumos(insumos.map((i) => {
+      if (i.id !== id) return i;
+      const atualizado = { ...i, ...patch };
+      // editou a Qtd. na mão — refixa o coeficiente a partir desse novo valor, senão a próxima vez
+      // que a Quantidade do serviço mudar, essa edição manual seria perdida/sobrescrita errado.
+      if (patch.quantidade != null && atualizado.tipo !== 'parametro_calculado') {
+        atualizado.coeficiente = escalaInsumos > 0 ? patch.quantidade / escalaInsumos : patch.quantidade;
+      }
+      return atualizado;
+    }));
   }
 
   function removerInsumo(id: string) {
@@ -196,6 +216,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       quantidade,
       custoUnitario,
       tipo: novoInsumo.tipo,
+      coeficiente: escalaInsumos > 0 ? quantidade / escalaInsumos : quantidade,
     }]);
     setNovoInsumo({ descricao: '', unidade: '', quantidade: '1', custoUnitario: '', tipo: 'material', sinapiCodigo: undefined });
     setResultadosManual([]);
@@ -212,10 +233,18 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   const [escalaInsumos, setEscalaInsumos] = useState(1);
   function aplicarEscala(novaEscala: number) {
     if (!(novaEscala > 0) || novaEscala === escalaInsumos) return;
-    const fator = novaEscala / escalaInsumos;
-    // os "parâmetro calculado" (Medidas do ambiente) já vêm com a quantidade final calculada, não
-    // um coeficiente "por 1 unidade" — não escala de novo, senão dobra o valor a cada reaplicação.
-    onChangeInsumos(insumos.map((i) => (i.tipo === 'parametro_calculado' ? i : { ...i, quantidade: i.quantidade * fator })));
+    onChangeInsumos(insumos.map((i) => {
+      // os "parâmetro calculado" (Medidas do ambiente) já vêm com a quantidade final calculada —
+      // não escala de novo, senão dobra o valor a cada reaplicação.
+      if (i.tipo === 'parametro_calculado') return i;
+      // com coeficiente fixo: recalcula sempre do zero (coeficiente × escala nova), nunca multiplica
+      // em cima da quantidade atual — assim aplicar/reaplicar várias vezes nunca acumula erro.
+      if (i.coeficiente != null) return { ...i, quantidade: i.coeficiente * novaEscala };
+      // item sem coeficiente ainda (lançado à mão antes dessa correção) — escala proporcional uma
+      // vez e já fixa o coeficiente a partir de agora, pra não voltar a acumular erro depois.
+      const coef = escalaInsumos > 0 ? i.quantidade / escalaInsumos : i.quantidade;
+      return { ...i, quantidade: coef * novaEscala, coeficiente: coef };
+    }));
     setEscalaInsumos(novaEscala);
   }
 
@@ -249,6 +278,7 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
       quantidade: escalaInsumos,
       custoUnitario: valorPorUnidade,
       tipo: 'mao_de_obra',
+      coeficiente: 1, // "1 por unidade do serviço" — sempre igual à escala, então escala 1:1 com ela
     };
     onChangeInsumos([...insumos, novoItem]);
     setEmpreitaAberto(false);
@@ -405,7 +435,9 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
                       </select>
                     </td>
                     <td><input defaultValue={i.unidade} onBlur={(e) => updateInsumo(i.id, { unidade: e.target.value })} /></td>
-                    <td className="atividade-insumos-table__coef">{escalaInsumos > 0 ? formatNumberBR(i.quantidade / escalaInsumos) : '—'}</td>
+                    <td className="atividade-insumos-table__coef">
+                      {i.coeficiente != null ? formatNumberBR(i.coeficiente) : (escalaInsumos > 0 ? formatNumberBR(i.quantidade / escalaInsumos) : '—')}
+                    </td>
                     <td>
                       <input
                         type="text" inputMode="decimal"

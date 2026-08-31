@@ -57,6 +57,7 @@ export interface ItemInsumoAtividade {
   custoUnitario: number;
   tipo: TipoInsumoAtividade;
   origemCalculo?: string; // tag ("alvenaria", "reboco-parede", "eletrica:<id>"...) usada pra atualizar esta mesma linha ao clicar "Aplicar" de novo nas Medidas do ambiente — ausente = linha lançada à mão, nunca sobrescrita pelo cálculo
+  coeficiente?: number; // quantidade "por 1 unidade" do serviço (ex: 1,77 KG por m² de reboco) — fixo, não muda quando a "Quantidade do serviço" muda; `quantidade` é sempre recalculada como coeficiente × escala, pra reaplicar a escala várias vezes nunca acumular erro
 }
 
 /** Uma abertura na parede (porta ou janela) — desconta da área líquida de alvenaria/reboco. */
