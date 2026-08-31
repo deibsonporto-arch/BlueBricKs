@@ -86,7 +86,7 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
   const [enviandoCotacao, setEnviandoCotacao] = useState(false);
   const [insumos, setInsumos] = useState<ItemInsumoAtividade[]>(() => subatividade?.insumos ?? []);
   const [medidasAmbiente, setMedidasAmbiente] = useState<MedidasAmbiente | undefined>(() => subatividade?.medidasAmbiente);
-  const [composicaoOrigem, setComposicaoOrigem] = useState<{ codigo: number; unidade: string } | undefined>(() => subatividade?.composicaoSinapiOrigem);
+  const [composicaoOrigem, setComposicaoOrigem] = useState<{ codigo: number; unidade: string; quantidade?: number } | undefined>(() => subatividade?.composicaoSinapiOrigem);
   const [buscaModelo, setBuscaModelo] = useState('');
   // quando clica "Aplicar" num item do resumo de Medidas do ambiente (ex: Reboco 37,04 m²), além de
   // atualizar a linha de referência calculada, pede pro campo "Quantidade do serviço" da composição
