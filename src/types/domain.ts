@@ -188,7 +188,7 @@ export interface Subatividade {
   subatividades?: Subatividade[]; // 3º nível (subatividade dentro de subatividade) — quando presente, datas/custos/status desta subatividade são derivados dos filhos, igual a Atividade deriva de subatividades
   faseMapa?: number; // coluna manual (0..10) no Mapa de Dependências — 0 = "Fase 0 (livre)"; usuário arrasta o card pra dentro da coluna
   medidasAmbiente?: MedidasAmbiente; // opcional — largura/comprimento/pé-direito, portas, janelas e pontos elétricos do cômodo, pra calcular m² de alvenaria/reboco/porcelanato e pontos
-  composicaoSinapiOrigem?: { codigo: number; unidade: string }; // composição SINAPI que gerou os insumos atuais — permite "Restaurar valores do SINAPI" mesmo reabrindo a subatividade depois
+  composicaoSinapiOrigem?: { codigo: number; unidade: string; quantidade?: number }; // composição SINAPI que gerou os insumos atuais, com a última "Quantidade do serviço" aplicada — permite "Restaurar valores do SINAPI" e reabrir a subatividade sem perder a escala (senão o campo reseta pra 1 a cada reabertura, e "restaurar" decompõe errado pra escala 1)
 }
 
 export interface Atividade {

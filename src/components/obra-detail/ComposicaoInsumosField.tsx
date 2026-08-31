@@ -112,9 +112,9 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
     try {
       const explodidos = await buscarItensComposicaoSinapi(selecionada.item.codigo, { uf, desoneracao, mes }, quantidade);
       onChangeInsumos(fixarCoeficientes(insumosDeComposicaoExplodida(explodidos), quantidade));
-      setEscalaInsumos(quantidade);
+      setEscalaInsumosState(quantidade);
       setUnidadeComposicao(selecionada.item.unidade);
-      onChangeComposicaoOrigem?.({ codigo: selecionada.item.codigo, unidade: selecionada.item.unidade });
+      onChangeComposicaoOrigem?.({ codigo: selecionada.item.codigo, unidade: selecionada.item.unidade, quantidade });
       onSugerirNome?.(selecionada.item.descricao);
       setSelecionada(null);
       setBusca('');
@@ -230,7 +230,14 @@ export function ComposicaoInsumosField({ uf, etapaNome, insumos, onChangeInsumos
   // "Quantidade" no topo da tabela = escala de tudo — a composição vem decomposta pra 1 unidade
   // (1 m² de reboco, por ex.); mudar esse número aqui multiplica a quantidade de CADA insumo pela
   // razão entre o novo valor e o anterior, sem precisar editar linha por linha.
-  const [escalaInsumos, setEscalaInsumos] = useState(1);
+  // inicializa com a escala que ficou salva na subatividade — sem isso, reabrir o formulário sempre
+  // resetava esse número pra 1, então "Restaurar valores do SINAPI" (que busca a composição de novo
+  // usando esse número) decompunha errado pra escala 1 em vez da escala real salva.
+  const [escalaInsumos, setEscalaInsumosState] = useState(() => composicaoOrigem?.quantidade ?? 1);
+  function setEscalaInsumos(novaEscala: number) {
+    setEscalaInsumosState(novaEscala);
+    if (composicaoOrigem) onChangeComposicaoOrigem?.({ ...composicaoOrigem, quantidade: novaEscala });
+  }
   function aplicarEscala(novaEscala: number) {
     if (!(novaEscala > 0) || novaEscala === escalaInsumos) return;
     onChangeInsumos(insumos.map((i) => {
