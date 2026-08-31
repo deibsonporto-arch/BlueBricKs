@@ -124,6 +124,9 @@ export function RequisicoesTab() {
   const { requisicoes, createRequisicoes, updateRequisicao, deleteRequisicao } = useRequisicoes(obraId);
   const { entradas, createEntrada } = useEstoque(obraId);
   const [recolhidas, setRecolhidas] = useState<Set<string>>(new Set());
+  // lista de itens dentro de cada grupo do "Consolidado por material" — some por padrão, só abre a
+  // que o usuário clicar (o "descricao" do grupo é a chave, já que os grupos não têm id próprio)
+  const [gruposAbertos, setGruposAbertos] = useState<Set<string>>(new Set());
   const [entradaPrefill, setEntradaPrefill] = useState<EntradaEstoquePrefill | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
 
@@ -301,6 +304,14 @@ export function RequisicoesTab() {
     });
   }
 
+  function toggleGrupoAberto(descricao: string) {
+    setGruposAbertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(descricao)) next.delete(descricao); else next.add(descricao);
+      return next;
+    });
+  }
+
   function toggleRecolhida(subatividadeId: string) {
     setRecolhidas((prev) => {
       const next = new Set(prev);
@@ -347,12 +358,21 @@ export function RequisicoesTab() {
               {consolidadoPorMaterial.map((grupo) => {
                 const idsDoGrupo = grupo.itens.map((x) => x.item.id);
                 const algumSelecionado = idsDoGrupo.some((id) => selecionados.has(id));
+                const aberto = gruposAbertos.has(grupo.descricao);
                 return (
                   <div key={grupo.descricao} className="requisicoes-material-card">
                     <div className="requisicoes-material-card__header">
+                      <button
+                        type="button"
+                        className="requisicoes-subetapa__toggle"
+                        onClick={() => toggleGrupoAberto(grupo.descricao)}
+                        aria-label={aberto ? 'Recolher' : 'Expandir'}
+                      >
+                        {aberto ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+                      </button>
                       <strong>{grupo.descricao}</strong>
                       <span className="requisicoes-material-card__total">
-                        Total: {grupo.totaisPorUnidade.map(([un, qtd]) => `${formatNumberBR(qtd)} ${un}`).join(' + ')}
+                        Total: {grupo.totaisPorUnidade.map(([un, qtd]) => `${formatNumberBR(qtd)} ${un}`).join(' + ')} · {grupo.itens.length} {grupo.itens.length === 1 ? 'item' : 'itens'}
                       </span>
                       <button
                         type="button"
@@ -371,6 +391,7 @@ export function RequisicoesTab() {
                         <IconBan size={14} /> Ignorar tudo
                       </button>
                     </div>
+                    {aberto && (
                     <ul className="requisicoes-material-card__lista">
                       {grupo.itens.map(({ item, dias }) => (
                         <li key={item.id} className={classeUrgencia(dias, antecedenciaDias)}>
@@ -398,6 +419,7 @@ export function RequisicoesTab() {
                         </li>
                       ))}
                     </ul>
+                    )}
                   </div>
                 );
               })}
