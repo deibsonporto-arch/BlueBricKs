@@ -4,6 +4,7 @@ import { atividadeRepository } from '../data/repositories/atividadeRepository';
 import { deriveParentStatus, recomputeParentAggregates, resolveSubatividadeDates } from '../utils/subatividades';
 import { resolveAtividadeDates } from '../utils/atividadeSchedule';
 import { generateId } from '../utils/id';
+import { calcularResumoAmbiente } from '../utils/medidasAmbiente';
 import { readCollection, writeCollection } from '../data/storage';
 import { pushCollection } from '../data/apiSync';
 
@@ -132,20 +133,60 @@ function applySubSubatividadeMutation(
 }
 
 /** Corrige recursivamente insumos que vieram das Medidas do ambiente antes de existir o tipo
- * "parâmetro calculado" — ficaram marcados como Material (têm `origemCalculo` mas tipo errado).
+ * "parâmetro calculado" — ficaram marcados como Material (têm `origemCalculo` mas tipo errado). Além
+ * disso migra porcelanato piso/parede pra virar sempre Material separado (regra atual — antes podia
+ * ter sido aplicado como parâmetro calculado único, ou como uma única linha combinada "soma:..." de
+ * quando piso+parede eram somados juntos), sem precisar o usuário reabrir cada subatividade na mão.
  * Devolve a subatividade sem alterações se não achar nada pra corrigir (evita escritas à toa). */
 function corrigirInsumosCalculados(s: Subatividade): Subatividade {
   const filhosCorrigidos = s.subatividades?.map(corrigirInsumosCalculados);
   const filhosMudaram = filhosCorrigidos?.some((f, i) => f !== s.subatividades![i]) ?? false;
 
-  const precisaCorrigirInsumos = (s.insumos ?? []).some((i) => i.origemCalculo && i.tipo !== 'parametro_calculado');
-  if (!precisaCorrigirInsumos && !filhosMudaram) return s;
+  const insumosBase = s.insumos ?? [];
+
+  let insumosCorrigidos = insumosBase.map((i) => {
+    if (i.origemCalculo === 'porcelanato-piso' || i.origemCalculo === 'porcelanato-piso-compra') {
+      return { ...i, tipo: 'material' as const, descricao: 'Porcelanato — piso (calculado)', origemCalculo: 'porcelanato-piso' };
+    }
+    if (i.origemCalculo === 'porcelanato-parede' || i.origemCalculo === 'porcelanato-parede-compra') {
+      return { ...i, tipo: 'material' as const, descricao: 'Porcelanato — parede (calculado)', origemCalculo: 'porcelanato-parede' };
+    }
+    return i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' as const } : i;
+  });
+
+  // linha antiga da "Aplicar soma" (piso+parede combinados numa única linha) — quebra em 2 linhas
+  // de Material separadas, recalculando os m² a partir das Medidas do ambiente salvas
+  const linhaSoma = insumosCorrigidos.find((i) => i.origemCalculo?.startsWith('soma:') && i.origemCalculo.toLowerCase().includes('porcelanato'));
+  if (linhaSoma && s.medidasAmbiente) {
+    const resumo = calcularResumoAmbiente(s.medidasAmbiente);
+    const jaTemPiso = insumosCorrigidos.some((i) => i.origemCalculo === 'porcelanato-piso');
+    const jaTemParede = insumosCorrigidos.some((i) => i.origemCalculo === 'porcelanato-parede');
+    const novasLinhas: Subatividade['insumos'] = [];
+    if (!jaTemPiso && resumo.areaPorcelanatoPiso > 0) {
+      novasLinhas!.push({ id: generateId(), descricao: 'Porcelanato — piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, custoUnitario: 0, tipo: 'material', origemCalculo: 'porcelanato-piso' });
+    }
+    if (!jaTemParede && resumo.areaPorcelanatoParede > 0) {
+      novasLinhas!.push({ id: generateId(), descricao: 'Porcelanato — parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, custoUnitario: 0, tipo: 'material', origemCalculo: 'porcelanato-parede' });
+    }
+    insumosCorrigidos = [...insumosCorrigidos.filter((i) => i.id !== linhaSoma.id), ...(novasLinhas ?? [])];
+  }
+
+  // se sobrou linha duplicada (usuário já tinha aplicado piso/parede de mais de um jeito antigo),
+  // fica só a 1ª
+  const vistos = new Set<string>();
+  insumosCorrigidos = insumosCorrigidos.filter((i) => {
+    if (i.origemCalculo !== 'porcelanato-piso' && i.origemCalculo !== 'porcelanato-parede') return true;
+    if (vistos.has(i.origemCalculo)) return false;
+    vistos.add(i.origemCalculo);
+    return true;
+  });
+
+  const mudouInsumos = insumosCorrigidos.length !== insumosBase.length || insumosCorrigidos.some((i, idx) => i !== insumosBase[idx]);
+  if (!mudouInsumos && !filhosMudaram) return s;
 
   return {
     ...s,
-    insumos: precisaCorrigirInsumos
-      ? s.insumos!.map((i) => (i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' as const } : i))
-      : s.insumos,
+    insumos: mudouInsumos ? insumosCorrigidos : s.insumos,
     subatividades: filhosMudaram ? filhosCorrigidos : s.subatividades,
   };
 }
