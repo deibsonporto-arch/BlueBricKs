@@ -246,9 +246,12 @@ export function RequisicoesTab() {
   // comprar de uma vez e a lista de quem precisa de quanto — ordenado pelo mais urgente primeiro.
   const consolidadoPorMaterial = useMemo(() => {
     const pendentes = requisicoes.filter((r) => ehRequisitavel(r.tipo) && r.status === 'pendente');
+    // agrupa só pela descrição — mesmo item lançado com unidade diferente em subatividades
+    // diferentes (ex: uma porta como M2 e outra como UN) continua sendo "o mesmo item" pra comprar
+    // junto; o total é somado por unidade separadamente, já que M2 e UN não podem virar 1 número só.
     const porDescricao = new Map<string, ItemRequisicao[]>();
     for (const r of pendentes) {
-      const chave = `${r.descricao.trim().toLowerCase()}__${r.unidade.trim().toLowerCase()}`;
+      const chave = r.descricao.trim().toLowerCase();
       const lista = porDescricao.get(chave) ?? [];
       lista.push(r);
       porDescricao.set(chave, lista);
@@ -258,10 +261,11 @@ export function RequisicoesTab() {
         const comDias = itens
           .map((r) => ({ item: r, dias: diasParaInicioDe(r) }))
           .sort((a, b) => (a.dias ?? Infinity) - (b.dias ?? Infinity));
+        const totaisPorUnidade = new Map<string, number>();
+        for (const r of itens) totaisPorUnidade.set(r.unidade, (totaisPorUnidade.get(r.unidade) ?? 0) + r.quantidade);
         return {
           descricao: itens[0].descricao,
-          unidade: itens[0].unidade,
-          totalQuantidade: itens.reduce((s, r) => s + r.quantidade, 0),
+          totaisPorUnidade: [...totaisPorUnidade.entries()],
           itens: comDias,
           diasMaisUrgente: comDias[0]?.dias,
         };
@@ -344,10 +348,12 @@ export function RequisicoesTab() {
                 const idsDoGrupo = grupo.itens.map((x) => x.item.id);
                 const algumSelecionado = idsDoGrupo.some((id) => selecionados.has(id));
                 return (
-                  <div key={`${grupo.descricao}__${grupo.unidade}`} className="requisicoes-material-card">
+                  <div key={grupo.descricao} className="requisicoes-material-card">
                     <div className="requisicoes-material-card__header">
                       <strong>{grupo.descricao}</strong>
-                      <span className="requisicoes-material-card__total">Total: {formatNumberBR(grupo.totalQuantidade)} {grupo.unidade}</span>
+                      <span className="requisicoes-material-card__total">
+                        Total: {grupo.totaisPorUnidade.map(([un, qtd]) => `${formatNumberBR(qtd)} ${un}`).join(' + ')}
+                      </span>
                       <button
                         type="button"
                         className="btn btn-secondary"
