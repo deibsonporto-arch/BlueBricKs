@@ -20,7 +20,7 @@ import { AtividadesTable } from '../../components/obra-detail/AtividadesTable';
 import { AtividadeFormModal } from '../../components/obra-detail/AtividadeFormModal';
 import { SubatividadeFormModal } from '../../components/obra-detail/SubatividadeFormModal';
 import { UsarEtapasPadraoModal } from '../../components/obra-detail/UsarEtapasPadraoModal';
-import type { Atividade, EmpreitadaItem, ItemInsumoAtividade, Subatividade, UnidadeMedida } from '../../types/domain';
+import type { Atividade, Empreitada, EmpreitadaItem, ItemInsumoAtividade, Subatividade, UnidadeMedida } from '../../types/domain';
 import { businessDaysBetween } from '../../utils/dateUtils';
 import { generateId } from '../../utils/id';
 import { ordenarPorSequenciaPadrao } from '../../utils/etapasPadrao';
@@ -70,6 +70,7 @@ export function VisaoGeralTab() {
   const { lembretes, createLembrete, toggleConcluido, deleteLembrete } = useLembretes(obraId);
   const { requisicoes, createRequisicoes, deleteRequisicao } = useRequisicoes(obraId);
   const { entradas } = useEstoque(obraId);
+  const { empreitadas } = useEmpreitadas(obraId);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -82,6 +83,11 @@ export function VisaoGeralTab() {
   const [subSubatividadePaiId, setSubSubatividadePaiId] = useState<string>('');
   const [editingSubatividade, setEditingSubatividade] = useState<Subatividade | undefined>(undefined);
   const [etapasPadraoModalOpen, setEtapasPadraoModalOpen] = useState(false);
+
+  const [empreitaModalOpen, setEmpreitaModalOpen] = useState(false);
+  const [empreitaModalMode, setEmpreitaModalMode] = useState<'create' | 'edit'>('create');
+  const [empreitaEditando, setEmpreitaEditando] = useState<Empreitada | undefined>(undefined);
+  const [empreitaItemPrefill, setEmpreitaItemPrefill] = useState<EmpreitadaItem | undefined>(undefined);
 
   if (!obra) return null;
 
@@ -139,12 +145,7 @@ export function VisaoGeralTab() {
     for (const r of jaEnviados) await deleteRequisicao(r.id);
   }
 
-  const { empreitadas } = useEmpreitadas(obraId);
   const insumosNaEmpreita = new Set(empreitadas.flatMap((e) => e.itens.map((i) => i.origemInsumoId).filter((v): v is string => !!v)));
-  const [empreitaModalOpen, setEmpreitaModalOpen] = useState(false);
-  const [empreitaModalMode, setEmpreitaModalMode] = useState<'create' | 'edit'>('create');
-  const [empreitaEditando, setEmpreitaEditando] = useState<typeof empreitadas[number] | undefined>(undefined);
-  const [empreitaItemPrefill, setEmpreitaItemPrefill] = useState<EmpreitadaItem | undefined>(undefined);
 
   const UNIDADES_EMPREITADA: UnidadeMedida[] = ['un', 'kg', 'm', 'm2', 'm3', 'saco', 'l', 'cx', 'pç', 'verba'];
   function normalizarUnidadeEmpreitada(u: string): UnidadeMedida | undefined {
