@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Atividade, Subatividade } from '../types/domain';
+import type { Atividade, ItemInsumoAtividade, Subatividade } from '../types/domain';
 import { atividadeRepository } from '../data/repositories/atividadeRepository';
 import { deriveParentStatus, recomputeParentAggregates, resolveSubatividadeDates } from '../utils/subatividades';
 import { resolveAtividadeDates } from '../utils/atividadeSchedule';
@@ -143,50 +143,71 @@ function corrigirInsumosCalculados(s: Subatividade): Subatividade {
   const filhosMudaram = filhosCorrigidos?.some((f, i) => f !== s.subatividades![i]) ?? false;
 
   const insumosBase = s.insumos ?? [];
+  const resumo = s.medidasAmbiente ? calcularResumoAmbiente(s.medidasAmbiente) : null;
 
-  let insumosCorrigidos = insumosBase.map((i) => {
-    if (i.origemCalculo === 'porcelanato-piso' || i.origemCalculo === 'porcelanato-piso-compra') {
-      return { ...i, tipo: 'material' as const, descricao: 'Porcelanato — piso (calculado)', origemCalculo: 'porcelanato-piso' };
-    }
-    if (i.origemCalculo === 'porcelanato-parede' || i.origemCalculo === 'porcelanato-parede-compra') {
-      return { ...i, tipo: 'material' as const, descricao: 'Porcelanato — parede (calculado)', origemCalculo: 'porcelanato-parede' };
-    }
-    return i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' as const } : i;
-  });
+  let mudou = false;
+  let queriaPisoLegado = false;
+  let queriaParedeLegado = false;
+  const semLegado: ItemInsumoAtividade[] = [];
 
-  // linha antiga da "Aplicar soma" (piso+parede combinados numa única linha) — quebra em 2 linhas
-  // de Material separadas, recalculando os m² a partir das Medidas do ambiente salvas
-  const linhaSoma = insumosCorrigidos.find((i) => i.origemCalculo?.startsWith('soma:') && i.origemCalculo.toLowerCase().includes('porcelanato'));
-  if (linhaSoma && s.medidasAmbiente) {
-    const resumo = calcularResumoAmbiente(s.medidasAmbiente);
-    const jaTemPiso = insumosCorrigidos.some((i) => i.origemCalculo === 'porcelanato-piso');
-    const jaTemParede = insumosCorrigidos.some((i) => i.origemCalculo === 'porcelanato-parede');
-    const novasLinhas: Subatividade['insumos'] = [];
-    if (!jaTemPiso && resumo.areaPorcelanatoPiso > 0) {
-      novasLinhas!.push({ id: generateId(), descricao: 'Porcelanato — piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, custoUnitario: 0, tipo: 'material', origemCalculo: 'porcelanato-piso' });
+  for (const i of insumosBase) {
+    const tag = i.origemCalculo;
+
+    // formatos antigos de porcelanato (aplicado como compra separada antes de virar padrão, ou
+    // combinado piso+parede numa única linha via "Aplicar soma") — some daqui, uma linha canônica
+    // nova entra no lugar mais abaixo
+    if (tag === 'porcelanato-piso-compra' || tag === 'porcelanato-parede-compra' || (tag?.startsWith('soma:') && tag.toLowerCase().includes('porcelanato'))) {
+      mudou = true;
+      if (tag === 'porcelanato-piso-compra') queriaPisoLegado = true;
+      else if (tag === 'porcelanato-parede-compra') queriaParedeLegado = true;
+      else if (tag) {
+        const chaves = tag.slice('soma:'.length).split(',');
+        if (chaves.includes('porcelanatoPiso')) queriaPisoLegado = true;
+        if (chaves.includes('porcelanatoParede')) queriaParedeLegado = true;
+      }
+      continue;
     }
-    if (!jaTemParede && resumo.areaPorcelanatoParede > 0) {
-      novasLinhas!.push({ id: generateId(), descricao: 'Porcelanato — parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, custoUnitario: 0, tipo: 'material', origemCalculo: 'porcelanato-parede' });
+
+    // já com a tag canônica — só recalcula/corrige em cima da MESMA linha (mesmo id) se o m² atual
+    // das Medidas do ambiente mudou, ou se ainda tinha ficado com tipo/descrição errados
+    if (tag === 'porcelanato-piso' || tag === 'porcelanato-parede') {
+      const descricaoCerta = tag === 'porcelanato-piso' ? 'Porcelanato — piso (calculado)' : 'Porcelanato — parede (calculado)';
+      const areaAtual = resumo ? (tag === 'porcelanato-piso' ? resumo.areaPorcelanatoPiso : resumo.areaPorcelanatoParede) : i.quantidade;
+      const precisaAjustar = i.tipo !== 'material' || i.unidade !== 'm²' || i.descricao !== descricaoCerta || Math.abs(i.quantidade - areaAtual) > 0.001;
+      if (precisaAjustar) {
+        mudou = true;
+        semLegado.push({ ...i, tipo: 'material', unidade: 'm²', descricao: descricaoCerta, quantidade: areaAtual });
+      } else {
+        semLegado.push(i);
+      }
+      continue;
     }
-    insumosCorrigidos = [...insumosCorrigidos.filter((i) => i.id !== linhaSoma.id), ...(novasLinhas ?? [])];
+
+    if (tag && i.tipo !== 'parametro_calculado') {
+      mudou = true;
+      semLegado.push({ ...i, tipo: 'parametro_calculado' });
+    } else {
+      semLegado.push(i);
+    }
   }
 
-  // se sobrou linha duplicada (usuário já tinha aplicado piso/parede de mais de um jeito antigo),
-  // fica só a 1ª
-  const vistos = new Set<string>();
-  insumosCorrigidos = insumosCorrigidos.filter((i) => {
-    if (i.origemCalculo !== 'porcelanato-piso' && i.origemCalculo !== 'porcelanato-parede') return true;
-    if (vistos.has(i.origemCalculo)) return false;
-    vistos.add(i.origemCalculo);
-    return true;
-  });
+  let insumosCorrigidos = semLegado;
+  if (resumo) {
+    const jaTemPiso = insumosCorrigidos.some((i) => i.origemCalculo === 'porcelanato-piso');
+    const jaTemParede = insumosCorrigidos.some((i) => i.origemCalculo === 'porcelanato-parede');
+    if (queriaPisoLegado && !jaTemPiso && resumo.areaPorcelanatoPiso > 0) {
+      insumosCorrigidos = [...insumosCorrigidos, { id: generateId(), descricao: 'Porcelanato — piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, custoUnitario: 0, tipo: 'material', origemCalculo: 'porcelanato-piso' }];
+    }
+    if (queriaParedeLegado && !jaTemParede && resumo.areaPorcelanatoParede > 0) {
+      insumosCorrigidos = [...insumosCorrigidos, { id: generateId(), descricao: 'Porcelanato — parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, custoUnitario: 0, tipo: 'material', origemCalculo: 'porcelanato-parede' }];
+    }
+  }
 
-  const mudouInsumos = insumosCorrigidos.length !== insumosBase.length || insumosCorrigidos.some((i, idx) => i !== insumosBase[idx]);
-  if (!mudouInsumos && !filhosMudaram) return s;
+  if (!mudou && !filhosMudaram) return s;
 
   return {
     ...s,
-    insumos: mudouInsumos ? insumosCorrigidos : s.insumos,
+    insumos: mudou ? insumosCorrigidos : s.insumos,
     subatividades: filhosMudaram ? filhosCorrigidos : s.subatividades,
   };
 }
