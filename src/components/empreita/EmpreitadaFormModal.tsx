@@ -23,6 +23,7 @@ interface EmpreitadaFormModalProps {
   atividades: Atividade[];
   onClose: () => void;
   onSaved: () => void;
+  itemPrefill?: EmpreitadaItem; // veio de "Enviar para empreita" num insumo de mão de obra — some as etapas/serviços do contrato se ainda não tiver um item com o mesmo origemInsumoId
 }
 
 interface FormState {
@@ -71,14 +72,21 @@ function toFormState(e?: Empreitada): FormState {
   };
 }
 
-export function EmpreitadaFormModal({ open, mode, obraId, empreitada, fornecedores, atividades, onClose, onSaved }: EmpreitadaFormModalProps) {
+export function EmpreitadaFormModal({ open, mode, obraId, empreitada, fornecedores, atividades, onClose, onSaved, itemPrefill }: EmpreitadaFormModalProps) {
   const { createEmpreitada, updateEmpreitada } = useEmpreitadas(obraId);
   const [form, setForm] = useState<FormState>(() => toFormState(empreitada));
   const [anexoErro, setAnexoErro] = useState('');
 
   useEffect(() => {
-    if (open) setForm(toFormState(empreitada));
-  }, [open, empreitada]);
+    if (!open) return;
+    const base = toFormState(empreitada);
+    if (itemPrefill && !base.itens.some((i) => i.origemInsumoId && i.origemInsumoId === itemPrefill.origemInsumoId)) {
+      base.itens = [...base.itens, itemPrefill];
+      if (!base.atividadeId && itemPrefill.atividadeId) base.atividadeId = itemPrefill.atividadeId;
+      if (!base.servico.trim()) base.servico = itemPrefill.nome;
+    }
+    setForm(base);
+  }, [open, empreitada, itemPrefill]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));

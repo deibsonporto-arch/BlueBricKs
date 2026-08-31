@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { IconChevronDown, IconChevronUp, IconPlus } from '@tabler/icons-react';
 import { useEmpreitadas } from '../../hooks/useEmpreitadas';
@@ -78,7 +78,7 @@ export function EmpreitaTab() {
   const { nomeEmpresa } = useEmpresaConfig();
   const { empreitadas, createEmpreitada, updateEmpreitada, deleteEmpreitada, registrarMedicoes, atualizarMedicao, removerMedicao, refresh } = useEmpreitadas(obraId);
   const { fornecedores } = useFornecedores();
-  const { atividades, refresh: refreshAtividades } = useAtividades(obraId);
+  const { atividades, updateSubatividade, refresh: refreshAtividades } = useAtividades(obraId);
   const { lancamentos, refresh: refreshLancamentos } = useLancamentos(obraId);
 
   // "Em andamento" primeiro — concluída já está resolvida e não precisa de atenção imediata, fica
@@ -93,6 +93,31 @@ export function EmpreitaTab() {
   );
   const empreitadasCanceladas = useMemo(() => empreitadas.filter((e) => e.status === 'cancelada'), [empreitadas]);
   const [canceladasAbertas, setCanceladasAbertas] = useState(false);
+
+  // um item de empreitada que veio de "Enviar p/ empreita" (tem origemInsumoId) é o lado editável do
+  // vínculo — editar o valor/quantidade dele aqui reflete de volta no insumo de mão de obra da
+  // subatividade de origem automaticamente, sem precisar abrir a Visão Geral pra ajustar de novo
+  useEffect(() => {
+    for (const emp of empreitadas) {
+      for (const item of emp.itens) {
+        if (!item.origemInsumoId || !item.subatividadeId) continue;
+        const atividadeId = item.atividadeId ?? emp.atividadeId;
+        const atividade = atividades.find((a) => a.id === atividadeId);
+        const subatividade = atividade?.subatividades.find((s) => s.id === item.subatividadeId);
+        const insumo = subatividade?.insumos?.find((i) => i.id === item.origemInsumoId);
+        if (!atividade || !subatividade || !insumo) continue;
+
+        const novaQuantidade = item.quantidade ?? insumo.quantidade;
+        const novoCusto = item.quantidade ? (item.valorUnitario ?? insumo.custoUnitario) : (novaQuantidade > 0 ? item.valor / novaQuantidade : insumo.custoUnitario);
+        if (Math.abs(insumo.quantidade - novaQuantidade) < 0.001 && Math.abs(insumo.custoUnitario - novoCusto) < 0.01) continue;
+
+        updateSubatividade(atividade.id, subatividade.id, {
+          insumos: subatividade.insumos!.map((i) => (i.id === insumo.id ? { ...i, quantidade: novaQuantidade, custoUnitario: novoCusto } : i)),
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empreitadas, atividades]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');

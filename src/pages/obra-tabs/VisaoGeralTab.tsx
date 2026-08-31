@@ -9,6 +9,8 @@ import { useFornecedores } from '../../hooks/useFornecedores';
 import { useLembretes } from '../../hooks/useLembretes';
 import { useRequisicoes } from '../../hooks/useRequisicoes';
 import { useEstoque } from '../../hooks/useEstoque';
+import { useEmpreitadas } from '../../hooks/useEmpreitadas';
+import { EmpreitadaFormModal } from '../../components/empreita/EmpreitadaFormModal';
 import { VisaoGeralMetrics } from '../../components/obra-detail/VisaoGeralMetrics';
 import { PagamentosDoDiaCard } from '../../components/obra-detail/PagamentosDoDiaCard';
 import { LembretesCard } from '../../components/obra-detail/LembretesCard';
@@ -18,7 +20,7 @@ import { AtividadesTable } from '../../components/obra-detail/AtividadesTable';
 import { AtividadeFormModal } from '../../components/obra-detail/AtividadeFormModal';
 import { SubatividadeFormModal } from '../../components/obra-detail/SubatividadeFormModal';
 import { UsarEtapasPadraoModal } from '../../components/obra-detail/UsarEtapasPadraoModal';
-import type { Atividade, Subatividade } from '../../types/domain';
+import type { Atividade, EmpreitadaItem, ItemInsumoAtividade, Subatividade, UnidadeMedida } from '../../types/domain';
 import { businessDaysBetween } from '../../utils/dateUtils';
 import { generateId } from '../../utils/id';
 import { ordenarPorSequenciaPadrao } from '../../utils/etapasPadrao';
@@ -135,6 +137,42 @@ export function VisaoGeralTab() {
   async function handleRemoverDaRequisicoes(subatividadeId: string) {
     const jaEnviados = requisicoes.filter((r) => r.subatividadeId === subatividadeId);
     for (const r of jaEnviados) await deleteRequisicao(r.id);
+  }
+
+  const { empreitadas } = useEmpreitadas(obraId);
+  const insumosNaEmpreita = new Set(empreitadas.flatMap((e) => e.itens.map((i) => i.origemInsumoId).filter((v): v is string => !!v)));
+  const [empreitaModalOpen, setEmpreitaModalOpen] = useState(false);
+  const [empreitaModalMode, setEmpreitaModalMode] = useState<'create' | 'edit'>('create');
+  const [empreitaEditando, setEmpreitaEditando] = useState<typeof empreitadas[number] | undefined>(undefined);
+  const [empreitaItemPrefill, setEmpreitaItemPrefill] = useState<EmpreitadaItem | undefined>(undefined);
+
+  const UNIDADES_EMPREITADA: UnidadeMedida[] = ['un', 'kg', 'm', 'm2', 'm3', 'saco', 'l', 'cx', 'pç', 'verba'];
+  function normalizarUnidadeEmpreitada(u: string): UnidadeMedida | undefined {
+    const norm = u.trim().toLowerCase().replace('²', '2').replace('³', '3');
+    return (UNIDADES_EMPREITADA as string[]).includes(norm) ? (norm as UnidadeMedida) : undefined;
+  }
+
+  // "Enviar p/ empreita" num insumo de mão de obra — abre o formulário de empreitada já com um item
+  // pré-preenchido a partir desse insumo (nome, valor, quantidade/unidade se reconhecida), entrando
+  // no contrato dessa etapa se já existir um em andamento, ou começando um novo contrato
+  function handleEnviarParaEmpreita(atividade: Atividade, subatividade: Subatividade, insumo: ItemInsumoAtividade) {
+    const unidade = normalizarUnidadeEmpreitada(insumo.unidade);
+    const item: EmpreitadaItem = {
+      id: generateId(),
+      nome: `${insumo.descricao} — ${subatividade.nome}`,
+      valor: insumo.quantidade * insumo.custoUnitario,
+      quantidade: unidade ? insumo.quantidade : undefined,
+      unidade,
+      valorUnitario: unidade ? insumo.custoUnitario : undefined,
+      atividadeId: atividade.id,
+      subatividadeId: subatividade.id,
+      origemInsumoId: insumo.id,
+    };
+    const existente = empreitadas.find((e) => e.status !== 'cancelada' && e.atividadeId === atividade.id);
+    setEmpreitaItemPrefill(item);
+    setEmpreitaEditando(existente);
+    setEmpreitaModalMode(existente ? 'edit' : 'create');
+    setEmpreitaModalOpen(true);
   }
 
   function handleReordenarPadrao() {
@@ -275,6 +313,8 @@ export function VisaoGeralTab() {
         onEnviarParaRequisicoes={handleEnviarParaRequisicoes}
         onRemoverDaRequisicoes={handleRemoverDaRequisicoes}
         subatividadesComRequisicaoEnviada={subatividadesComRequisicaoEnviada}
+        onEnviarParaEmpreita={handleEnviarParaEmpreita}
+        insumosNaEmpreita={insumosNaEmpreita}
         entradasPorSubatividade={entradasPorSubatividade}
         onNewSubatividade={openNewSubatividade}
         onEditSubatividade={openEditSubatividade}
@@ -283,6 +323,18 @@ export function VisaoGeralTab() {
         onDeleteSubSubatividade={deleteSubSubatividade}
         onNewSubSubatividade={openNewSubSubatividade}
         onEditSubSubatividade={openEditSubSubatividade}
+      />
+
+      <EmpreitadaFormModal
+        open={empreitaModalOpen}
+        mode={empreitaModalMode}
+        obraId={obraId}
+        empreitada={empreitaEditando}
+        fornecedores={fornecedores}
+        atividades={atividades}
+        itemPrefill={empreitaItemPrefill}
+        onClose={() => setEmpreitaModalOpen(false)}
+        onSaved={() => setEmpreitaModalOpen(false)}
       />
 
       <AtividadeFormModal

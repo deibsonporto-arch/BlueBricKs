@@ -456,6 +456,8 @@ export interface EmpreitadaItem {
   unidade?: UnidadeMedida;
   valorUnitario?: number; // valor = quantidade * valorUnitario quando informado
   atividadeId?: string; // etapa/atividade específica desse item — se vazio, herda o atividadeId da empreitada
+  subatividadeId?: string; // subatividade de origem, quando o item veio de um insumo de mão de obra enviado da Visão Geral
+  origemInsumoId?: string; // id do ItemInsumoAtividade que originou esse item — usado pra sincronizar valor/quantidade de volta pro insumo quando editados aqui na empreitada
 }
 
 export interface MedicaoEmpreitada {

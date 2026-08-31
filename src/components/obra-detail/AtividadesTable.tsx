@@ -14,7 +14,7 @@ import {
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react';
-import type { Atividade, EntradaEstoque, Subatividade } from '../../types/domain';
+import type { Atividade, EntradaEstoque, ItemInsumoAtividade, Subatividade } from '../../types/domain';
 import { AtividadeStatusBadge } from '../common/StatusBadge';
 import { isBlocked } from '../../hooks/useAtividades';
 import { businessDaysBetween, durationDays, endDateFromDuration, endDateFromDurationUteis, formatDate } from '../../utils/dateUtils';
@@ -53,6 +53,8 @@ interface AtividadesTableProps {
   onEnviarParaRequisicoes?: (atividade: Atividade, subatividade: Subatividade) => void;
   onRemoverDaRequisicoes?: (subatividadeId: string) => void;
   subatividadesComRequisicaoEnviada?: Set<string>;
+  onEnviarParaEmpreita?: (atividade: Atividade, subatividade: Subatividade, insumo: ItemInsumoAtividade) => void;
+  insumosNaEmpreita?: Set<string>; // ids de ItemInsumoAtividade já vinculados a algum item de empreitada (origemInsumoId)
   entradasPorSubatividade?: Map<string, EntradaEstoque[]>;
   onNewSubatividade: (atividadeId: string) => void;
   onEditSubatividade: (atividadeId: string, subatividade: Subatividade) => void;
@@ -86,6 +88,8 @@ export function AtividadesTable({
   onEnviarParaRequisicoes,
   onRemoverDaRequisicoes,
   subatividadesComRequisicaoEnviada,
+  onEnviarParaEmpreita,
+  insumosNaEmpreita,
   entradasPorSubatividade,
   onNewSubatividade,
   onEditSubatividade,
@@ -652,6 +656,7 @@ export function AtividadesTable({
                                           <th>Preço unit.</th>
                                           <th>Total</th>
                                           <th></th>
+                                          <th></th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -664,6 +669,24 @@ export function AtividadesTable({
                                             <td>{formatNumberBR(i.quantidade)}</td>
                                             <td>{formatBRL(i.custoUnitario)}</td>
                                             <td>{formatBRL(i.quantidade * i.custoUnitario)}</td>
+                                            <td>
+                                              {i.tipo === 'mao_de_obra' && onEnviarParaEmpreita && (
+                                                insumosNaEmpreita?.has(i.id) ? (
+                                                  <span className="subativ-insumos__empreita-badge" title="Já vinculado a uma empreitada — edite o valor lá que atualiza aqui também">
+                                                    ✓ Na empreita
+                                                  </span>
+                                                ) : (
+                                                  <button
+                                                    type="button"
+                                                    className="btn btn-ghost subativ-insumos__empreita-btn"
+                                                    onClick={() => onEnviarParaEmpreita(a, s, i)}
+                                                    title="Enviar essa mão de obra para virar (ou entrar n)um contrato de empreitada"
+                                                  >
+                                                    Enviar p/ empreita
+                                                  </button>
+                                                )
+                                              )}
+                                            </td>
                                             <td>
                                               <button
                                                 type="button"
