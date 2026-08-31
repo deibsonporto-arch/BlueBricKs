@@ -115,7 +115,10 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
     } else {
       setInsumos([...insumos, { id: generateId(), descricao: opts.descricao, unidade: opts.unidade, quantidade: opts.quantidade, custoUnitario: 0, tipo: opts.tipo, origemCalculo: opts.tag }]);
     }
-    if (opts.quantidade > 0) setEscalaPedida({ valor: opts.quantidade, ts: Date.now() });
+    // só empurra a "Quantidade do serviço" da composição quando é mesmo um parâmetro de base pro
+    // cálculo (ex: m² de reboco pra escalar a composição de reboco toda) — uma compra avulsa (ex:
+    // "Porcelanato — piso" como item de material separado) não deve mexer na escala de mais nada.
+    if (opts.tipo === 'parametro_calculado' && opts.quantidade > 0) setEscalaPedida({ valor: opts.quantidade, ts: Date.now() });
   }
 
   const atividadePai = todasAtividades.find((a) => a.id === atividadeId);

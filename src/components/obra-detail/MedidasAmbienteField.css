@@ -149,12 +149,15 @@
 }
 
 .medidas-ambiente__resumo-linha {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto auto auto;
+  display: flex;
   align-items: center;
   gap: 12px;
   font-size: 13px;
   padding: 4px 0;
+}
+
+.medidas-ambiente__resumo-linha > span:first-of-type {
+  flex: 1;
 }
 
 .medidas-ambiente__soma-selecionados {
@@ -184,6 +187,16 @@
 }
 
 .medidas-ambiente__ajuste-btn.is-ativo {
+  color: var(--color-primary);
+}
+
+.medidas-ambiente__compra-btn {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.medidas-ambiente__compra-btn:hover {
   color: var(--color-primary);
 }
 
