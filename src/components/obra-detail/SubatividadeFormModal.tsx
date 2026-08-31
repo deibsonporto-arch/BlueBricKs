@@ -98,7 +98,27 @@ export function SubatividadeFormModal({ open, mode, obraId, obra, atividadeId, s
       setForm(toFormState(subatividade));
       // corrige insumos antigos que vieram das Medidas do ambiente antes de existir o tipo
       // "parâmetro calculado" — tinham origemCalculo mas ficaram marcados como Material
-      setInsumos((subatividade?.insumos ?? []).map((i) => (i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' } : i)));
+      const corrigidos = (subatividade?.insumos ?? []).map((i) => {
+        // porcelanato piso/parede virou regra: sempre item de Material separado (compra própria),
+        // nunca mais parâmetro calculado — migra sozinho quem já tinha sido aplicado do jeito antigo,
+        // e normaliza a tag pra bater com o que "Aplicar" usa agora (senão clicar de novo cria outra linha)
+        if (i.origemCalculo === 'porcelanato-piso' || i.origemCalculo === 'porcelanato-piso-compra') {
+          return { ...i, tipo: 'material' as const, descricao: 'Porcelanato — piso (calculado)', origemCalculo: 'porcelanato-piso' };
+        }
+        if (i.origemCalculo === 'porcelanato-parede' || i.origemCalculo === 'porcelanato-parede-compra') {
+          return { ...i, tipo: 'material' as const, descricao: 'Porcelanato — parede (calculado)', origemCalculo: 'porcelanato-parede' };
+        }
+        return i.origemCalculo && i.tipo !== 'parametro_calculado' ? { ...i, tipo: 'parametro_calculado' as const } : i;
+      });
+      // se sobrou linha duplicada (ex: usuário já tinha clicado nos dois botões antigos, "Aplicar" e
+      // "+ compra separada", pra piso ou parede), fica só a 1ª — a 2ª some daqui e não vai mais voltar
+      const vistos = new Set<string>();
+      setInsumos(corrigidos.filter((i) => {
+        if (!i.origemCalculo || (i.origemCalculo !== 'porcelanato-piso' && i.origemCalculo !== 'porcelanato-parede')) return true;
+        if (vistos.has(i.origemCalculo)) return false;
+        vistos.add(i.origemCalculo);
+        return true;
+      }));
       setMedidasAmbiente(subatividade?.medidasAmbiente);
       setComposicaoOrigem(subatividade?.composicaoSinapiOrigem);
       setBuscaModelo('');

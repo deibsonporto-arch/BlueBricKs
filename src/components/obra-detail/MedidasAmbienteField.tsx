@@ -276,8 +276,7 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 config={m.configPorcelanatoPiso}
                 onConfigChange={(cfg) => atualizar({ configPorcelanatoPiso: cfg })}
                 onRemover={() => removerItemAtivo('porcelanatoPiso')}
-                onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato para piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'parametro_calculado' })}
-                onAplicarComoCompra={() => onAplicarInsumo({ tag: 'porcelanato-piso-compra', descricao: 'Porcelanato — piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'material' })}
+                onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-piso', descricao: 'Porcelanato — piso (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoPiso, tipo: 'material' })}
                 selecionado={selecionados.includes('porcelanatoPiso')}
                 onToggleSelecionado={() => toggleSelecionado('porcelanatoPiso')}
               />
@@ -289,8 +288,7 @@ export function MedidasAmbienteField({ medidas, onChangeMedidas, onAplicarInsumo
                 config={m.configPorcelanatoParede}
                 onConfigChange={(cfg) => atualizar({ configPorcelanatoParede: cfg })}
                 onRemover={() => removerItemAtivo('porcelanatoParede')}
-                onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato para parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'parametro_calculado' })}
-                onAplicarComoCompra={() => onAplicarInsumo({ tag: 'porcelanato-parede-compra', descricao: 'Porcelanato — parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'material' })}
+                onAplicar={() => onAplicarInsumo({ tag: 'porcelanato-parede', descricao: 'Porcelanato — parede (calculado)', unidade: 'm²', quantidade: resumo.areaPorcelanatoParede, tipo: 'material' })}
                 selecionado={selecionados.includes('porcelanatoParede')}
                 onToggleSelecionado={() => toggleSelecionado('porcelanatoParede')}
               />
@@ -346,7 +344,6 @@ interface LinhaResumoItemProps {
   onConfigChange: (cfg: ConfigItemAmbiente | undefined) => void;
   onRemover: () => void;
   onAplicar: () => void;
-  onAplicarComoCompra?: () => void; // pra itens que são material de compra direto (ex: porcelanato) — cria uma linha de Material própria, separada da composição/mão de obra, que não se mistura com outro item (piso não soma com parede) e vai sozinha pra Requisições
   selecionado: boolean;
   onToggleSelecionado: () => void;
 }
@@ -375,7 +372,7 @@ function novoSegmentoPlano(larguraPadrao: number, comprimentoPadrao: number): Se
  * ajuste) um mini formulário com os campos certos pro tipo do item: parede (alvenaria, reboco,
  * porcelanato-parede, pintura) usa metro linear x altura; plano (piso, forro) usa largura x
  * comprimento. Campo vazio = usa o valor geral do ambiente. */
-function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onRemover, onAplicar, onAplicarComoCompra, selecionado, onToggleSelecionado }: LinhaResumoItemProps) {
+function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onRemover, onAplicar, selecionado, onToggleSelecionado }: LinhaResumoItemProps) {
   // sempre começa fechado, mesmo quando já tem um ajuste salvo — só expande se o usuário clicar
   // no ícone; o valor calculado (com o ajuste aplicado) já aparece na linha, então não precisa
   // abrir o painel só pra "avisar" que tem uma personalização.
@@ -432,20 +429,9 @@ function LinhaResumoItem({ label, tipoItem, area, m, config, onConfigChange, onR
           <IconAdjustments size={14} />
         </button>
         <strong>{formatNumberBR(area)} m²</strong>
-        <button type="button" className="btn btn-secondary" disabled={area <= 0} onClick={onAplicar} title="Usa como base pra escalar a composição/mão de obra inteira lá embaixo">
+        <button type="button" className="btn btn-secondary" disabled={area <= 0} onClick={onAplicar}>
           Aplicar
         </button>
-        {onAplicarComoCompra && (
-          <button
-            type="button"
-            className="btn btn-ghost medidas-ambiente__compra-btn"
-            disabled={area <= 0}
-            onClick={onAplicarComoCompra}
-            title="Manda como item de Material separado, com esse m² fixo — não mistura com outro item (ex: piso não soma com parede) e não muda a escala da composição"
-          >
-            + compra separada
-          </button>
-        )}
         <button type="button" className="btn btn-ghost" onClick={onRemover} aria-label={`Tirar ${label} do resumo`} title="Tirar do resumo (não apaga o ajuste, só deixa de mostrar)">
           <IconX size={14} />
         </button>
