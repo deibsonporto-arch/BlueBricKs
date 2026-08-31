@@ -332,6 +332,14 @@ export function RequisicoesTab() {
           <h2>Requisições</h2>
           <p className="requisicoes-tab__hint">Materiais e aluguéis pra requisitar/comprar — a mão de obra aparece junto só como referência de contexto.</p>
         </div>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={sincronizarComVisaoGeral}
+          title="Força puxar de novo os insumos atuais de todas as subatividades (não mexe no que já foi marcado requisitado/ignorado)"
+        >
+          <IconRefresh size={14} /> Atualizar
+        </button>
         <label className="requisicoes-antecedencia">
           Enviar sozinho pra Requisições com
           <input
