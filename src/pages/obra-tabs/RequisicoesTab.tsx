@@ -198,7 +198,11 @@ export function RequisicoesTab() {
   // mantém as linhas já enviadas em dia com os insumos atuais da subatividade — editou a
   // quantidade/custo na Visão Geral, atualiza aqui também sozinho (linhas já "requisitado" não
   // são tocadas, pra não desfazer uma compra já feita).
-  function sincronizarComVisaoGeral() {
+  // sub-rotina compartilhada entre o efeito automático e o botão "Atualizar" manual — devolve
+  // quantas linhas mexeu, pra dar pra mostrar um feedback visível de que rodou de verdade
+  function sincronizarComVisaoGeral(): { atualizadas: number; criadas: number } {
+    let atualizadas = 0;
+    let criadas = 0;
     for (const a of atividades) {
       for (const s of a.subatividades) {
         if (s.concluida) continue; // já terminou — não precisa mais mandar/atualizar nada pra requisição
@@ -207,6 +211,7 @@ export function RequisicoesTab() {
         const insumosMateriais = (s.insumos ?? []).filter((i) => ehRequisitavel(i.tipo));
         const { atualizacoes, novos } = sincronizarSubatividade(requisicoesDaSub, insumosMateriais);
         for (const u of atualizacoes) updateRequisicao(u.id, u.patch);
+        atualizadas += atualizacoes.length;
         if (novos.length > 0) {
           const now = new Date().toISOString();
           createRequisicoes(
@@ -227,8 +232,19 @@ export function RequisicoesTab() {
               updatedAt: now,
             })),
           );
+          criadas += novos.length;
         }
       }
+    }
+    return { atualizadas, criadas };
+  }
+
+  function handleAtualizarManual() {
+    const { atualizadas, criadas } = sincronizarComVisaoGeral();
+    if (atualizadas === 0 && criadas === 0) {
+      alert('Já está tudo em dia — nenhuma linha precisou mudar. Se algo ainda parece errado, pode ser o preview do navegador desatualizado: recarregue a página.');
+    } else {
+      alert(`Atualizado: ${criadas} linha(s) nova(s), ${atualizadas} linha(s) com quantidade/custo mudado.`);
     }
   }
 
@@ -335,7 +351,7 @@ export function RequisicoesTab() {
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={sincronizarComVisaoGeral}
+          onClick={handleAtualizarManual}
           title="Força puxar de novo os insumos atuais de todas as subatividades (não mexe no que já foi marcado requisitado/ignorado)"
         >
           <IconRefresh size={14} /> Atualizar
