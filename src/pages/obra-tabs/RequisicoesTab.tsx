@@ -145,14 +145,6 @@ export function RequisicoesTab() {
     return mapa;
   }, [atividades]);
 
-  // limpa requisições antigas que foram mandadas antes de existir o tipo "parâmetro calculado" —
-  // ficaram marcadas como Material só por causa do nome "(calculado)" no final da descrição
-  useEffect(() => {
-    const antigas = requisicoes.filter((r) => r.tipo !== 'parametro_calculado' && r.descricao.trim().endsWith('(calculado)'));
-    for (const r of antigas) deleteRequisicao(r.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requisicoes]);
-
   // envia sozinho pra Requisições qualquer subatividade com insumos de material/aluguel que entrou
   // na janela de antecedência configurada (e ainda não foi enviada, manual ou automaticamente).
   useEffect(() => {
