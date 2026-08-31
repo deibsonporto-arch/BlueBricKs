@@ -154,6 +154,18 @@
 }
 .requisicoes-urgencia--tranquila .requisicoes-material-card__data { color: var(--color-success, #2f9e44); }
 
+.requisicoes-material-card__data-urgente {
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+.requisicoes-material-card__data-urgente.requisicoes-urgencia--atrasada { color: var(--status-atrasada, #e03131); }
+.requisicoes-material-card__data-urgente.requisicoes-urgencia--critica { color: #f76707; }
+.requisicoes-material-card__data-urgente.requisicoes-urgencia--proxima { color: #a37a00; }
+.requisicoes-material-card__data-urgente.requisicoes-urgencia--tranquila { color: var(--color-success, #2f9e44); }
+
 .requisicoes-table tr.requisicoes-urgencia--atrasada { background: rgba(224, 49, 49, 0.06); }
 .requisicoes-table tr.requisicoes-urgencia--critica { background: rgba(247, 103, 7, 0.05); }
 .requisicoes-table tr.requisicoes-urgencia--proxima { background: rgba(245, 184, 0, 0.06); }

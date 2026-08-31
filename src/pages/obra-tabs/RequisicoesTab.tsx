@@ -54,6 +54,16 @@ function agruparPorEtapa(requisicoes: ItemRequisicao[]): GrupoEtapa[] {
   });
 }
 
+/** Texto "início em Xd — DD/MM" (ou "atrasada"/"começa hoje") a partir de dias-até-início e a data
+ * de início em si — usado tanto na linha do item quanto no resumo do grupo (mostrando a mais urgente
+ * mesmo com o grupo recolhido, pra dar pra priorizar sem precisar abrir cada um). */
+function textoData(dias: number | undefined, dataInicio: string | undefined): string {
+  if (dias == null || !dataInicio) return '—';
+  if (dias < 0) return `atrasada · início era ${formatDate(dataInicio)}`;
+  if (dias === 0) return 'começa hoje';
+  return `início em ${dias}d — ${formatDate(dataInicio)}`;
+}
+
 /** Classe de urgência a partir de quantos dias faltam pro início da tarefa dona do item — vermelho
  * (já era pra ter começado), laranja (começa em até 2 dias), amarelo (dentro da janela de
  * antecedência configurada) ou neutro (ainda folgado). */
@@ -400,6 +410,9 @@ export function RequisicoesTab() {
                       <span className="requisicoes-material-card__total">
                         Total: {grupo.totaisPorUnidade.map(([un, qtd]) => `${formatNumberBR(qtd)} ${un}`).join(' + ')} · {grupo.itens.length} {grupo.itens.length === 1 ? 'item' : 'itens'}
                       </span>
+                      <span className={`requisicoes-material-card__data-urgente ${classeUrgencia(grupo.diasMaisUrgente, antecedenciaDias)}`}>
+                        {textoData(grupo.diasMaisUrgente, infoSubatividade.get(grupo.itens[0]?.item.subatividadeId)?.dataInicio)}
+                      </span>
                       <button
                         type="button"
                         className="btn btn-secondary"
@@ -425,13 +438,7 @@ export function RequisicoesTab() {
                           <span className="requisicoes-material-card__qtd">{formatNumberBR(item.quantidade)} {item.unidade}</span>
                           <span className="requisicoes-material-card__origem">{item.subatividadeNome} <small>({item.atividadeNome})</small></span>
                           <span className="requisicoes-material-card__data">
-                            {dias == null
-                              ? '—'
-                              : dias < 0
-                                ? `atrasada · início era ${formatDate(infoSubatividade.get(item.subatividadeId)!.dataInicio)}`
-                                : dias === 0
-                                  ? 'começa hoje'
-                                  : `início em ${dias}d — ${formatDate(infoSubatividade.get(item.subatividadeId)!.dataInicio)}`}
+                            {textoData(dias, infoSubatividade.get(item.subatividadeId)?.dataInicio)}
                           </span>
                           <button
                             type="button"
