@@ -287,6 +287,16 @@ export function RequisicoesTab() {
     });
   }
 
+  async function ignorarGrupo(ids: string[]) {
+    if (!confirm(`Tirar essa lista inteira (${ids.length} ${ids.length === 1 ? 'item' : 'itens'}) da requisição? Não volta a aparecer sozinha depois.`)) return;
+    for (const id of ids) await updateRequisicao(id, { status: 'ignorado', updatedAt: new Date().toISOString() });
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
+  }
+
   function toggleRecolhida(subatividadeId: string) {
     setRecolhidas((prev) => {
       const next = new Set(prev);
@@ -345,6 +355,14 @@ export function RequisicoesTab() {
                         onClick={() => marcarSelecionadosComoRequisitado(idsDoGrupo.filter((id) => selecionados.has(id)))}
                       >
                         Marcar selecionados como requisitado
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => ignorarGrupo(idsDoGrupo)}
+                        title="Tirar TODA essa lista da requisição (ex: material já incluso na empreitada) — não volta a aparecer sozinho"
+                      >
+                        <IconBan size={14} /> Ignorar tudo
                       </button>
                     </div>
                     <ul className="requisicoes-material-card__lista">
