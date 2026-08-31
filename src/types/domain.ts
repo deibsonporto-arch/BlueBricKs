@@ -548,7 +548,7 @@ export interface Cotacao {
 
 // ---------- Módulo — Requisições ----------
 
-export type StatusRequisicao = 'pendente' | 'requisitado';
+export type StatusRequisicao = 'pendente' | 'requisitado' | 'ignorado'; // ignorado = não precisa comprar (ex: material já incluso no valor da empreitada) — fica fora do consolidado e não volta a ser recriado pela sincronização automática com a Visão Geral
 
 /** Um insumo (material, mão de obra ou aluguel) enviado da lista de insumos de uma subatividade pra
  * fila de requisições — quem faz a compra/locação vê tudo já agrupado por etapa/subetapa, sem

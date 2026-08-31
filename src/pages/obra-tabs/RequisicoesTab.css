@@ -267,6 +267,20 @@
   text-decoration: line-through;
 }
 
+.requisicoes-table tr.is-ignorado {
+  color: var(--color-text-muted);
+  opacity: 0.55;
+}
+
+.requisicoes-ignorado-badge {
+  font-style: italic;
+}
+
+.requisicoes-table__acoes {
+  display: flex;
+  gap: 2px;
+}
+
 .requisicoes-entrada-btn {
   display: inline-flex;
   align-items: center;

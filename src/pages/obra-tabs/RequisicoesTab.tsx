@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconChevronDown, IconChevronRight, IconPackageImport, IconRefresh, IconTrash } from '@tabler/icons-react';
+import { IconBan, IconChevronDown, IconChevronRight, IconPackageImport, IconRefresh, IconTrash } from '@tabler/icons-react';
 import { useAtividades } from '../../hooks/useAtividades';
 import { useRequisicoes } from '../../hooks/useRequisicoes';
 import { useEstoque } from '../../hooks/useEstoque';
@@ -73,18 +73,21 @@ function sincronizarSubatividade(
   requisicoesDaSub: ItemRequisicao[],
   insumosMateriais: { descricao: string; unidade: string; quantidade: number; custoUnitario: number; tipo: ItemRequisicao['tipo'] }[],
 ) {
-  const pendentes = requisicoesDaSub.filter((r) => r.status === 'pendente' && ehRequisitavel(r.tipo));
+  // "ignorado" (ex: material incluso na empreitada) conta como "já existe" pra não voltar a ser
+  // recriado sozinho — mas só os "pendente" são de fato atualizados quando o insumo muda.
+  const existentes = requisicoesDaSub.filter((r) => ehRequisitavel(r.tipo));
   const usadas = new Set<string>();
   const atualizacoes: { id: string; patch: Partial<ItemRequisicao> }[] = [];
   const novos: typeof insumosMateriais = [];
 
   for (const insumo of insumosMateriais) {
-    const match = pendentes.find((r) => !usadas.has(r.id) && r.descricao.trim().toLowerCase() === insumo.descricao.trim().toLowerCase());
+    const match = existentes.find((r) => !usadas.has(r.id) && r.descricao.trim().toLowerCase() === insumo.descricao.trim().toLowerCase());
     if (!match) {
       novos.push(insumo);
       continue;
     }
     usadas.add(match.id);
+    if (match.status !== 'pendente') continue;
     if (match.quantidade !== insumo.quantidade || match.custoUnitario !== insumo.custoUnitario || match.unidade !== insumo.unidade || match.tipo !== insumo.tipo) {
       atualizacoes.push({
         id: match.id,
@@ -359,6 +362,15 @@ export function RequisicoesTab() {
                                   ? 'começa hoje'
                                   : `início em ${dias}d — ${formatDate(infoSubatividade.get(item.subatividadeId)!.dataInicio)}`}
                           </span>
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            onClick={() => updateRequisicao(item.id, { status: 'ignorado', updatedAt: new Date().toISOString() })}
+                            aria-label="Tirar da requisição"
+                            title="Tirar da requisição (ex: material já incluso na empreitada) — não volta a aparecer sozinho"
+                          >
+                            <IconBan size={14} />
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -374,7 +386,7 @@ export function RequisicoesTab() {
           {grupo.subgrupos.map((sub) => {
             const maoDeObra = sub.itens.filter((i) => i.tipo === 'mao_de_obra');
             const materiaisEAlugueis = sub.itens.filter((i) => ehRequisitavel(i.tipo));
-            const totalRequisitar = materiaisEAlugueis.reduce((s, i) => s + i.quantidade * i.custoUnitario, 0);
+            const totalRequisitar = materiaisEAlugueis.filter((i) => i.status !== 'ignorado').reduce((s, i) => s + i.quantidade * i.custoUnitario, 0);
             const recolhida = recolhidas.has(sub.subatividadeId);
             return (
               <div key={sub.subatividadeId} className="requisicoes-subetapa">
@@ -444,17 +456,18 @@ export function RequisicoesTab() {
                             const jaDeuEntrada = requisicoesComEntrada.has(i.id);
                             const dias = diasParaInicioDe(i);
                             return (
-                            <tr key={i.id} className={`${i.status === 'requisitado' ? 'is-requisitado' : ''} ${classeUrgencia(dias, antecedenciaDias)}`}>
+                            <tr key={i.id} className={`${i.status === 'requisitado' ? 'is-requisitado' : ''} ${i.status === 'ignorado' ? 'is-ignorado' : ''} ${classeUrgencia(dias, antecedenciaDias)}`}>
                               <td>
                                 <input
                                   type="checkbox"
                                   checked={i.status === 'requisitado'}
+                                  disabled={i.status === 'ignorado'}
                                   onChange={() => updateRequisicao(i.id, { status: i.status === 'requisitado' ? 'pendente' : 'requisitado', updatedAt: new Date().toISOString() })}
                                   title="Marcar como requisitado"
                                 />
                               </td>
                               <td>{i.tipo === 'aluguel' ? 'Aluguel' : 'Material'}</td>
-                              <td>{i.descricao}</td>
+                              <td>{i.descricao}{i.status === 'ignorado' && <span className="requisicoes-ignorado-badge"> · ignorado</span>}</td>
                               <td>{i.unidade}</td>
                               <td>{formatNumberBR(i.quantidade)}</td>
                               <td>{formatBRL(i.custoUnitario)}</td>
@@ -484,8 +497,17 @@ export function RequisicoesTab() {
                                   </button>
                                 ) : null}
                               </td>
-                              <td>
-                                <button type="button" className="btn btn-ghost" onClick={() => deleteRequisicao(i.id)} aria-label="Remover da requisição">
+                              <td className="requisicoes-table__acoes">
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost"
+                                  onClick={() => updateRequisicao(i.id, { status: i.status === 'ignorado' ? 'pendente' : 'ignorado', updatedAt: new Date().toISOString() })}
+                                  aria-label={i.status === 'ignorado' ? 'Reativar na requisição' : 'Tirar da requisição'}
+                                  title={i.status === 'ignorado' ? 'Reativar — voltar a requisitar esse material' : 'Tirar da requisição (ex: material já incluso na empreitada) — não volta a aparecer sozinho'}
+                                >
+                                  <IconBan size={14} />
+                                </button>
+                                <button type="button" className="btn btn-ghost" onClick={() => deleteRequisicao(i.id)} aria-label="Excluir a linha" title="Excluir a linha (se o insumo continuar na subatividade, a sincronização pode recriar essa linha)">
                                   <IconTrash size={14} />
                                 </button>
                               </td>
