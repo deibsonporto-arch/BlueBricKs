@@ -145,6 +145,16 @@ export function RequisicoesTab() {
     return mapa;
   }, [atividades]);
 
+  // limpa linhas órfãs de testes antigos de porcelanato piso/parede — de antes do nome padronizar
+  // pra sempre terminar em "(calculado)" — que ficaram presas sem nunca mais serem atualizadas nem
+  // apagadas sozinhas, duplicando o grupo no Consolidado por material
+  const DESCRICOES_ORFAS = new Set(['porcelanato — piso', 'porcelanato — parede']);
+  useEffect(() => {
+    const orfas = requisicoes.filter((r) => DESCRICOES_ORFAS.has(r.descricao.trim().toLowerCase()));
+    for (const r of orfas) deleteRequisicao(r.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requisicoes]);
+
   // envia sozinho pra Requisições qualquer subatividade com insumos de material/aluguel que entrou
   // na janela de antecedência configurada (e ainda não foi enviada, manual ou automaticamente).
   useEffect(() => {
