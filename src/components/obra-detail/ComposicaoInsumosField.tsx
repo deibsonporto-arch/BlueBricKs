@@ -21,7 +21,7 @@ interface ComposicaoInsumosFieldProps {
   insumos: ItemInsumoAtividade[];
   onChangeInsumos: (insumos: ItemInsumoAtividade[]) => void;
   onSugerirNome?: (nome: string) => void; // chamado ao decompor pela 1ª vez, se o nome do form ainda estiver vazio
-  composicaoOrigem?: { codigo: number; unidade: string }; // composição SINAPI salva que gerou os insumos atuais (pra reabrir e ainda poder "Restaurar valores do SINAPI")
+  composicaoOrigem?: { codigo: number; unidade: string; quantidade?: number }; // composição SINAPI salva que gerou os insumos atuais (pra reabrir e ainda poder "Restaurar valores do SINAPI")
   onChangeComposicaoOrigem?: (origem: { codigo: number; unidade: string } | undefined) => void;
   escalaPedida?: { valor: number; ts: number } | null; // pedido externo (ex: "Aplicar" nas Medidas do ambiente) pra já jogar a "Quantidade do serviço" pra esse valor
 }
