@@ -1089,14 +1089,9 @@ export function DiarioDeObraTab() {
                     <div className="diario-print-dia__empreitada">
                       <p className="diario-print-dia__empreitada-titulo">Checklist de ferramentas</p>
                       {(e.checklistFerramentas ?? []).map((c) => (
-                        <div key={c.id} className="diario-print-dia__empreitada-item">
-                          <p style={{ margin: 0 }}>{c.nome} — {c.limpa ? 'Limpa' : 'Não limpa'}</p>
-                          {c.foto && (
-                            <div className="diario-print-fotos">
-                              <img src={fotosResolvidas[c.foto.id] ?? c.foto.dataUrl} alt={c.foto.nome} />
-                            </div>
-                          )}
-                        </div>
+                        <p key={c.id} className="diario-print-dia__empreitada-item">
+                          {c.nome} — {c.limpa ? 'Limpa' : 'Não limpa'}
+                        </p>
                       ))}
                     </div>
                   )}
@@ -1104,6 +1099,13 @@ export function DiarioDeObraTab() {
                     <div className="diario-print-fotos">
                       {e.fotos.map((f) => (
                         <img key={f.id} src={fotosResolvidas[f.id] ?? f.dataUrl} alt={f.nome} />
+                      ))}
+                    </div>
+                  )}
+                  {(e.checklistFerramentas ?? []).some((c) => c.foto) && (
+                    <div className="diario-print-fotos">
+                      {(e.checklistFerramentas ?? []).filter((c) => c.foto).map((c) => (
+                        <img key={c.foto!.id} src={fotosResolvidas[c.foto!.id] ?? c.foto!.dataUrl} alt={c.foto!.nome} />
                       ))}
                     </div>
                   )}

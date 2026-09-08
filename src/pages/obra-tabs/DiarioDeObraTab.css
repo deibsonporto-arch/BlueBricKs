@@ -640,7 +640,4 @@
     display: block;
   }
 
-  .diario-print-dia {
-    page-break-inside: avoid;
-  }
 }
