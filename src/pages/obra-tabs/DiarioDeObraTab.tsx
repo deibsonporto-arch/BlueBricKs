@@ -538,7 +538,12 @@ export function DiarioDeObraTab() {
     if (relatorioTipo === 'completo') {
       setResolvendoRelatorio(true);
       const pares = await Promise.all(
-        filtradas.flatMap((e) => e.fotos.map((f) => loadAnexoDataUrl(f).then((url) => [f.id, url] as const))),
+        filtradas.flatMap((e) => [
+          ...e.fotos.map((f) => loadAnexoDataUrl(f).then((url) => [f.id, url] as const)),
+          ...(e.checklistFerramentas ?? [])
+            .filter((c) => c.foto)
+            .map((c) => loadAnexoDataUrl(c.foto!).then((url) => [c.foto!.id, url] as const)),
+        ]),
       );
       mapa = Object.fromEntries(pares);
     }
@@ -1060,6 +1065,21 @@ export function DiarioDeObraTab() {
                     </p>
                   )}
                   {e.observacoes && <p className="diario-print-dia__obs"><em>Observações: {e.observacoes}</em></p>}
+                  {(e.checklistFerramentas ?? []).length > 0 && (
+                    <div className="diario-print-dia__empreitada">
+                      <p className="diario-print-dia__empreitada-titulo">Checklist de ferramentas</p>
+                      {(e.checklistFerramentas ?? []).map((c) => (
+                        <div key={c.id} className="diario-print-dia__empreitada-item">
+                          <p style={{ margin: 0 }}>{c.nome} — {c.limpa ? 'Limpa' : 'Não limpa'}</p>
+                          {c.foto && (
+                            <div className="diario-print-fotos">
+                              <img src={fotosResolvidas[c.foto.id] ?? c.foto.dataUrl} alt={c.foto.nome} />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {e.fotos.length > 0 && (
                     <div className="diario-print-fotos">
                       {e.fotos.map((f) => (
