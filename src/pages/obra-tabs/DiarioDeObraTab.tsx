@@ -1041,6 +1041,22 @@ export function DiarioDeObraTab() {
                   {e.etapaAtual && <p className="diario-print-dia__etapa">Etapa: {e.etapaAtual}</p>}
                   <p className="diario-print-dia__atividades-titulo">Atividades executadas no dia</p>
                   <p>{e.atividadesExecutadas || 'Sem descrição de atividades.'}</p>
+                  {(e.atividadesPrevistas ?? []).filter((a) => a.descricao.trim()).length > 0 && (
+                    <>
+                      <p className="diario-print-dia__atividades-titulo">Atividades previstas para o dia</p>
+                      <ul className="diario-print-dia__lista">
+                        {(e.atividadesPrevistas ?? []).filter((a) => a.descricao.trim()).map((a) => <li key={a.id}>{a.descricao}</li>)}
+                      </ul>
+                    </>
+                  )}
+                  {(e.previstoAmanha ?? []).filter((a) => a.descricao.trim()).length > 0 && (
+                    <>
+                      <p className="diario-print-dia__atividades-titulo">Serviços previstos para amanhã</p>
+                      <ul className="diario-print-dia__lista">
+                        {(e.previstoAmanha ?? []).filter((a) => a.descricao.trim()).map((a) => <li key={a.id}>{a.descricao}</li>)}
+                      </ul>
+                    </>
+                  )}
                   <p className="diario-print-dia__equipe">Equipe: {equipeResumo(e)}</p>
                   {e.empreitados.filter((emp) => emp.quantidade > 0 || emp.descricao).length > 0 && (
                     <div className="diario-print-dia__empreitada">

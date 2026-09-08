@@ -478,6 +478,12 @@
   margin: 6px 0 2px;
 }
 
+.diario-print-dia__lista {
+  margin: 0 0 2px;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
 .diario-print-dia__equipe,
 .diario-print-dia__maodeobra,
 .diario-print-dia__marmitas {
