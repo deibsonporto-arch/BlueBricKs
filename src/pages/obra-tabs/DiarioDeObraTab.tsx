@@ -1039,8 +1039,12 @@ export function DiarioDeObraTab() {
                     {e.mestreDeObra && <span>{e.mestreDeObra}</span>}
                   </div>
                   {e.etapaAtual && <p className="diario-print-dia__etapa">Etapa: {e.etapaAtual}</p>}
-                  <p className="diario-print-dia__atividades-titulo">Atividades executadas no dia</p>
-                  <p>{e.atividadesExecutadas || 'Sem descrição de atividades.'}</p>
+                  {e.atividadesExecutadas.trim() && (
+                    <>
+                      <p className="diario-print-dia__atividades-titulo">Atividades executadas no dia</p>
+                      <p>{e.atividadesExecutadas}</p>
+                    </>
+                  )}
                   {(e.atividadesPrevistas ?? []).filter((a) => a.descricao.trim()).length > 0 && (
                     <>
                       <p className="diario-print-dia__atividades-titulo">Atividades previstas para o dia</p>
