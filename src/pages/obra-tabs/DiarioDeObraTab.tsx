@@ -8,9 +8,10 @@ import { useEmpresaConfig } from '../../hooks/useEmpresaConfig';
 import { useFornecedores } from '../../hooks/useFornecedores';
 import { useEquipes } from '../../hooks/useEquipes';
 import { useEmpreitadas } from '../../hooks/useEmpreitadas';
+import { useFerramentas } from '../../hooks/useFerramentas';
 import { Modal } from '../../components/common/Modal';
 import { EquipesListModal } from '../../components/diario/EquipesListModal';
-import type { DiarioEmpreitadoRow, DiarioEntry, DiarioFoto, DiarioRegistro, Fornecedor, StatusAtividade } from '../../types/domain';
+import type { DiarioAtividadePrevista, DiarioChecklistFerramenta, DiarioEmpreitadoRow, DiarioEntry, DiarioFoto, DiarioRegistro, Fornecedor, StatusAtividade } from '../../types/domain';
 import { generateId } from '../../utils/id';
 import { formatDate, monthKey, monthLabel, todayISO } from '../../utils/dateUtils';
 import { formatBRL } from '../../utils/currency';
@@ -92,6 +93,8 @@ function emptyForm(data: string): {
   etapaAtual: string;
   mestreDeObra: string;
   atividadesExecutadas: string;
+  atividadesPrevistas: DiarioAtividadePrevista[];
+  previstoAmanha: DiarioAtividadePrevista[];
   observacoes: string;
   pedreiros: number;
   serventes: number;
@@ -106,15 +109,16 @@ function emptyForm(data: string): {
   maoDeObra: MaoDeObraRow[];
   empreitados: DiarioEmpreitadoRow[];
   registros: DiarioRegistro[];
+  checklistFerramentas: DiarioChecklistFerramenta[];
   fotos: DiarioFoto[];
   data: string;
 } {
   return {
-    etapaAtual: '', mestreDeObra: '', atividadesExecutadas: '', observacoes: '',
+    etapaAtual: '', mestreDeObra: '', atividadesExecutadas: '', atividadesPrevistas: [], previstoAmanha: [], observacoes: '',
     pedreiros: 0, serventes: 0, carpinteiros: 0,
     valorDiariaMestre: 0, valorDiariaPedreiro: 0, valorDiariaServente: 0, valorDiariaCarpinteiro: 0,
     marmitasQuantidade: 0, marmitasValorUnitario: 0,
-    colaboradoresExtra: [], maoDeObra: [], empreitados: [], registros: [], fotos: [], data,
+    colaboradoresExtra: [], maoDeObra: [], empreitados: [], registros: [], checklistFerramentas: [], fotos: [], data,
   };
 }
 
@@ -141,6 +145,7 @@ export function DiarioDeObraTab() {
   const { fornecedores } = useFornecedores();
   const { equipes } = useEquipes();
   const { empreitadas, registrarMedicoes, atualizarMedicao } = useEmpreitadas(obraId);
+  const { ferramentas } = useFerramentas(obraId);
 
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const [form, setForm] = useState(() => emptyForm(todayISO()));
@@ -205,6 +210,8 @@ export function DiarioDeObraTab() {
         etapaAtual: existing.etapaAtual,
         mestreDeObra: existing.mestreDeObra,
         atividadesExecutadas: existing.atividadesExecutadas,
+        atividadesPrevistas: existing.atividadesPrevistas ?? [],
+        previstoAmanha: existing.previstoAmanha ?? [],
         observacoes: existing.observacoes ?? '',
         pedreiros: existing.pedreiros,
         serventes: existing.serventes,
@@ -219,6 +226,7 @@ export function DiarioDeObraTab() {
         maoDeObra: existing.maoDeObra ?? [],
         empreitados: existing.empreitados,
         registros: existing.registros,
+        checklistFerramentas: existing.checklistFerramentas ?? [],
         fotos: existing.fotos,
         data: existing.data,
       });
@@ -268,6 +276,8 @@ export function DiarioDeObraTab() {
       etapaAtual: f.etapaAtual,
       mestreDeObra: f.mestreDeObra,
       atividadesExecutadas: f.atividadesExecutadas,
+      atividadesPrevistas: f.atividadesPrevistas,
+      previstoAmanha: f.previstoAmanha,
       observacoes: f.observacoes || undefined,
       pedreiros: f.pedreiros,
       serventes: f.serventes,
@@ -282,6 +292,7 @@ export function DiarioDeObraTab() {
       maoDeObra: f.maoDeObra,
       empreitados: f.empreitados,
       registros: f.registros,
+      checklistFerramentas: f.checklistFerramentas,
       fotos,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -354,6 +365,71 @@ export function DiarioDeObraTab() {
 
   function removeRegistro(id: string) {
     update('registros', form.registros.filter((r) => r.id !== id));
+  }
+
+  function addAtividadePrevista() {
+    update('atividadesPrevistas', [...form.atividadesPrevistas, { id: generateId(), descricao: '' }]);
+  }
+
+  function updateAtividadePrevista(itemId: string, descricao: string) {
+    update('atividadesPrevistas', form.atividadesPrevistas.map((a) => (a.id === itemId ? { ...a, descricao } : a)));
+  }
+
+  function removeAtividadePrevista(itemId: string) {
+    update('atividadesPrevistas', form.atividadesPrevistas.filter((a) => a.id !== itemId));
+  }
+
+  function addPrevistoAmanha() {
+    update('previstoAmanha', [...form.previstoAmanha, { id: generateId(), descricao: '' }]);
+  }
+
+  function updatePrevistoAmanha(itemId: string, descricao: string) {
+    update('previstoAmanha', form.previstoAmanha.map((a) => (a.id === itemId ? { ...a, descricao } : a)));
+  }
+
+  function removePrevistoAmanha(itemId: string) {
+    update('previstoAmanha', form.previstoAmanha.filter((a) => a.id !== itemId));
+  }
+
+  function addChecklistFerramenta(ferramentaId: string) {
+    const ferramenta = ferramentas.find((f) => f.id === ferramentaId);
+    if (!ferramenta) return;
+    if (form.checklistFerramentas.some((c) => c.ferramentaId === ferramentaId)) return;
+    update('checklistFerramentas', [
+      ...form.checklistFerramentas,
+      { id: generateId(), ferramentaId: ferramenta.id, nome: ferramenta.nome, limpa: false },
+    ]);
+  }
+
+  function addChecklistFerramentaCustom() {
+    update('checklistFerramentas', [...form.checklistFerramentas, { id: generateId(), nome: '', limpa: false }]);
+  }
+
+  function updateChecklistFerramenta(itemId: string, patch: Partial<DiarioChecklistFerramenta>) {
+    update('checklistFerramentas', form.checklistFerramentas.map((c) => (c.id === itemId ? { ...c, ...patch } : c)));
+  }
+
+  function removeChecklistFerramenta(itemId: string) {
+    const item = form.checklistFerramentas.find((c) => c.id === itemId);
+    if (item?.foto) deleteBlob(item.foto.id).catch((err) => console.error('Erro ao remover anexo do checklist:', err));
+    update('checklistFerramentas', form.checklistFerramentas.filter((c) => c.id !== itemId));
+  }
+
+  function handleChecklistFotoChange(itemId: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    compressImageToDataUrl(file)
+      .then((dataUrl) => ({ id: generateId(), nome: file.name, dataUrl }) as DiarioFoto)
+      .then(storeAnexo)
+      .then((foto) => updateChecklistFerramenta(itemId, { foto }))
+      .catch((err) => console.error('Erro ao processar foto do checklist:', err));
+  }
+
+  function removeChecklistFoto(itemId: string) {
+    const item = form.checklistFerramentas.find((c) => c.id === itemId);
+    if (item?.foto) deleteBlob(item.foto.id).catch((err) => console.error('Erro ao remover anexo do checklist:', err));
+    updateChecklistFerramenta(itemId, { foto: undefined });
   }
 
   function addMaoDeObra() {
@@ -498,6 +574,44 @@ export function DiarioDeObraTab() {
             <div className="form-field form-field--full">
               <label>Atividades executadas no dia</label>
               <textarea value={form.atividadesExecutadas} onChange={(e) => update('atividadesExecutadas', e.target.value)} />
+            </div>
+
+            <div className="form-field form-field--full">
+              <label>Atividades previstas para o dia</label>
+              {form.atividadesPrevistas.map((a) => (
+                <div className="diario-registro-row__main" key={a.id} style={{ marginBottom: 6 }}>
+                  <input
+                    placeholder="ex: Chapisco da parede externa dos fundos"
+                    value={a.descricao}
+                    onChange={(e) => updateAtividadePrevista(a.id, e.target.value)}
+                  />
+                  <button type="button" className="btn btn-ghost" onClick={() => removeAtividadePrevista(a.id)} aria-label="Remover atividade prevista">
+                    <IconTrash size={14} />
+                  </button>
+                </div>
+              ))}
+              <button type="button" className="btn btn-secondary" onClick={addAtividadePrevista} style={{ marginTop: 4 }}>
+                <IconPlus size={14} /> Adicionar atividade prevista
+              </button>
+            </div>
+
+            <div className="form-field form-field--full">
+              <label>Serviços previstos para amanhã</label>
+              {form.previstoAmanha.map((a) => (
+                <div className="diario-registro-row__main" key={a.id} style={{ marginBottom: 6 }}>
+                  <input
+                    placeholder="ex: Início dos rasgos nas paredes para instalação das caixas elétricas"
+                    value={a.descricao}
+                    onChange={(e) => updatePrevistoAmanha(a.id, e.target.value)}
+                  />
+                  <button type="button" className="btn btn-ghost" onClick={() => removePrevistoAmanha(a.id)} aria-label="Remover previsto para amanhã">
+                    <IconTrash size={14} />
+                  </button>
+                </div>
+              ))}
+              <button type="button" className="btn btn-secondary" onClick={addPrevistoAmanha} style={{ marginTop: 4 }}>
+                <IconPlus size={14} /> Adicionar previsto para amanhã
+              </button>
             </div>
 
             <div className="form-field form-field--full">
@@ -724,6 +838,66 @@ export function DiarioDeObraTab() {
                   ))}
                 </div>
               )}
+            </div>
+            <div className="form-field form-field--full">
+              <label>Checklist de ferramentas</label>
+              <div className="diario-empreitados__header">
+                <select value="" onChange={(e) => { if (e.target.value) addChecklistFerramenta(e.target.value); e.target.value = ''; }}>
+                  <option value="">Adicionar ferramenta da obra...</option>
+                  {ferramentas
+                    .filter((f) => !form.checklistFerramentas.some((c) => c.ferramentaId === f.id))
+                    .map((f) => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                </select>
+                <button type="button" className="btn btn-ghost" onClick={addChecklistFerramentaCustom}>
+                  <IconPlus size={14} /> Adicionar item avulso
+                </button>
+              </div>
+
+              {form.checklistFerramentas.length === 0 && (
+                <p className="diario-maodeobra__empty">Nenhuma ferramenta no checklist deste dia.</p>
+              )}
+
+              {form.checklistFerramentas.map((item) => (
+                <div className="diario-registro-row" key={item.id}>
+                  <div className="diario-registro-row__main">
+                    {item.ferramentaId ? (
+                      <input value={item.nome} disabled style={{ flex: 1 }} />
+                    ) : (
+                      <input
+                        placeholder="Nome da ferramenta"
+                        value={item.nome}
+                        onChange={(e) => updateChecklistFerramenta(item.id, { nome: e.target.value })}
+                        style={{ flex: 1 }}
+                      />
+                    )}
+                    <label className="diario-checklist-limpa">
+                      <input
+                        type="checkbox"
+                        checked={item.limpa}
+                        onChange={(e) => updateChecklistFerramenta(item.id, { limpa: e.target.checked })}
+                      />
+                      Está limpa
+                    </label>
+                    <label className="btn btn-ghost diario-photo-btn">
+                      <IconCamera size={14} /> {item.foto ? 'Trocar foto' : 'Anexar foto'}
+                      <input type="file" accept="image/*" capture="environment" onChange={(e) => handleChecklistFotoChange(item.id, e)} hidden />
+                    </label>
+                    <button type="button" className="btn btn-ghost" onClick={() => removeChecklistFerramenta(item.id)} aria-label="Remover item do checklist">
+                      <IconTrash size={14} />
+                    </button>
+                  </div>
+                  {item.foto && (
+                    <div className="diario-fotos-grid">
+                      <div className="diario-foto-thumb">
+                        <ResolvedImage item={item.foto} onClick={() => setFotoAmpliada(item.foto!)} title="Clique para ampliar" />
+                        <button type="button" onClick={() => removeChecklistFoto(item.id)} aria-label="Remover foto">
+                          <IconTrash size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 

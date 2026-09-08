@@ -392,6 +392,19 @@ export interface DiarioFoto {
   dataUrl: string;
 }
 
+export interface DiarioAtividadePrevista {
+  id: string;
+  descricao: string;
+}
+
+export interface DiarioChecklistFerramenta {
+  id: string;
+  ferramentaId?: string; // vínculo com Ferramenta cadastrada na obra — ausente quando digitada livremente
+  nome: string;
+  limpa: boolean;
+  foto?: DiarioFoto;
+}
+
 export interface DiarioEntry {
   id: string;
   obraId: string;
@@ -399,6 +412,8 @@ export interface DiarioEntry {
   etapaAtual: string;
   mestreDeObra: string;
   atividadesExecutadas: string;
+  atividadesPrevistas?: DiarioAtividadePrevista[]; // atividades previstas para o próprio dia do registro
+  previstoAmanha?: DiarioAtividadePrevista[]; // serviços previstos para o dia seguinte
   observacoes?: string;
   pedreiros: number;
   serventes: number;
@@ -413,6 +428,7 @@ export interface DiarioEntry {
   maoDeObra?: { id: string; nome: string; funcao: string; valorDiaria: number }[];
   empreitados: DiarioEmpreitadoRow[];
   registros: DiarioRegistro[];
+  checklistFerramentas?: DiarioChecklistFerramenta[];
   fotos: DiarioFoto[];
   createdAt: string;
   updatedAt: string;
