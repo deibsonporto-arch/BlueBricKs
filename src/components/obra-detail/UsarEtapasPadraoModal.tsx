@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '../common/Modal';
-import type { Atividade } from '../../types/domain';
+import type { Atividade, Subatividade } from '../../types/domain';
 import { useAtividades } from '../../hooks/useAtividades';
 import { ETAPAS_PADRAO, ordenarPorSequenciaPadrao } from '../../utils/etapasPadrao';
 import { generateId } from '../../utils/id';
@@ -17,7 +17,7 @@ interface UsarEtapasPadraoModalProps {
 }
 
 export function UsarEtapasPadraoModal({ open, obraId, obraDataInicio, atividades, onClose, onApplied }: UsarEtapasPadraoModalProps) {
-  const { createAtividade, mergeAtividade, reorderAtividades } = useAtividades(obraId);
+  const { createAtividade, createSubatividade, mergeAtividade, reorderAtividades } = useAtividades(obraId);
 
   const nomesPadrao = useMemo(() => new Set(ETAPAS_PADRAO.map((e) => e.nome.trim().toLowerCase())), []);
   const existentes = useMemo(() => new Set(atividades.map((a) => a.nome.trim().toLowerCase())), [atividades]);
@@ -82,6 +82,32 @@ export function UsarEtapasPadraoModal({ open, obraId, obraDataInicio, atividades
         await createAtividade(nova);
         idPorNome.set(etapa.nome.trim().toLowerCase(), nova.id);
         ultimaId = nova.id;
+
+        let subUltimaId: string | undefined;
+        for (const [subIndice, nomeSub] of (etapa.subitens ?? []).entries()) {
+          const novaSub: Subatividade = {
+            id: generateId(),
+            nome: nomeSub,
+            concluida: false,
+            status: 'pendente',
+            iniciada: false,
+            dataInicio: obraDataInicio,
+            dataFim: obraDataInicio,
+            dependeDe: subUltimaId ? [subUltimaId] : [],
+            diasEsperaAposPredecessora: 0,
+            dataAutomatica: true,
+            contagemDias: 'uteis',
+            ordem: subIndice,
+            custoMaoDeObra: 0,
+            custoMaterial: 0,
+            custoAluguel: 0,
+            materiaisNecessarios: [],
+            maoDeObraNecessaria: [],
+            equipamentosAluguel: [],
+          };
+          await createSubatividade(nova.id, novaSub);
+          subUltimaId = novaSub.id;
+        }
       }
 
       for (const [sourceId, destNome] of Object.entries(mesclagens)) {
@@ -125,7 +151,7 @@ export function UsarEtapasPadraoModal({ open, obraId, obraDataInicio, atividades
           {faltantes.length > 0 && (
             <div className="form-field form-field--full">
               <label>Etapas padrão a criar ({selecionadas.size} de {faltantes.length})</label>
-              <p className="form-field__hint">Entram como atividades vazias (0 dias de custo), em sequência — depois é só editar datas, custos e adicionar subatividades.</p>
+              <p className="form-field__hint">Entram em sequência, já com as subatividades usuais de cada etapa (sem custo definido) — depois é só editar datas, custos e ajustar o que for diferente nessa obra.</p>
               <div className="usar-etapas-padrao__lista">
                 {faltantes.map((etapa) => (
                   <label key={etapa.nome} className="usar-etapas-padrao__item">

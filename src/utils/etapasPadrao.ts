@@ -1,31 +1,135 @@
 /** Lista padrão de etapas de obra na sequência de execução real do canteiro (EAP simplificada,
  * do início ao "habite-se") e as regras que classificam o "grupo" de uma composição SINAPI numa
  * dessas etapas — usado pra priorizar a busca de composição pela etapa da atividade/subatividade atual. */
-export const ETAPAS_PADRAO: { nome: string; descricao: string }[] = [
-  { nome: 'Serviços Preliminares', descricao: 'Limpeza do terreno, canteiro de obras, ligações provisórias e locação da obra' },
-  { nome: 'Movimento de Terra', descricao: 'Escavação, transporte de material, aterro/reaterro e compactação' },
-  { nome: 'Infraestrutura', descricao: 'Fundações, baldrames, impermeabilização e reaterro das fundações' },
-  { nome: 'Supraestrutura', descricao: 'Pilares, vigas, lajes e escadas' },
-  { nome: 'Paredes e Painéis', descricao: 'Alvenaria de vedação, vergas, contravergas e encunhamento' },
-  { nome: 'Cobertura', descricao: 'Estrutura do telhado, telhamento, calhas e condutores de águas pluviais' },
-  { nome: 'Instalações Hidrossanitárias', descricao: 'Água fria, água quente, esgoto, águas pluviais e reservatórios' },
-  { nome: 'Instalações Elétricas e Telecomunicações', descricao: 'Eletrodutos, caixas, quadros, cabeamento, telefonia/dados e aterramento' },
-  { nome: 'Impermeabilizações', descricao: 'Áreas molhadas, lajes e reservatórios' },
-  { nome: 'Esquadrias', descricao: 'Portas, janelas e esquadrias metálicas' },
-  { nome: 'Revestimentos Internos', descricao: 'Chapisco, emboço/reboco, cerâmica e porcelanato' },
-  { nome: 'Revestimentos Externos', descricao: 'Chapisco, emboço/reboco e textura externa' },
-  { nome: 'Forros', descricao: 'Estrutura, drywall/gesso e arremates' },
-  { nome: 'Pisos', descricao: 'Contrapiso, cerâmica, porcelanato e pisos externos' },
-  { nome: 'Marmoraria', descricao: 'Soleiras, peitoris, bancadas, nichos e rodabancas' },
-  { nome: 'Vidros e Espelhos', descricao: 'Instalação de vidros e espelhos' },
-  { nome: 'Pintura', descricao: 'Selador, massa corrida, lixamento e pintura interna/externa' },
-  { nome: 'Louças, Metais e Acessórios', descricao: 'Louças, metais, torneiras e acessórios de banheiro' },
-  { nome: 'Instalações e Equipamentos Finais', descricao: 'Tomadas, interruptores, luminárias, equipamentos elétricos e bombas' },
-  { nome: 'Áreas Externas e Urbanização', descricao: 'Calçadas, pavimentação, muros, portões e drenagem externa' },
-  { nome: 'Acabamentos e Complementos', descricao: 'Rodapés, calafetações e arremates finais' },
-  { nome: 'Testes e Comissionamento', descricao: 'Testes das instalações hidráulicas, elétricas e equipamentos' },
-  { nome: 'Limpeza Final', descricao: 'Limpeza grossa, fina e de vidros/esquadrias' },
-  { nome: 'Vistoria e Entrega', descricao: 'Vistoria final, levantamento/correção de pendências e entrega da obra' },
+export interface EtapaPadrao {
+  nome: string;
+  descricao: string;
+  /** Subatividades pré-cadastradas dessa etapa, na ordem em que normalmente são executadas —
+   * cada uma entra dependendo da anterior (a 1ª segue a predecessora da própria etapa/atividade). */
+  subitens?: string[];
+}
+
+export const ETAPAS_PADRAO: EtapaPadrao[] = [
+  {
+    nome: 'Serviços Preliminares',
+    descricao: 'Limpeza do terreno, canteiro de obras, ligações provisórias e locação da obra',
+    subitens: ['Limpeza e preparação do terreno', 'Instalação do canteiro de obras', 'Ligações provisórias', 'Locação da obra'],
+  },
+  {
+    nome: 'Movimento de Terra',
+    descricao: 'Escavação, transporte de material, aterro/reaterro e compactação',
+    subitens: ['Escavação de valas e fundações', 'Transporte e retirada de material', 'Aterro e reaterro', 'Compactação do solo'],
+  },
+  {
+    nome: 'Infraestrutura',
+    descricao: 'Fundações, baldrames, impermeabilização e reaterro das fundações',
+    subitens: ['Execução das fundações', 'Baldrames', 'Impermeabilização de fundações', 'Reaterro das fundações'],
+  },
+  {
+    nome: 'Supraestrutura',
+    descricao: 'Pilares, vigas, lajes e escadas',
+    subitens: ['Pilares', 'Vigas', 'Lajes', 'Escadas'],
+  },
+  {
+    nome: 'Paredes e Painéis',
+    descricao: 'Alvenaria de vedação, vergas, contravergas e encunhamento',
+    subitens: ['Alvenaria de vedação', 'Vergas e contravergas', 'Encunhamento', 'Fechamentos e complementos'],
+  },
+  {
+    nome: 'Cobertura',
+    descricao: 'Estrutura do telhado, telhamento, calhas e condutores de águas pluviais',
+    subitens: ['Estrutura da cobertura', 'Telhamento', 'Calhas e rufos', 'Condutores de águas pluviais'],
+  },
+  {
+    nome: 'Instalações Hidrossanitárias',
+    descricao: 'Água fria, água quente, esgoto, águas pluviais e reservatórios',
+    subitens: ['Instalação de água fria', 'Instalação de água quente', 'Instalação de esgoto', 'Instalação de águas pluviais', 'Reservatórios'],
+  },
+  {
+    nome: 'Instalações Elétricas e Telecomunicações',
+    descricao: 'Eletrodutos, caixas, quadros, cabeamento, telefonia/dados e aterramento',
+    subitens: ['Rasgos para instalações', 'Instalação de eletrodutos/conduítes', 'Instalação de caixas elétricas', 'Quadros elétricos', 'Cabeamento elétrico', 'Telefonia e dados', 'Sistema de aterramento'],
+  },
+  {
+    nome: 'Impermeabilizações',
+    descricao: 'Áreas molhadas, lajes e reservatórios',
+    subitens: ['Impermeabilização de áreas molhadas', 'Impermeabilização de lajes', 'Impermeabilização de reservatórios'],
+  },
+  {
+    nome: 'Esquadrias',
+    descricao: 'Portas, janelas e esquadrias metálicas',
+    subitens: ['Instalação de portas', 'Instalação de janelas', 'Esquadrias metálicas'],
+  },
+  {
+    nome: 'Revestimentos Internos',
+    descricao: 'Chapisco, emboço/reboco, cerâmica e porcelanato',
+    subitens: ['Chapisco', 'Emboço/reboco', 'Regularização de paredes', 'Revestimento cerâmico', 'Porcelanato de paredes'],
+  },
+  {
+    nome: 'Revestimentos Externos',
+    descricao: 'Chapisco, emboço/reboco e textura externa',
+    subitens: ['Chapisco externo', 'Emboço/reboco externo', 'Textura/revestimento externo'],
+  },
+  {
+    nome: 'Forros',
+    descricao: 'Estrutura, drywall/gesso e arremates',
+    subitens: ['Estrutura para forro', 'Forro de drywall/gesso', 'Tabicas, sancas e arremates'],
+  },
+  {
+    nome: 'Pisos',
+    descricao: 'Contrapiso, cerâmica, porcelanato e pisos externos',
+    subitens: ['Contrapiso', 'Regularização de piso', 'Piso cerâmico', 'Porcelanato', 'Pisos externos'],
+  },
+  {
+    nome: 'Marmoraria',
+    descricao: 'Soleiras, peitoris, bancadas, nichos e rodabancas',
+    subitens: ['Soleiras', 'Peitoris', 'Bancadas', 'Nichos', 'Rodabancas'],
+  },
+  {
+    nome: 'Vidros e Espelhos',
+    descricao: 'Instalação de vidros e espelhos',
+    subitens: ['Instalação de vidros', 'Instalação de espelhos'],
+  },
+  {
+    nome: 'Pintura',
+    descricao: 'Selador, massa corrida, lixamento e pintura interna/externa',
+    subitens: ['Selador', 'Massa corrida', 'Lixamento', 'Pintura interna', 'Pintura externa'],
+  },
+  {
+    nome: 'Louças, Metais e Acessórios',
+    descricao: 'Louças, metais, torneiras e acessórios de banheiro',
+    subitens: ['Instalação de louças sanitárias', 'Instalação de metais sanitários', 'Torneiras e registros', 'Acessórios de banheiro'],
+  },
+  {
+    nome: 'Instalações e Equipamentos Finais',
+    descricao: 'Tomadas, interruptores, luminárias, equipamentos elétricos e bombas',
+    subitens: ['Tomadas e interruptores', 'Luminárias', 'Equipamentos elétricos', 'Bombas e equipamentos hidráulicos'],
+  },
+  {
+    nome: 'Áreas Externas e Urbanização',
+    descricao: 'Calçadas, pavimentação, muros, portões e drenagem externa',
+    subitens: ['Calçadas', 'Pavimentação externa', 'Muros e gradis', 'Portões', 'Drenagem externa'],
+  },
+  {
+    nome: 'Acabamentos e Complementos',
+    descricao: 'Rodapés, calafetações e arremates finais',
+    subitens: ['Rodapés', 'Calafetações', 'Arremates e remates finais', 'Correções de acabamento'],
+  },
+  {
+    nome: 'Testes e Comissionamento',
+    descricao: 'Testes das instalações hidráulicas, elétricas e equipamentos',
+    subitens: ['Teste das instalações hidráulicas', 'Teste das instalações elétricas', 'Teste de esgoto e águas pluviais', 'Teste dos equipamentos'],
+  },
+  {
+    nome: 'Limpeza Final',
+    descricao: 'Limpeza grossa, fina e de vidros/esquadrias',
+    subitens: ['Limpeza grossa', 'Limpeza fina', 'Limpeza de vidros e esquadrias'],
+  },
+  {
+    nome: 'Vistoria e Entrega',
+    descricao: 'Vistoria final, levantamento/correção de pendências e entrega da obra',
+    subitens: ['Vistoria final', 'Levantamento de pendências', 'Correção das pendências', 'Entrega da obra'],
+  },
 ];
 
 const REGRAS_CLASSIFICACAO: { etapa: string; padroes: string[] }[] = [
