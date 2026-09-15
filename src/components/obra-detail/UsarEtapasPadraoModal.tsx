@@ -130,7 +130,10 @@ export function UsarEtapasPadraoModal({ open, obraId, obraDataInicio, atividades
                 {faltantes.map((etapa) => (
                   <label key={etapa.nome} className="usar-etapas-padrao__item">
                     <input type="checkbox" checked={selecionadas.has(etapa.nome)} onChange={() => toggleEtapa(etapa.nome)} />
-                    {etapa.nome}
+                    <span>
+                      {etapa.nome}
+                      {etapa.descricao && <span className="usar-etapas-padrao__item-descricao"> — {etapa.descricao}</span>}
+                    </span>
                   </label>
                 ))}
               </div>

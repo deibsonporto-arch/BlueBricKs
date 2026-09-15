@@ -1,13 +1,13 @@
 .usar-etapas-padrao__lista {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 4px;
 }
 
 .usar-etapas-padrao__item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-size: 13px;
   font-weight: 500;
@@ -16,6 +16,12 @@
 
 .usar-etapas-padrao__item input {
   width: auto;
+  margin-top: 2px;
+}
+
+.usar-etapas-padrao__item-descricao {
+  font-weight: 400;
+  color: var(--color-text-muted);
 }
 
 .usar-etapas-padrao__mescla-lista {
